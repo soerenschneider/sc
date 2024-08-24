@@ -1,6 +1,6 @@
 # sc
 
-sc is a command-line interface (CLI) tool, similar to the AWS CLI, designed as the primary interface to the [sc-agent](https://github.com/soerenschneider/sc-agent) daemon, which runs on all (virtual) machines of [soeren.cloud](https://github.com/soerenschneider/soeren.cloud). Through REST API calls, SC enables seamless remote management.
+sc is a command-line interface (CLI) tool, similar to the AWS CLI, designed as an interface for [soeren.cloud](https://github.com/soerenschneider/soeren.cloud).
 
 ## Installation
 
