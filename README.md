@@ -40,6 +40,7 @@ Use "sc [command] --help" for more information about a command.
 
 Detailed documentation for all CLI sub commands is available below
 - [agent subcommand](./docs/cli/agent/sc_agent.md)
+- [pki subcommand](./docs/cli/pki/sc_pki.md)
 - [ssh subcommand](./docs/cli/ssh/sc_ssh.md)
 
 ## Code Generation
