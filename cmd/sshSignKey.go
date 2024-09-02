@@ -3,8 +3,6 @@ package cmd
 import (
 	"fmt"
 	"math"
-	"os/user"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -122,21 +120,6 @@ func sshSignKeyCmdGetCertificateFile(publicKeyFile, certificateFile string) stri
 	auto := strings.Replace(publicKeyFile, ".pub", "", 1)
 	auto = GetExpandedFile(fmt.Sprintf("%s-cert.pub", auto))
 	return auto
-}
-
-func GetExpandedFile(filename string) string {
-	usr, _ := user.Current()
-	dir := usr.HomeDir
-
-	if strings.HasPrefix(filename, "~/") {
-		return filepath.Join(dir, filename[2:])
-	}
-
-	if strings.HasPrefix(filename, "$HOME/") {
-		return filepath.Join(dir, filename[6:])
-	}
-
-	return filename
 }
 
 func logIssueResults(result *signature.IssueResult) {
