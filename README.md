@@ -1,5 +1,11 @@
 # sc
 
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/soerenschneider/sc)](https://goreportcard.com/report/github.com/soerenschneider/sc-agent)
+![test-workflow](https://github.com/soerenschneider/sc/actions/workflows/test.yaml/badge.svg)
+![release-workflow](https://github.com/soerenschneider/sc/actions/workflows/release-container.yaml/badge.svg)
+![golangci-lint-workflow](https://github.com/soerenschneider/sc/actions/workflows/golangci-lint.yaml/badge.svg)
+
 sc is a command-line interface (CLI) tool, similar to the AWS CLI, designed as an interface for [soeren.cloud](https://github.com/soerenschneider/soeren.cloud).
 
 ## Installation
