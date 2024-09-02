@@ -33,6 +33,7 @@ func WithTlsClientCert(certFile, keyFile, caFile string) HttpClientOption {
 			Certificates:       []tls.Certificate{cert},
 			RootCAs:            caCertPool,
 			InsecureSkipVerify: false,
+			MinVersion:         tls.VersionTLS13,
 		}
 
 		client.Transport = &http.Transport{
