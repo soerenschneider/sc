@@ -44,6 +44,15 @@ var docsCmd = &cobra.Command{
 		if err = doc.GenMarkdownTree(sshCmd, sshDocsDir); err != nil {
 			log.Fatalf("Could not generate docs: %v", err)
 		}
+
+		pkiDocsDir := filepath.Join(docsDir, "pki")
+		if err = os.Mkdir(pkiDocsDir, 0755); err != nil {
+			log.Fatalf("Failed to create dir: %v", err)
+		}
+
+		if err = doc.GenMarkdownTree(pkiCmd, pkiDocsDir); err != nil {
+			log.Fatalf("Could not generate docs: %v", err)
+		}
 	},
 }
 
