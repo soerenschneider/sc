@@ -9,7 +9,6 @@ go install github.com/soerenschneider/sc@latest
 ```
 
 ```shell
-$ sc --help
 Universal Command Line Interface for soeren.cloud
 
 Usage:
@@ -19,11 +18,14 @@ Available Commands:
   agent       Interact with a remote sc-agent instance
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command
+  pki         Sign, issue and revoke x509 certificates and retrieve x509 CA data
   ssh         Sign SSH certificates or retrieve SSH CA data
+  version     Print version and exit
 
 Flags:
-  -h, --help      help for sc
-  -v, --verbose   Print debug logs
+  -h, --help           help for sc
+      --no-telemetry   Do not perform check for updated version
+  -v, --verbose        Print debug logs
 
 Use "sc [command] --help" for more information about a command.
 ```
