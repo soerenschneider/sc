@@ -14,8 +14,9 @@ import (
 const docsDir = "./docs/cli"
 
 var docsCmd = &cobra.Command{
-	Use:   "docs",
-	Short: "Generate CLI docs",
+	Use:    "docs",
+	Short:  "Generate CLI docs",
+	Hidden: true,
 	Run: func(cmd *cobra.Command, args []string) {
 		err := os.RemoveAll(docsDir)
 		if err != nil {
