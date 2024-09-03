@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/hashicorp/go-retryablehttp"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
