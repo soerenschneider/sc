@@ -11,17 +11,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const vaultAddrEnvVarKey = "VAULT_ADDR"
+
 func getVaultAddress(cmd *cobra.Command) (string, error) {
 	address, err := cmd.Flags().GetString(sshCmdFlagsVaultAddress)
 	if err == nil && len(address) > 0 {
 		return address, nil
 	}
-	log.Info().Msg("No vault address supplied, trying env var VAULT_ADDR")
-	address = os.Getenv("VAULT_ADDR")
+	address = os.Getenv(vaultAddrEnvVarKey)
 	if len(address) == 0 {
 		return "", errors.New("no vault address specified")
 	}
-
+	log.Info().Msgf("No vault address supplied explicitly, using value of env var %s=%s", vaultAddrEnvVarKey, address)
 	return address, nil
 }
 
