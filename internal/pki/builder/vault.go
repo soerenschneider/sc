@@ -7,8 +7,8 @@ import (
 
 	"github.com/hashicorp/vault/api"
 	auth "github.com/soerenschneider/sc/internal/vault"
-	"github.com/soerenschneider/vault-pki-cli/pkg/issue_strategies"
 	"github.com/soerenschneider/vault-pki-cli/pkg/pki"
+	"github.com/soerenschneider/vault-pki-cli/pkg/renew_strategy"
 	"github.com/soerenschneider/vault-pki-cli/pkg/vault"
 )
 
@@ -18,7 +18,7 @@ func BuildPki(address string, sshMount, role string) (*pki.PkiService, error) {
 		return nil, fmt.Errorf("could not build client for signatures: %w", err)
 	}
 
-	issueStrategy, err := issue_strategies.NewPercentage(50)
+	issueStrategy, err := renew_strategy.NewPercentage(50)
 	if err != nil {
 		return nil, fmt.Errorf("could not build issue strategy implementation: %w", err)
 	}
