@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/hashicorp/go-retryablehttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/soerenschneider/sc/cmd/deps"
 	"github.com/soerenschneider/sc/internal"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -29,26 +30,7 @@ var rootCmd = &cobra.Command{
 		verbose, _ := cmd.Flags().GetBool(rootCmdFlagsVerbose)
 		setupLogLevel(verbose)
 
-		go func() {
-			disableTelemetry, err := cmd.Flags().GetBool(rootCmdFlagsNoTelemetry)
-			DieOnErr(err, "could not get flag")
-
-			if disableTelemetry || !strings.HasPrefix(internal.BuildVersion, "v") {
-				log.Debug().Str("local_version", internal.BuildVersion).Msg("not performing check for update")
-				return
-			}
-
-			httpClient := retryablehttp.NewClient().StandardClient()
-			releaseNotifier, err := internal.NewReleaseNotifier(httpClient, internal.BuildVersion)
-			if err != nil {
-				log.Warn().Msg("could not build release notifier")
-				return
-			}
-
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-			defer cancel()
-			releaseNotifier.CheckRelease(ctx)
-		}()
+		conditionallyLogLatestReleaseInfo(cmd)
 	},
 }
 
@@ -87,4 +69,44 @@ func setupLogLevel(debug bool) {
 			TimeFormat: "15:04:05",
 		})
 	}
+}
+
+func conditionallyLogLatestReleaseInfo(cmd *cobra.Command) {
+	disableTelemetry := isDisableTelemetry(cmd)
+	if disableTelemetry {
+		return
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if disableTelemetry || !strings.HasPrefix(internal.BuildVersion, "v") {
+			log.Debug().Str("local_version", internal.BuildVersion).Msg("not performing check for update")
+			return
+		}
+
+		httpClient := deps.GetHttpClient()
+		releaseNotifier, err := internal.NewReleaseNotifier(httpClient, internal.BuildVersion)
+		if err != nil {
+			log.Warn().Msg("could not build release notifier")
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		releaseNotifier.CheckRelease(ctx)
+	}()
+
+	wg.Wait()
+}
+
+func isDisableTelemetry(cmd *cobra.Command) bool {
+	if cmd.Use == "version" || cmd.Use == "help" || cmd.Use == "docs" {
+		return true
+	}
+
+	disableTelemetry, err := cmd.Flags().GetBool(rootCmdFlagsNoTelemetry)
+	DieOnErr(err, "could not get flag")
+	return disableTelemetry
 }
