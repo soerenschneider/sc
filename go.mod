@@ -10,6 +10,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.5.9
 	github.com/rs/zerolog v1.33.0
 	github.com/soerenschneider/sc-agent v0.0.0-20240821204745-71a3511a3983
+	github.com/soerenschneider/vault-pki-cli v1.15.0
 	github.com/soerenschneider/vault-ssh-cli v1.8.2
 	github.com/spf13/afero v1.11.0
 	github.com/spf13/cobra v1.8.1
@@ -56,7 +57,6 @@ require (
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
-	github.com/soerenschneider/vault-pki-cli v1.15.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
