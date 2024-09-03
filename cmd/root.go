@@ -22,8 +22,9 @@ const (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "sc",
-	Short: "Universal Command Line Interface for soeren.cloud",
+	Use:               "sc",
+	Short:             "Universal Command Line Interface for soeren.cloud",
+	DisableAutoGenTag: true,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		verbose, _ := cmd.Flags().GetBool(rootCmdFlagsVerbose)
 		setupLogLevel(verbose)
