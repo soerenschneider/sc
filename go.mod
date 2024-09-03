@@ -9,7 +9,7 @@ require (
 	github.com/hashicorp/vault/api v1.14.0
 	github.com/jedib0t/go-pretty/v6 v6.5.9
 	github.com/rs/zerolog v1.33.0
-	github.com/soerenschneider/sc-agent v0.0.0-20240821204745-71a3511a3983
+	github.com/soerenschneider/sc-agent v1.1.0
 	github.com/soerenschneider/vault-pki-cli v1.15.0
 	github.com/soerenschneider/vault-ssh-cli v1.8.2
 	github.com/spf13/afero v1.11.0
