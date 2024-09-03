@@ -47,7 +47,3 @@ func (z *zerologAdapter) Warn(msg string, keysAndValues ...interface{}) {
 func (z *zerologAdapter) Error(msg string, keysAndValues ...interface{}) {
 	log.Error().Fields(keysAndValues).Msg(msg)
 }
-
-type retryableLogger struct {
-	logger *zerolog.Logger
-}
