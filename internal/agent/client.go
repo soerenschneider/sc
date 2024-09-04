@@ -24,12 +24,24 @@ func NewClient(client api.ClientInterface) (*ScAgentClient, error) {
 	}, nil
 }
 
-func (a ScAgentClient) AcmeGetManagedCerts(ctx context.Context, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
-	return a.client.AcmeGetManagedCerts(ctx, reqEditors...)
+func (a ScAgentClient) CertsAcmeGetCertificates(ctx context.Context, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
+	return a.client.CertsAcmeGetCertificates(ctx, reqEditors...)
 }
 
-func (a ScAgentClient) AcmeGetManagedCert(ctx context.Context, id string, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
-	return a.client.AcmeGetManagedCert(ctx, id, reqEditors...)
+func (a ScAgentClient) CertsAcmeGetCertificate(ctx context.Context, id string, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
+	return a.client.CertsAcmeGetCertificate(ctx, id, reqEditors...)
+}
+
+func (a ScAgentClient) CertsSshGetCertificates(ctx context.Context, params *api.CertsSshGetCertificatesParams, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
+	return a.client.CertsSshGetCertificates(ctx, params, reqEditors...)
+}
+
+func (a ScAgentClient) CertsSshGetCertificate(ctx context.Context, id string, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
+	return a.client.CertsSshGetCertificate(ctx, id, reqEditors...)
+}
+
+func (a ScAgentClient) InfoGetComponents(ctx context.Context, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
+	return a.client.InfoGetComponents(ctx, reqEditors...)
 }
 
 func (a ScAgentClient) CertsSshPostIssueRequests(ctx context.Context, params *api.CertsSshPostIssueRequestsParams, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
@@ -46,10 +58,6 @@ func (a ScAgentClient) CertsX509PostIssueRequests(ctx context.Context, params *a
 
 func (a ScAgentClient) CertsX509GetCertificate(ctx context.Context, id string, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
 	return a.client.CertsX509GetCertificate(ctx, id, reqEditors...)
-}
-
-func (a ScAgentClient) SysGetComponents(ctx context.Context, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
-	return a.client.SysGetComponents(ctx, reqEditors...)
 }
 
 func (a ScAgentClient) K0sPostAction(ctx context.Context, params *api.K0sPostActionParams, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
@@ -94,14 +102,6 @@ func (a ScAgentClient) ReplicationPostSecretsRequests(ctx context.Context, param
 
 func (a ScAgentClient) ServicesUnitStatusPut(ctx context.Context, unit string, params *api.ServicesUnitStatusPutParams, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
 	return a.client.ServicesUnitStatusPut(ctx, unit, params, reqEditors...)
-}
-
-func (a ScAgentClient) SshGetCertificateConfigList(ctx context.Context, params *api.SshGetCertificateConfigListParams, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
-	return a.client.SshGetCertificateConfigList(ctx, params, reqEditors...)
-}
-
-func (a ScAgentClient) SshGetCertificatesConfig(ctx context.Context, id string, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
-	return a.client.SshGetCertificatesConfig(ctx, id, reqEditors...)
 }
 
 func (a ScAgentClient) PackagesInstalledGet(ctx context.Context, reqEditors ...api.RequestEditorFn) (*http.Response, error) {

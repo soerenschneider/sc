@@ -23,7 +23,7 @@ var agentCertsSshGetCertificateCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("could not get flag")
 		}
 
-		resp, err := client.SshGetCertificatesConfig(context.Background(), id)
+		resp, err := client.CertsSshGetCertificate(context.Background(), id)
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not send request")
 		}

@@ -55,8 +55,6 @@ func (r *ReleaseNotifier) CheckRelease(ctx context.Context) {
 			log.Info().Str("component", componentName).Str("remote_version", release).Str("local_version", r.tag).Msg("noticed update")
 		}
 		r.updateSeen = true
-	} else {
-		log.Info().Str("component", componentName).Str("remote_version", release).Str("local_version", r.tag).Msg("no update available")
 	}
 }
 
