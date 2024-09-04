@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/soerenschneider/sc/compare/v1.0.0...v1.1.0) (2024-09-04)
+
+
+### Features
+
+* better logging ([909b4b4](https://github.com/soerenschneider/sc/commit/909b4b4235a226953cb388bc3a7300cafc5f518b))
+
+
+### Bug Fixes
+
+* bump sc-agent to v1.0.1 ([01f1109](https://github.com/soerenschneider/sc/commit/01f11090802f7ac8a2829ee36b7808c196387093))
+
 ## 1.0.0 (2024-09-02)
 
 
