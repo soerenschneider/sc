@@ -26,6 +26,10 @@ var agentCertsSshGetCertificatesCmd = &cobra.Command{
 
 		var certType api.CertsSshGetCertificatesParamsType
 		certTypeParam, err := cmd.Flags().GetString(agentCertsSshGetCertificatesCmdFlagsCertType)
+		if err != nil {
+			log.Fatal().Err(err).Msg("could not get flag")
+		}
+
 		switch certTypeParam {
 		case agentCertsSshGetCertificatesCmdCertTypeUser:
 			certType = api.User
