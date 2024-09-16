@@ -10,7 +10,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.5.9
 	github.com/rs/zerolog v1.33.0
 	github.com/soerenschneider/sc-agent v1.0.1
-	github.com/soerenschneider/vault-pki-cli v1.15.0
+	github.com/soerenschneider/vault-pki-cli v1.15.1
 	github.com/soerenschneider/vault-ssh-cli v1.8.2
 	github.com/spf13/afero v1.11.0
 	github.com/spf13/cobra v1.8.1
