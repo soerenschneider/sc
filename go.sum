@@ -116,12 +116,12 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/posener/complete v1.1.1/go.mod h1:em0nMJCgc9GFtwrmVmEMR/ZL6WyhyjMBndrE9hABlRI=
-github.com/prometheus/client_golang v1.20.2 h1:5ctymQzZlyOON1666svgwn3s6IKWgfbjsejTMiXIyjg=
-github.com/prometheus/client_golang v1.20.2/go.mod h1:PIEt8X02hGcP8JWbeHyeZ53Y/jReSnHgO035n//V5WE=
+github.com/prometheus/client_golang v1.20.3 h1:oPksm4K8B+Vt35tUhw6GbSNSgVlVSBH0qELP/7u83l4=
+github.com/prometheus/client_golang v1.20.3/go.mod h1:PIEt8X02hGcP8JWbeHyeZ53Y/jReSnHgO035n//V5WE=
 github.com/prometheus/client_model v0.6.1 h1:ZKSh/rekM+n3CeS952MLRAdFwIKqeY8b62p8ais2e9E=
 github.com/prometheus/client_model v0.6.1/go.mod h1:OrxVMOVHjw3lKMa8+x6HeMGkHMQyHDk9E3jmP2AmGiY=
-github.com/prometheus/common v0.57.0 h1:Ro/rKjwdq9mZn1K5QPctzh+MA4Lp0BuYk5ZZEVhoNcY=
-github.com/prometheus/common v0.57.0/go.mod h1:7uRPFSUTbfZWsJ7MHY56sqt7hLQu3bxXHDnNhl8E9qI=
+github.com/prometheus/common v0.59.1 h1:LXb1quJHWm1P6wq/U824uxYi4Sg0oGvNeUm1z5dJoX0=
+github.com/prometheus/common v0.59.1/go.mod h1:GpWM7dewqmVYcd7SmRaiWVe9SSqjf0UrwnYnpEZNuT0=
 github.com/prometheus/procfs v0.15.1 h1:YagwOFzUgYfKKHX6Dr+sHT7km/hxC76UB0learggepc=
 github.com/prometheus/procfs v0.15.1/go.mod h1:fB45yRUv8NstnjriLhBQLuOUt+WW4BsoGhij/e3PBqk=
 github.com/rivo/uniseg v0.2.0 h1:S1pD9weZBuJdFmowNwbpi7BJ8TNftyUImj/0WQi72jY=
@@ -144,8 +144,8 @@ github.com/soerenschneider/sc-agent v1.0.1 h1:q75OL/gnbOloJDwHOtMqAmPmKLFiVQTMOR
 github.com/soerenschneider/sc-agent v1.0.1/go.mod h1:evhsvYay0FlhQ8/KXOxlbFdRDr1W0gq50RuTI41FwIs=
 github.com/soerenschneider/vault-pki-cli v1.15.1 h1:FpfXpr73WlQlxhc/9U541AN6Klo8d9mZDAjC1oITCMQ=
 github.com/soerenschneider/vault-pki-cli v1.15.1/go.mod h1:cXSog4RzTzRaaQYpS3eHDVg81lmvb+TPbt6NtO1ZwiQ=
-github.com/soerenschneider/vault-ssh-cli v1.8.2 h1:aJyXZ3Fzf3oxWqtGFq/+x1sghdkhIWh1rNAbWSVXB+A=
-github.com/soerenschneider/vault-ssh-cli v1.8.2/go.mod h1:WKa4Iz0MqTqtp3uxi+5xNYJIsC05YP/6I1iARc+G7z8=
+github.com/soerenschneider/vault-ssh-cli v1.8.3 h1:v7arpNCg020wRNKZyquKuMGJrjLhHQ9l9k0JP86/Iyk=
+github.com/soerenschneider/vault-ssh-cli v1.8.3/go.mod h1:Uh+4332dHqz2KRJQh2p7aCHnbPEtz8HVkNddkWliL2w=
 github.com/sourcegraph/conc v0.3.0 h1:OQTbbt6P72L20UqAkXXuLOj79LfEanQ+YQFNpLA9ySo=
 github.com/sourcegraph/conc v0.3.0/go.mod h1:Sdozi7LEKbFPqYX2/J+iBAM6HpqSLTASQIKqDmF7Mt0=
 github.com/spf13/afero v1.11.0 h1:WJQKhtpdm3v2IzqG8VMqrr6Rf3UYpEF239Jy9wNepM8=
