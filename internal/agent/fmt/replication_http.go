@@ -22,13 +22,13 @@ func PrintReplicationHttpItem(item api.ReplicationHttpItem) {
 
 	fmt.Printf(`  ID                : %s
   Source            : %s
-  Destination       : %s
+  Destinations      : %v
   Expected Checksum : %s
   Status            : %s
 `,
 		item.Id,
 		item.Source,
-		item.DestUri,
+		item.DestUris,
 		expectedChecksum,
 		item.Status,
 	)
