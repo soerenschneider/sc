@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.1.1](https://github.com/soerenschneider/sc/compare/v1.1.0...v1.1.1) (2024-10-11)
+
+
+### Bug Fixes
+
+* adapt to change ([76ad84c](https://github.com/soerenschneider/sc/commit/76ad84c00c665f4fdb09c38c89cd63ffbd0b8f02))
+* **agent:** bump github.com/hashicorp/vault/api from 1.14.0 to 1.15.0 ([8e5d574](https://github.com/soerenschneider/sc/commit/8e5d5746665a00b89b568344e12d1d6e4d2f2046))
+* **agent:** bump github.com/jedib0t/go-pretty/v6 from 6.5.9 to 6.6.0 ([fe6c780](https://github.com/soerenschneider/sc/commit/fe6c7803d183eab049f60e30567efdd3eaed6b8d))
+* **agent:** bump github.com/soerenschneider/sc-agent from 1.0.1 to 1.4.0 ([346cc25](https://github.com/soerenschneider/sc/commit/346cc252f02fa5b17a2759980c2bb557e1841be6))
+* **agent:** bump github.com/soerenschneider/vault-pki-cli ([71e0259](https://github.com/soerenschneider/sc/commit/71e025920c45b56c80963f56b66490c7d012a8b8))
+* **agent:** bump github.com/soerenschneider/vault-ssh-cli ([6cf0914](https://github.com/soerenschneider/sc/commit/6cf0914d7e95c4c51a128cdbb7e0f066b2e661f9))
+* **agent:** bump golang from 1.23.0 to 1.23.1 ([fd2f173](https://github.com/soerenschneider/sc/commit/fd2f1736c741941208f6db909d0c213e9021048f))
+* **agent:** bump golang from 1.23.1 to 1.23.2 ([c49c32e](https://github.com/soerenschneider/sc/commit/c49c32efda644dd25fa47dfe69896cfa6516b7ae))
+* **agent:** bump golang.org/x/term from 0.23.0 to 0.24.0 ([5bd6ed8](https://github.com/soerenschneider/sc/commit/5bd6ed838ccbc991f2591f99d11a8e1cdb6e653b))
+* **agent:** bump golang.org/x/term from 0.24.0 to 0.25.0 ([c58afca](https://github.com/soerenschneider/sc/commit/c58afca5c38dbd9b571c5b9737f6e78dfb4e7d7b))
+* don't require passing a ca cert ([dbb4211](https://github.com/soerenschneider/sc/commit/dbb42116ab03540b670ca794a5a1fafc85b1015e))
+* **lint:** check err ([2a92323](https://github.com/soerenschneider/sc/commit/2a9232397d77c3058bb536420c2a0c72b832b712))
+
 ## [1.1.0](https://github.com/soerenschneider/sc/compare/v1.0.0...v1.1.0) (2024-09-04)
 
 
