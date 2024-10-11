@@ -29,7 +29,7 @@ func MustBuildApp(cmd *cobra.Command) *ScAgentClient {
 	caFile, _ := cmd.Flags().GetString(AgentCmdFlagsCaFile)
 
 	var opts []HttpClientOption
-	if len(certFile) > 0 && len(keyFile) > 0 && len(caFile) > 0 {
+	if len(certFile) > 0 && len(keyFile) > 0 {
 		opts = append(opts, WithTlsClientCert(certFile, keyFile, caFile))
 	}
 

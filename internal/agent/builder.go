@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/rs/zerolog/log"
 	"go.uber.org/multierr"
 
 	"github.com/hashicorp/go-retryablehttp"
@@ -21,19 +22,23 @@ func WithTlsClientCert(certFile, keyFile, caFile string) HttpClientOption {
 			return err
 		}
 
-		caCert, err := os.ReadFile(caFile)
-		if err != nil {
-			return err
-		}
-
-		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(caCert)
-
 		tlsConfig := &tls.Config{
 			Certificates:       []tls.Certificate{cert},
-			RootCAs:            caCertPool,
 			InsecureSkipVerify: false,
 			MinVersion:         tls.VersionTLS13,
+		}
+
+		if caFile != "" {
+			caCert, err := os.ReadFile(caFile)
+			if err != nil {
+				return err
+			}
+			caCertPool, err := x509.SystemCertPool()
+			if err != nil {
+				log.Warn().Msg("could not get system cert pool, creating new one with supplied ca crt")
+				caCertPool = x509.NewCertPool()
+			}
+			caCertPool.AppendCertsFromPEM(caCert)
 		}
 
 		client.Transport = &http.Transport{
