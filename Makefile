@@ -8,6 +8,9 @@ DOCKER_PREFIX = ghcr.io/soerenschneider
 generate:
 	go generate  ./...
 
+install: build
+	cp sc ~/bin/
+
 tests:
 	go test ./... -race -covermode=atomic -coverprofile=coverage.out
 	go tool cover -html=coverage.out -o=coverage.html
