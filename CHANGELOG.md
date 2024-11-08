@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/soerenschneider/sc/compare/v1.2.0...v1.2.1) (2024-11-08)
+
+
+### Bug Fixes
+
+* **deps:** bump github.com/soerenschneider/sc-agent from 1.4.0 to 1.8.0 ([2dc18c0](https://github.com/soerenschneider/sc/commit/2dc18c086b2bea1eaa83ff2b658e981647df7fbd))
+
 ## [1.2.0](https://github.com/soerenschneider/sc/compare/v1.1.1...v1.2.0) (2024-11-08)
 
 
