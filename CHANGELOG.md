@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0](https://github.com/soerenschneider/sc/compare/v1.1.1...v1.2.0) (2024-11-08)
+
+
+### Features
+
+* **sc-agent:** automatically set default protocol and port for server if not supplied ([832ef50](https://github.com/soerenschneider/sc/commit/832ef5060edea755ff5822112c631a17bff8b2b3))
+* **sc-agent:** expand files to support paths using a tilde prefix ([aee1039](https://github.com/soerenschneider/sc/commit/aee10396ae972998f54928f8dbb72d9edb2ca5de))
+
+
+### Bug Fixes
+
+* **deps:** bump github.com/jedib0t/go-pretty/v6 from 6.6.0 to 6.6.1 ([31e95fb](https://github.com/soerenschneider/sc/commit/31e95fb15c9aeedc48a9099f27afb99692cf6053))
+
 ## [1.1.1](https://github.com/soerenschneider/sc/compare/v1.1.0...v1.1.1) (2024-10-11)
 
 
