@@ -72,12 +72,12 @@ func (a ScAgentClient) PowerPostAction(ctx context.Context, params *api.PowerPos
 	return a.client.PowerPostAction(ctx, params, reqEditors...)
 }
 
-func (a ScAgentClient) PowerConditionalRebootPostStatus(ctx context.Context, params *api.PowerConditionalRebootPostStatusParams, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
-	return a.client.PowerConditionalRebootPostStatus(ctx, params, reqEditors...)
+func (a ScAgentClient) PowerRebootManagerPostStatus(ctx context.Context, params *api.PowerRebootManagerPostStatusParams, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
+	return a.client.PowerRebootManagerPostStatus(ctx, params, reqEditors...)
 }
 
-func (a ScAgentClient) PowerConditionalRebootGetStatus(ctx context.Context, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
-	return a.client.PowerConditionalRebootGetStatus(ctx, reqEditors...)
+func (a ScAgentClient) PowerRebootManagerGetStatus(ctx context.Context, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
+	return a.client.PowerRebootManagerGetStatus(ctx, reqEditors...)
 }
 
 func (a ScAgentClient) ReplicationGetHttpItemsList(ctx context.Context, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
