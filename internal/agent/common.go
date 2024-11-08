@@ -2,8 +2,10 @@ package agent
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os/user"
 	"path/filepath"
 	"strings"
@@ -18,14 +20,17 @@ const (
 	AgentCmdFlagsKeyFile  = "key-file"
 	AgentCmdFlagsCaFile   = "ca-file"
 	AgentCmdFlagsVerbose  = "verbose"
+
+	defaultPort uint16 = 9999
 )
 
 func MustBuildApp(cmd *cobra.Command) *ScAgentClient {
-
 	server, err := cmd.Flags().GetString(AgentCmdFlagsServer)
 	if err != nil {
 		log.Fatal().Err(err).Msg("could not get flag")
 	}
+
+	server = AddDefaultProtoAndPort(server, true, defaultPort)
 
 	certFile, _ := cmd.Flags().GetString(AgentCmdFlagsCertFile)
 	keyFile, _ := cmd.Flags().GetString(AgentCmdFlagsKeyFile)
@@ -72,6 +77,29 @@ func MustResponse[T any](resp *http.Response) *T {
 	}
 
 	return ret
+}
+
+func AddDefaultProtoAndPort(server string, useHttps bool, defaultPort uint16) string {
+	defaultProtocol := "https"
+	if !useHttps {
+		defaultProtocol = "http"
+	}
+
+	if !strings.HasPrefix(server, "https://") && !strings.HasPrefix(server, "http://") {
+		server = fmt.Sprintf("%s://%s", defaultProtocol, server)
+	}
+
+	parsedURL, err := url.Parse(server)
+	if err != nil {
+		return server
+	}
+
+	port := parsedURL.Port()
+	if len(port) == 0 {
+		return fmt.Sprintf("%s:%d", server, defaultPort)
+	}
+
+	return server
 }
 
 func GetExpandedFile(filename string) string {
