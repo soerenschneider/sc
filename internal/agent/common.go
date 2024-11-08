@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os/user"
+	"path/filepath"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -30,6 +33,10 @@ func MustBuildApp(cmd *cobra.Command) *ScAgentClient {
 
 	var opts []HttpClientOption
 	if len(certFile) > 0 && len(keyFile) > 0 {
+		certFile = GetExpandedFile(certFile)
+		keyFile = GetExpandedFile(keyFile)
+		caFile = GetExpandedFile(caFile)
+
 		opts = append(opts, WithTlsClientCert(certFile, keyFile, caFile))
 	}
 
@@ -65,4 +72,19 @@ func MustResponse[T any](resp *http.Response) *T {
 	}
 
 	return ret
+}
+
+func GetExpandedFile(filename string) string {
+	usr, _ := user.Current()
+	dir := usr.HomeDir
+
+	if strings.HasPrefix(filename, "~/") {
+		return filepath.Join(dir, filename[2:])
+	}
+
+	if strings.HasPrefix(filename, "$HOME/") {
+		return filepath.Join(dir, filename[6:])
+	}
+
+	return filename
 }
