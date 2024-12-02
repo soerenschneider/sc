@@ -7,7 +7,7 @@ toolchain go1.22.5
 require (
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/vault/api v1.15.0
-	github.com/jedib0t/go-pretty/v6 v6.6.1
+	github.com/jedib0t/go-pretty/v6 v6.6.3
 	github.com/rs/zerolog v1.33.0
 	github.com/soerenschneider/sc-agent v1.8.0
 	github.com/soerenschneider/vault-pki-cli v1.15.1
