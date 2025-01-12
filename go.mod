@@ -1,8 +1,7 @@
 module github.com/soerenschneider/sc
 
 go 1.22.2
-
-toolchain go1.22.5
+toolchain go1.23.4
 
 require (
 	github.com/hashicorp/go-retryablehttp v0.7.7
@@ -11,7 +10,7 @@ require (
 	github.com/rs/zerolog v1.33.0
 	github.com/soerenschneider/sc-agent v1.8.0
 	github.com/soerenschneider/vault-pki-cli v1.15.1
-	github.com/soerenschneider/vault-ssh-cli v1.8.3
+	github.com/soerenschneider/vault-ssh-cli v1.9.2
 	github.com/spf13/afero v1.11.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
@@ -67,7 +66,7 @@ require (
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
-	golang.org/x/time v0.5.0 // indirect
+	golang.org/x/time v0.7.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
