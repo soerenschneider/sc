@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.2.2](https://github.com/soerenschneider/sc/compare/v1.2.1...v1.2.2) (2025-01-12)
+
+
+### Bug Fixes
+
+* **deps:** bump github.com/jedib0t/go-pretty/v6 from 6.6.1 to 6.6.5 ([1d742f1](https://github.com/soerenschneider/sc/commit/1d742f17f091718a337c5424afa99cbe58662123))
+* **deps:** bump golang from 1.23.2 to 1.23.4 ([65756b0](https://github.com/soerenschneider/sc/commit/65756b04a7be6be2f98130996c81b0116dde98df))
+* **deps:** bump golang.org/x/crypto from 0.28.0 to 0.31.0 ([c498c36](https://github.com/soerenschneider/sc/commit/c498c361ed6f1fff872517888c2e917b4c782ec4))
+* **deps:** bump golang.org/x/net from 0.29.0 to 0.33.0 ([a470a44](https://github.com/soerenschneider/sc/commit/a470a44e51b6544d4459e1ff9aae95436d48be4c))
+* **deps:** bump golang.org/x/term from 0.25.0 to 0.28.0 ([1772e78](https://github.com/soerenschneider/sc/commit/1772e78fcdf0e34ee442f9b76e8187c8231f44dc))
+
 ## [1.2.1](https://github.com/soerenschneider/sc/compare/v1.2.0...v1.2.1) (2024-11-08)
 
 
