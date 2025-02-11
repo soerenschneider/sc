@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.3](https://github.com/soerenschneider/sc/compare/v1.2.2...v1.2.3) (2025-02-11)
+
+
+### Bug Fixes
+
+* **deps:** bump github.com/spf13/afero from 1.11.0 to 1.12.0 ([d424d62](https://github.com/soerenschneider/sc/commit/d424d62566034337bfe391f2bf0486d323c6034e))
+* **deps:** bump golang from 1.23.4 to 1.23.6 ([11a314e](https://github.com/soerenschneider/sc/commit/11a314e40fb9cfda78f2602224c9a193fa0d0459))
+* **deps:** bump golang.org/x/term from 0.28.0 to 0.29.0 ([8809f77](https://github.com/soerenschneider/sc/commit/8809f7702e41ff3fc0ef1ae3464c9a5b0fa64695))
+
 ## [1.2.2](https://github.com/soerenschneider/sc/compare/v1.2.1...v1.2.2) (2025-01-12)
 
 
