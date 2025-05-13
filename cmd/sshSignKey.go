@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"strings"
@@ -9,6 +10,8 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/ssh"
 	"github.com/soerenschneider/sc/internal/ssh/builder"
+	"github.com/soerenschneider/sc/internal/vault"
+	"github.com/soerenschneider/sc/pkg"
 	"github.com/soerenschneider/vault-ssh-cli/pkg/signature"
 	"github.com/spf13/cobra"
 )
@@ -35,7 +38,7 @@ var sshSignKeyCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("could not get flag")
 		}
 
-		publicKeyFile = GetExpandedFile(publicKeyFile)
+		publicKeyFile = pkg.GetExpandedFile(publicKeyFile)
 
 		publicKeyStorage, err := ssh.NewAferoSink(publicKeyFile)
 		if err != nil {
@@ -57,12 +60,7 @@ var sshSignKeyCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("could not get flag")
 		}
 
-		role, err := cmd.Flags().GetString(sshSignKeyCmdFlagsVaultRole)
-		if err != nil {
-			log.Fatal().Err(err).Msg("could not get flag")
-		}
-
-		address, err := getVaultAddress(cmd)
+		address, err := vault.GetVaultAddress(cmd)
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not sign public key")
 		}
@@ -70,6 +68,20 @@ var sshSignKeyCmd = &cobra.Command{
 		mount, err := cmd.Flags().GetString(sshCmdFlagsSshMount)
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not get flag")
+		}
+
+		role := pkg.GetString(cmd, sshSignKeyCmdFlagsVaultRole)
+		if role == "" {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			client := vault.MustAuthenticateClient(vault.MustGetVaultClient(cmd))
+			availableRoles, err := vaultSshListRoles(ctx, client, mount)
+			if err == nil {
+				role = huhSelectInput("Enter role", availableRoles)
+			} else {
+				role = huhReadInput("Enter role", nil)
+			}
 		}
 
 		signer, err := builder.BuildSshSigner(address, mount)
@@ -118,7 +130,7 @@ func sshSignKeyCmdGetCertificateFile(publicKeyFile, certificateFile string) stri
 	}
 
 	auto := strings.Replace(publicKeyFile, ".pub", "", 1)
-	auto = GetExpandedFile(fmt.Sprintf("%s-cert.pub", auto))
+	auto = pkg.GetExpandedFile(fmt.Sprintf("%s-cert.pub", auto))
 	return auto
 }
 

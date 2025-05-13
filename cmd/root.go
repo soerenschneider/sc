@@ -12,6 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/cmd/deps"
 	"github.com/soerenschneider/sc/internal"
+	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/term"
@@ -107,6 +108,6 @@ func isDisableTelemetry(cmd *cobra.Command) bool {
 	}
 
 	disableTelemetry, err := cmd.Flags().GetBool(rootCmdFlagsNoTelemetry)
-	DieOnErr(err, "could not get flag")
+	pkg.DieOnErr(err, "could not get flag")
 	return disableTelemetry
 }
