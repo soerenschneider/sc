@@ -1,6 +1,7 @@
 package vault
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -17,7 +18,16 @@ const (
 	vaultTokenEnvVarKey = "VAULT_TOKEN"
 )
 
-func MustGetVaultClient(command *cobra.Command) *vault.Client {
+type AwsCredentials struct {
+	AccessKeyID     string
+	SecretAccessKey string
+}
+
+type VaultClient struct {
+	client *vault.Client
+}
+
+func MustBuildClient(command *cobra.Command) *VaultClient {
 	vaultAddr, err := GetVaultAddress(command)
 	if err != nil {
 		log.Fatal().Err(err).Msg("could not get vault address")
@@ -31,10 +41,12 @@ func MustGetVaultClient(command *cobra.Command) *vault.Client {
 		log.Fatal().Msgf("Error creating Vault client: %v", err)
 	}
 
-	return client
+	return &VaultClient{
+		client: client,
+	}
 }
 
-func MustAuthenticateClient(client *vault.Client) *vault.Client {
+func MustAuthenticateClient(client *VaultClient) *VaultClient {
 	if client == nil {
 		log.Fatal().Msg("nil client passed")
 	}
@@ -43,7 +55,8 @@ func MustAuthenticateClient(client *vault.Client) *vault.Client {
 	if err != nil {
 		log.Fatal().Err(err).Msg("unable to get Vault token")
 	}
-	client.SetToken(token)
+
+	client.client.SetToken(token)
 	return client
 }
 
@@ -90,10 +103,97 @@ func GetVaultTokenFilePath() (string, error) {
 	return filepath.Join(homeDir, ".vault-token"), nil
 }
 
-func SendPassword(ctx context.Context, client *vault.Client, username, password string) (*vault.Secret, error) {
+func (c *VaultClient) AwsListRoles(ctx context.Context, mount string) ([]string, error) {
+	path := fmt.Sprintf("%s/roles", mount)
+	secret, err := c.client.Logical().ListWithContext(ctx, path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read AWS credentials: %w", err)
+	}
+
+	if secret == nil || secret.Data == nil {
+		return nil, fmt.Errorf("no data returned from Vault")
+	}
+
+	var keys []string
+	for _, v := range secret.Data["keys"].([]any) {
+		if s, ok := v.(string); ok {
+			keys = append(keys, s)
+		}
+	}
+
+	return keys, nil
+}
+
+func (c *VaultClient) LookupToken(ctx context.Context) (*vault.Secret, error) {
+	return c.client.Auth().Token().LookupSelfWithContext(ctx)
+}
+
+func (c *VaultClient) AwsGenCreds(ctx context.Context, mount string, role string, ttl string) (*AwsCredentials, error) {
+	path := fmt.Sprintf("%s/creds/%s", mount, role)
+
+	options := map[string][]string{
+		"ttl": {cmp.Or(ttl, "3600s")},
+	}
+
+	secret, err := c.client.Logical().ReadWithDataWithContext(ctx, path, options)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read AWS credentials: %w", err)
+	}
+
+	if secret == nil || secret.Data == nil {
+		return nil, fmt.Errorf("no data returned from Vault")
+	}
+
+	accessKey, ok1 := secret.Data["access_key"].(string)
+	secretKey, ok2 := secret.Data["secret_key"].(string)
+	if !ok1 || !ok2 {
+		return nil, fmt.Errorf("unexpected response structure: %#v", secret.Data)
+	}
+
+	return &AwsCredentials{
+		AccessKeyID:     accessKey,
+		SecretAccessKey: secretKey,
+	}, nil
+}
+
+func (c *VaultClient) SshListRoles(ctx context.Context, mount string) ([]string, error) {
+	path := fmt.Sprintf("%s/roles", mount)
+	secret, err := c.client.Logical().ListWithContext(ctx, path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read AWS credentials: %w", err)
+	}
+
+	if secret == nil || secret.Data == nil {
+		return nil, fmt.Errorf("no data returned from Vault")
+	}
+
+	var keys []string
+	for _, v := range secret.Data["keys"].([]any) {
+		if s, ok := v.(string); ok {
+			keys = append(keys, s)
+		}
+	}
+
+	return keys, nil
+}
+
+func (c *VaultClient) SendPassword(ctx context.Context, mount, username, password string) (*vault.Secret, error) {
 	data := map[string]any{"password": password}
-	path := fmt.Sprintf("auth/userpass/login/%s", username)
-	return client.Logical().WriteWithContext(ctx, path, data)
+	path := fmt.Sprintf("auth/%s/login/%s", mount, username)
+	return c.client.Logical().WriteWithContext(ctx, path, data)
+}
+
+func (c *VaultClient) UpdatePassword(ctx context.Context, mount, username, password string) error {
+	userPath := fmt.Sprintf("auth/%s/users/%s", mount, username)
+	data := map[string]interface{}{
+		"password": password,
+	}
+
+	_, err := c.client.Logical().WriteWithContext(ctx, userPath, data)
+	if err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+	return nil
 }
 
 func GetVaultMfaRequirement(secret *vault.Secret) (*vault.MFARequirement, string, error) {
@@ -120,7 +220,7 @@ func GetVaultMfaRequirement(secret *vault.Secret) (*vault.MFARequirement, string
 	return nil, "", errors.New("no totp available")
 }
 
-func SendOtp(ctx context.Context, client *vault.Client, mfaReq *vault.MFARequirement, otp string) (*vault.Secret, error) {
+func (c *VaultClient) SendOtp(ctx context.Context, mfaReq *vault.MFARequirement, otp string) (*vault.Secret, error) {
 	defaultMfa, found := mfaReq.MFAConstraints["default"]
 	if !found {
 		return nil, errors.New("no default mfa requirement available")
@@ -140,22 +240,22 @@ func SendOtp(ctx context.Context, client *vault.Client, mfaReq *vault.MFARequire
 		},
 	}
 
-	return client.Logical().WriteWithContext(ctx, "sys/mfa/validate", mfaPayload)
+	return c.client.Logical().WriteWithContext(ctx, "sys/mfa/validate", mfaPayload)
 }
 
-func LoginSinglePhase(ctx context.Context, client *vault.Client, username, password, mfaId, otp string) (*vault.Secret, error) {
+func (c *VaultClient) LoginSinglePhase(ctx context.Context, username, password, mfaId, otp string) (*vault.Secret, error) {
 	var vaultMfaHeaderValue = mfaId
 	if otp != "" {
 		vaultMfaHeaderValue = fmt.Sprintf("%s: %s", mfaId, otp)
 	}
-	client.SetHeaders(map[string][]string{
+	c.client.SetHeaders(map[string][]string{
 		"X-Vault-MFA": {
 			vaultMfaHeaderValue,
 		},
 	})
-	defer client.SetHeaders(nil)
+	defer c.client.SetHeaders(nil)
 
 	data := map[string]any{"password": password}
 	path := fmt.Sprintf("auth/userpass/login/%s", username)
-	return client.Logical().WriteWithContext(ctx, path, data)
+	return c.client.Logical().WriteWithContext(ctx, path, data)
 }

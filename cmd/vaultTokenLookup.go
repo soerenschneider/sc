@@ -27,13 +27,13 @@ It attempts to authenticate using the following sources (in order):
   2. A token loaded from the local configuration file (e.g. ~/.config/mycli/token)
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := vault.MustGetVaultClient(cmd)
+		client := vault.MustBuildClient(cmd)
 		vault.MustAuthenticateClient(client)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()
 
-		secret, err := client.Auth().Token().LookupSelfWithContext(ctx)
+		secret, err := client.LookupToken(ctx)
 		if err != nil {
 			log.Fatal().Msgf("could not lookup: %v", err)
 		}

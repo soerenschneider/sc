@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"os"
@@ -10,7 +9,6 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/hashicorp/vault/api"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/soerenschneider/sc/pkg"
@@ -26,11 +24,6 @@ const (
 	defaultProfile             = "default"
 )
 
-type AwsCredentials struct {
-	AccessKeyID     string
-	SecretAccessKey string
-}
-
 // vaultLoginCmd represents the vaultLogin command
 var vaultAwsGenCmd = &cobra.Command{
 	Use:   "gen",
@@ -40,7 +33,7 @@ var vaultAwsGenCmd = &cobra.Command{
 This command itself does not perform any actions. Instead, use one of its subcommands
 to inspect or manage tokens.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := vault.MustAuthenticateClient(vault.MustGetVaultClient(cmd))
+		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 
 		mount := pkg.GetString(cmd, VaultMountPath)
 		profile := pkg.GetString(cmd, awsProfile)
@@ -50,7 +43,7 @@ to inspect or manage tokens.`,
 		if role == "" {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
-			availableRoles, err := vaultAwsListRoles(ctx, client, mount)
+			availableRoles, err := client.AwsListRoles(ctx, mount)
 			if err == nil {
 				role = huhSelectInput("Enter role", availableRoles)
 			} else {
@@ -61,7 +54,7 @@ to inspect or manage tokens.`,
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		creds, err := vaultAwsGenCreds(ctx, client, mount, role, strconv.Itoa(ttl))
+		creds, err := client.AwsGenCreds(ctx, mount, role, strconv.Itoa(ttl))
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to generate credentials")
 		}
@@ -81,35 +74,7 @@ to inspect or manage tokens.`,
 	},
 }
 
-func vaultAwsGenCreds(ctx context.Context, client *api.Client, mount string, role string, ttl string) (*AwsCredentials, error) {
-	path := fmt.Sprintf("%s/creds/%s", mount, role)
-
-	options := map[string][]string{
-		"ttl": []string{cmp.Or(ttl, defaultAwsTtl)},
-	}
-
-	secret, err := client.Logical().ReadWithDataWithContext(ctx, path, options)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read AWS credentials: %w", err)
-	}
-
-	if secret == nil || secret.Data == nil {
-		return nil, fmt.Errorf("no data returned from Vault")
-	}
-
-	accessKey, ok1 := secret.Data["access_key"].(string)
-	secretKey, ok2 := secret.Data["secret_key"].(string)
-	if !ok1 || !ok2 {
-		return nil, fmt.Errorf("unexpected response structure: %#v", secret.Data)
-	}
-
-	return &AwsCredentials{
-		AccessKeyID:     accessKey,
-		SecretAccessKey: secretKey,
-	}, nil
-}
-
-func updateAwsCredentialsFile(profile string, creds AwsCredentials) error {
+func updateAwsCredentialsFile(profile string, creds vault.AwsCredentials) error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("could not determine home directory: %w", err)

@@ -38,8 +38,9 @@ to stdout as a fallback.`,
 		username := pkg.GetString(cmd, vaultLoginUsername)
 		otp := pkg.GetString(cmd, vaultLoginOtp)
 		mfaId := pkg.GetString(cmd, vaultLoginMfaId)
+		mount := pkg.GetString(cmd, VaultMountPath)
 
-		client := vault.MustGetVaultClient(cmd)
+		client := vault.MustBuildClient(cmd)
 
 		var err error
 		if username == "" {
@@ -63,10 +64,10 @@ to stdout as a fallback.`,
 		var vaultSecret *api.Secret
 		sendPasswordFunc := func(ctx context.Context) error {
 			if mfaId != "" && otp != "" {
-				vaultSecret, err = vault.LoginSinglePhase(ctx, client, username, password, mfaId, otp)
+				vaultSecret, err = client.LoginSinglePhase(ctx, username, password, mfaId, otp)
 				return err
 			} else {
-				vaultSecret, err = vault.SendPassword(ctx, client, username, password)
+				vaultSecret, err = client.SendPassword(ctx, mount, username, password)
 				return err
 			}
 		}
@@ -99,7 +100,7 @@ to stdout as a fallback.`,
 			ctx, cancel = context.WithTimeout(context.Background(), time.Second*5)
 			defer cancel()
 			sendOtpFunc := func(ctx context.Context) error {
-				vaultSecret, err = vault.SendOtp(ctx, client, mfaReq, otp)
+				vaultSecret, err = client.SendOtp(ctx, mfaReq, otp)
 				return err
 			}
 
@@ -132,6 +133,7 @@ func init() {
 	vaultCmd.AddCommand(vaultLoginCmd)
 
 	vaultLoginCmd.Flags().StringP(vaultLoginUsername, "u", "", "Username for login")
+	vaultLoginCmd.Flags().StringP(VaultMountPath, "m", "userpass", "Vault mount for userpass auth engine")
 	vaultLoginCmd.Flags().StringP(vaultLoginOtp, "o", "", "OTP value for non-interactive login")
 	vaultLoginCmd.Flags().StringP(vaultLoginMfaId, "", "", "MFA ID")
 }

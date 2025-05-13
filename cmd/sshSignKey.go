@@ -75,8 +75,8 @@ var sshSignKeyCmd = &cobra.Command{
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			client := vault.MustAuthenticateClient(vault.MustGetVaultClient(cmd))
-			availableRoles, err := vaultSshListRoles(ctx, client, mount)
+			client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
+			availableRoles, err := client.SshListRoles(ctx, mount)
 			if err == nil {
 				role = huhSelectInput("Enter role", availableRoles)
 			} else {
