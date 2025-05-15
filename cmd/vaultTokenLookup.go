@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/rs/zerolog/log"
@@ -30,7 +29,7 @@ It attempts to authenticate using the following sources (in order):
 		client := vault.MustBuildClient(cmd)
 		vault.MustAuthenticateClient(client)
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)
 		defer cancel()
 
 		secret, err := client.LookupToken(ctx)
@@ -73,6 +72,17 @@ func writeOutput(data map[string]any) {
 		builder.WriteString(fmt.Sprintf("%s%s%s\n", key, spaces, val))
 	}
 
+	fmt.Println(builder.String())
+}
+
+func writeListOutput[T any](items []T) {
+	itemStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("245")) // Gray
+
+	var builder strings.Builder
+	for _, item := range items {
+		builder.WriteString(itemStyle.Render(fmt.Sprintf("- %v", item)) + "\n")
+	}
 	fmt.Println(builder.String())
 }
 

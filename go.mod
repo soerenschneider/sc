@@ -18,8 +18,11 @@ require (
 	github.com/spf13/afero v1.12.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
+	github.com/yeqown/go-qrcode/v2 v2.2.5
+	github.com/yeqown/go-qrcode/writer/terminal v1.1.2
 	go.uber.org/multierr v1.11.0
 	golang.org/x/term v0.29.0
+	gopkg.in/ini.v1 v1.67.0
 )
 
 require (

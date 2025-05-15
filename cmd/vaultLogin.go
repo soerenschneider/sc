@@ -2,25 +2,24 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/user"
-	"time"
+	"strings"
 
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hashicorp/vault/api"
 	"github.com/rs/zerolog/log"
+	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/cobra"
 )
 
-const (
-	vaultLoginUsername = "username"
-	vaultLoginOtp      = "otp"
-	vaultLoginMfaId    = "mfa-id"
-)
+const ()
 
 // vaultLoginCmd represents the vaultLogin command
 var vaultLoginCmd = &cobra.Command{
@@ -42,32 +41,41 @@ to stdout as a fallback.`,
 
 		client := vault.MustBuildClient(cmd)
 
-		var err error
+		validateFunc := func(val string) error {
+			if strings.TrimSpace(val) == "" {
+				return errors.New("input can not be empty")
+			}
+			return nil
+		}
+
+		var fields []huh.Field
 		if username == "" {
 			var suggestions []string
 			currentUser, err := user.Current()
 			if err == nil {
 				suggestions = []string{currentUser.Username}
 			}
-
-			username = huhReadInput("Enter username", suggestions)
+			fields = append(fields, huh.NewInput().Title("Username").Suggestions(suggestions).Value(&username).Validate(validateFunc))
 		}
 
 		var password string
-		if password == "" {
-			password = huhReadSensitiveInput(fmt.Sprintf("Enter password for %s", username))
+		fields = append(fields, huh.NewInput().Title("Password").EchoMode(huh.EchoModePassword).Value(&password).Validate(validateFunc))
+
+		if err := huh.NewForm(huh.NewGroup(fields...)).Run(); err != nil {
+			log.Fatal().Err(err).Msg("could not get info from user")
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)
 		defer cancel()
 
 		var vaultSecret *api.Secret
 		sendPasswordFunc := func(ctx context.Context) error {
+			var err error
 			if mfaId != "" && otp != "" {
-				vaultSecret, err = client.LoginSinglePhase(ctx, username, password, mfaId, otp)
+				vaultSecret, err = client.UserpassAuthMfa(ctx, username, password, mfaId, otp)
 				return err
 			} else {
-				vaultSecret, err = client.SendPassword(ctx, mount, username, password)
+				vaultSecret, err = client.UserpassAuth(ctx, mount, username, password)
 				return err
 			}
 		}
@@ -94,10 +102,10 @@ to stdout as a fallback.`,
 			}
 
 			if otp == "" {
-				otp = huhReadInput(fmt.Sprintf("Enter OTP for id %q", otpId), nil)
+				otp = tui.ReadOtp(fmt.Sprintf("Enter OTP for id %q", otpId))
 			}
 
-			ctx, cancel = context.WithTimeout(context.Background(), time.Second*5)
+			ctx, cancel = context.WithTimeout(context.Background(), vaultDefaultTimeout)
 			defer cancel()
 			sendOtpFunc := func(ctx context.Context) error {
 				vaultSecret, err = client.SendOtp(ctx, mfaReq, otp)
@@ -117,16 +125,23 @@ to stdout as a fallback.`,
 		}
 
 		tokenFile, err := vault.GetVaultTokenFilePath()
+		if err != nil {
+			printToken(vaultSecret.Auth.ClientToken)
+			return
+		}
 		if err := os.WriteFile(tokenFile, []byte(vaultSecret.Auth.ClientToken), 0600); err != nil {
-			var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("Vault token")
-			fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), vaultSecret.Auth.ClientToken))
-
+			printToken(vaultSecret.Auth.ClientToken)
 			log.Fatal().Msgf("Failed to save token to %s: %v", tokenFile, err)
 		}
 
 		var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("Token saved")
 		fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), tokenFile))
 	},
+}
+
+func printToken(token string) {
+	var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("Vault token")
+	fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), token))
 }
 
 func init() {

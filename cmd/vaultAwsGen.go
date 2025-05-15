@@ -5,23 +5,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
-	"time"
 
+	"github.com/charmbracelet/huh/spinner"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/rs/zerolog/log"
+	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
-)
-
-const (
-	awsProfile = "aws-profile"
-
-	defaultAwsTtl              = "3600s"
-	defaultCredentialsFilename = "~/.aws/credentials"
-	defaultProfile             = "default"
 )
 
 // vaultLoginCmd represents the vaultLogin command
@@ -36,26 +30,57 @@ to inspect or manage tokens.`,
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 
 		mount := pkg.GetString(cmd, VaultMountPath)
-		profile := pkg.GetString(cmd, awsProfile)
+		profile := pkg.GetString(cmd, vaultAwsProfile)
 		role := pkg.GetString(cmd, VaultRoleName)
 		ttl := pkg.GetInt(cmd, VaultTtl)
 
 		if role == "" {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			var availableRoles []string
+
+			ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)
 			defer cancel()
-			availableRoles, err := client.AwsListRoles(ctx, mount)
-			if err == nil {
-				role = huhSelectInput("Enter role", availableRoles)
+
+			if err := spinner.New().
+				Type(spinner.Line).
+				ActionWithErr(func(ctx context.Context) error {
+					roles, err := client.AwsListRoles(ctx, mount)
+					if err == nil {
+						availableRoles = roles
+					}
+					return nil
+				}).
+				Title("Loading available roles...").
+				Accessible(false).
+				Context(ctx).
+				Type(spinner.Dots).
+				Run(); err != nil {
+				log.Fatal().Err(err).Msg("sending login to request to Vault failed")
+			}
+
+			if len(availableRoles) > 0 {
+				sort.Strings(availableRoles)
+				role = tui.SelectInput("Enter role", availableRoles)
 			} else {
-				role = huhReadInput("Enter role", nil)
+				role = tui.ReadInput("Enter role", nil)
 			}
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)
 		defer cancel()
 
-		creds, err := client.AwsGenCreds(ctx, mount, role, strconv.Itoa(ttl))
-		if err != nil {
+		var creds *vault.AwsCredentials
+		if err := spinner.New().
+			Type(spinner.Line).
+			ActionWithErr(func(ctx context.Context) error {
+				var err error
+				creds, err = client.AwsGenCreds(ctx, mount, role, strconv.Itoa(ttl))
+				return err
+			}).
+			Title(fmt.Sprintf("Generating credentials for role %s", role)).
+			Accessible(false).
+			Context(ctx).
+			Type(spinner.Dots).
+			Run(); err != nil {
 			log.Fatal().Err(err).Msg("failed to generate credentials")
 		}
 
@@ -70,7 +95,7 @@ to inspect or manage tokens.`,
 		}
 
 		var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("Wrote credentials")
-		fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), defaultCredentialsFilename))
+		fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), vaultAwsDefaultCredentialsFilename))
 	},
 }
 
@@ -114,8 +139,8 @@ func updateAwsCredentialsFile(profile string, creds vault.AwsCredentials) error 
 func init() {
 	vaultAwsCmd.AddCommand(vaultAwsGenCmd)
 
-	vaultAwsGenCmd.Flags().StringP(VaultMountPath, "m", defaultAwsMount, "Mount path for the AWS secret engine")
+	vaultAwsGenCmd.Flags().StringP(VaultMountPath, "m", vaultAwsDefaultMount, "Mount path for the AWS secret engine")
 	vaultAwsGenCmd.Flags().IntP(VaultTtl, "t", 3600, "Specify how long the credentials should be valid for in seconds")
 	vaultAwsGenCmd.Flags().StringP(VaultRoleName, "r", "", "Specifies the name of the role to generate credentials for")
-	vaultAwsGenCmd.Flags().StringP(awsProfile, "p", defaultProfile, "Specifies the name of the AWS credentials profile section")
+	vaultAwsGenCmd.Flags().StringP(vaultAwsProfile, "p", vaultAwsDefaultProfile, "Specifies the name of the AWS credentials profile section")
 }

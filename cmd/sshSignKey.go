@@ -10,6 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/ssh"
 	"github.com/soerenschneider/sc/internal/ssh/builder"
+	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/soerenschneider/sc/pkg"
 	"github.com/soerenschneider/vault-ssh-cli/pkg/signature"
@@ -78,9 +79,9 @@ var sshSignKeyCmd = &cobra.Command{
 			client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 			availableRoles, err := client.SshListRoles(ctx, mount)
 			if err == nil {
-				role = huhSelectInput("Enter role", availableRoles)
+				role = tui.SelectInput("Enter role", availableRoles)
 			} else {
-				role = huhReadInput("Enter role", nil)
+				role = tui.ReadInput("Enter role", nil)
 			}
 		}
 

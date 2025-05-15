@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"os/user"
-	"time"
 
 	"github.com/charmbracelet/huh"
 	"github.com/rs/zerolog/log"
+	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/cobra"
@@ -36,7 +36,7 @@ This command allows a user to change their Vault password by providing their.`,
 				suggestions = []string{currentUser.Username}
 			}
 
-			username = huhReadInput("Enter username", suggestions)
+			username = tui.ReadInput("Enter username", suggestions)
 		}
 
 		var password string
@@ -72,7 +72,7 @@ This command allows a user to change their Vault password by providing their.`,
 			log.Fatal().Err(err).Msg("")
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)
 		defer cancel()
 
 		if err := client.UpdatePassword(ctx, mount, username, password); err != nil {

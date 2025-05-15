@@ -4,10 +4,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	defaultAwsMount = "aws"
-)
-
 // vaultLoginCmd represents the vaultLogin command
 var vaultAwsCmd = &cobra.Command{
 	Use:   "aws",

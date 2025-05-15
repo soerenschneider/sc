@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/rs/zerolog/log"
@@ -29,7 +28,7 @@ The command expects that the AWS secrets engine has been enabled and configured.
 
 		mount := pkg.GetString(cmd, VaultMountPath)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)
 		defer cancel()
 
 		roles, err := client.AwsListRoles(ctx, mount)
@@ -45,5 +44,5 @@ The command expects that the AWS secrets engine has been enabled and configured.
 func init() {
 	vaultAwsCmd.AddCommand(vaultAwsListCmd)
 
-	vaultAwsListCmd.Flags().StringP(VaultMountPath, "m", defaultAwsMount, "Mount path for the AWS secret engine")
+	vaultAwsListCmd.Flags().StringP(VaultMountPath, "m", vaultAwsDefaultMount, "Mount path for the AWS secret engine")
 }
