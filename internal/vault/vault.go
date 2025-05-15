@@ -3,6 +3,7 @@ package vault
 import (
 	"cmp"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -21,6 +22,12 @@ const (
 type AwsCredentials struct {
 	AccessKeyID     string
 	SecretAccessKey string
+}
+
+type MfaCreateMethodRequest struct {
+	MethodName string `json:"method_name"`
+	Issuer     string `json:"issuer"`
+	Algorithm  string `json:"algorithm"`
 }
 
 type VaultClient struct {
@@ -177,7 +184,7 @@ func (c *VaultClient) SshListRoles(ctx context.Context, mount string) ([]string,
 	return keys, nil
 }
 
-func (c *VaultClient) SendPassword(ctx context.Context, mount, username, password string) (*vault.Secret, error) {
+func (c *VaultClient) UserpassAuth(ctx context.Context, mount, username, password string) (*vault.Secret, error) {
 	data := map[string]any{"password": password}
 	path := fmt.Sprintf("auth/%s/login/%s", mount, username)
 	return c.client.Logical().WriteWithContext(ctx, path, data)
@@ -221,6 +228,10 @@ func GetVaultMfaRequirement(secret *vault.Secret) (*vault.MFARequirement, string
 }
 
 func (c *VaultClient) SendOtp(ctx context.Context, mfaReq *vault.MFARequirement, otp string) (*vault.Secret, error) {
+	if mfaReq == nil {
+		return nil, errors.New("nil mfarequirement passed")
+	}
+
 	defaultMfa, found := mfaReq.MFAConstraints["default"]
 	if !found {
 		return nil, errors.New("no default mfa requirement available")
@@ -243,7 +254,7 @@ func (c *VaultClient) SendOtp(ctx context.Context, mfaReq *vault.MFARequirement,
 	return c.client.Logical().WriteWithContext(ctx, "sys/mfa/validate", mfaPayload)
 }
 
-func (c *VaultClient) LoginSinglePhase(ctx context.Context, username, password, mfaId, otp string) (*vault.Secret, error) {
+func (c *VaultClient) UserpassAuthMfa(ctx context.Context, username, password, mfaId, otp string) (*vault.Secret, error) {
 	var vaultMfaHeaderValue = mfaId
 	if otp != "" {
 		vaultMfaHeaderValue = fmt.Sprintf("%s: %s", mfaId, otp)
@@ -258,4 +269,172 @@ func (c *VaultClient) LoginSinglePhase(ctx context.Context, username, password, 
 	data := map[string]any{"password": password}
 	path := fmt.Sprintf("auth/userpass/login/%s", username)
 	return c.client.Logical().WriteWithContext(ctx, path, data)
+}
+
+func (c *VaultClient) TotpListMethods(ctx context.Context) ([]string, error) {
+	path := "identity/mfa/method/totp"
+	secret, err := c.client.Logical().ListWithContext(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+
+	if secret == nil || secret.Data == nil {
+		return nil, fmt.Errorf("no data returned from Vault")
+	}
+
+	var keys []string
+	for _, v := range secret.Data["keys"].([]any) {
+		if s, ok := v.(string); ok {
+			keys = append(keys, s)
+		}
+	}
+
+	return keys, nil
+}
+
+func structToMap(v any) (map[string]any, error) {
+	var result map[string]any
+	bytes, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(bytes, &result)
+	return result, err
+}
+
+func (c *VaultClient) TotpGenerateMethod(ctx context.Context, req MfaCreateMethodRequest) (string, error) {
+	path := "identity/mfa/method/totp"
+	data, err := structToMap(req)
+	if err != nil {
+		return "", err
+	}
+	secret, err := c.client.Logical().WriteWithContext(ctx, path, data)
+	if err != nil {
+		return "", err
+	}
+
+	if secret == nil || secret.Data == nil {
+		return "", fmt.Errorf("no data returned from Vault")
+	}
+
+	return secret.Data["method_id"].(string), nil
+}
+
+func (c *VaultClient) TotpDestroySecretAdmin(ctx context.Context, methodId, entityId string) error {
+	path := "identity/mfa/method/totp/admin-destroy"
+	data := map[string]any{
+		"method_id": methodId,
+		"entity_id": entityId,
+	}
+	_, err := c.client.Logical().WriteWithContext(ctx, path, data)
+	return err
+}
+
+var ErrTotpAlreadyDefined = errors.New("TOTP already defined")
+var ErrTotpDeleteFailed = errors.New("TOTP deletion failed")
+
+func (c *VaultClient) TotpGenerateSecretAdmin(ctx context.Context, methodId, entityId string, force bool) (string, error) {
+	path := "identity/mfa/method/totp/admin-generate"
+	data := map[string]any{
+		"method_id": methodId,
+		"entity_id": entityId,
+	}
+
+	secret, err := c.client.Logical().WriteWithContext(ctx, path, data)
+	if err != nil {
+		return "", err
+	}
+
+	if secret == nil || secret.Data == nil || len(secret.Warnings) > 0 {
+		log.Warn().Msgf("TOTP already defined for %s", entityId)
+		if !force {
+			return "", ErrTotpAlreadyDefined
+		}
+
+		if err := c.TotpDestroySecretAdmin(ctx, methodId, entityId); err != nil {
+			return "", ErrTotpDeleteFailed
+		}
+		return c.TotpGenerateSecretAdmin(ctx, methodId, entityId, false)
+	}
+
+	return fmt.Sprintf("%s", secret.Data["url"]), nil
+}
+
+func (c *VaultClient) IdentityListEntities(ctx context.Context) ([]string, error) {
+	path := "identity/entity/name"
+
+	secret, err := c.client.Logical().ListWithContext(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+
+	if secret == nil || secret.Data == nil {
+		return nil, fmt.Errorf("no data returned from Vault")
+	}
+
+	var keys []string
+	for _, v := range secret.Data["keys"].([]any) {
+		if s, ok := v.(string); ok {
+			keys = append(keys, s)
+		}
+	}
+
+	return keys, nil
+}
+
+var ErrVaultEmptyDataReturned = errors.New("no data returned from Vault")
+
+func (c *VaultClient) IdentityGetEntityIdByName(ctx context.Context, entityName string) (string, error) {
+	entity, err := c.IdentityGetEntityByName(ctx, entityName)
+	if err != nil {
+		return "", err
+	}
+
+	if entity == nil {
+		return "", ErrVaultEmptyDataReturned
+	}
+
+	raw, ok := entity["id"]
+	if !ok {
+		return "", errors.New("no id contained in response")
+	}
+
+	return raw.(string), nil
+}
+
+func (c *VaultClient) IdentityGetEntityByName(ctx context.Context, entityName string) (map[string]any, error) {
+	path := fmt.Sprintf("identity/entity/name/%s", entityName)
+
+	secret, err := c.client.Logical().ReadWithContext(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+
+	if secret == nil || secret.Data == nil {
+		return nil, ErrVaultEmptyDataReturned
+	}
+
+	return secret.Data, nil
+}
+
+func (c *VaultClient) IdentityListGroups(ctx context.Context) ([]string, error) {
+	path := "identity/group/name"
+
+	secret, err := c.client.Logical().ListWithContext(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+
+	if secret == nil || secret.Data == nil {
+		return nil, fmt.Errorf("no data returned from Vault")
+	}
+
+	var keys []string
+	for _, v := range secret.Data["keys"].([]any) {
+		if s, ok := v.(string); ok {
+			keys = append(keys, s)
+		}
+	}
+
+	return keys, nil
 }
