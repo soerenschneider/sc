@@ -14,8 +14,9 @@ import (
 )
 
 var sshListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "Lists all roles for the SSH secrets engine",
+	Use:     "list-roles",
+	Aliases: []string{"list"},
+	Short:   "Lists all roles for the SSH secrets engine",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 

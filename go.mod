@@ -14,7 +14,6 @@ require (
 	github.com/rs/zerolog v1.33.0
 	github.com/soerenschneider/sc-agent v1.8.0
 	github.com/soerenschneider/vault-pki-cli v1.15.1
-	github.com/soerenschneider/vault-ssh-cli v1.9.2
 	github.com/spf13/afero v1.12.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0

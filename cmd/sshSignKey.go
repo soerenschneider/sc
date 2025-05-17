@@ -2,18 +2,19 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"math"
+	"os"
+	"os/user"
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/huh/spinner"
 	"github.com/rs/zerolog/log"
-	"github.com/soerenschneider/sc/internal/ssh"
-	"github.com/soerenschneider/sc/internal/ssh/builder"
 	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/soerenschneider/sc/pkg"
-	"github.com/soerenschneider/vault-ssh-cli/pkg/signature"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
 
@@ -28,10 +29,17 @@ const (
 var sshSignKeyCmd = &cobra.Command{
 	Use:   "sign-key",
 	Short: "Signs a SSH public key",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
+		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
+
 		principals, err := getPrincipals(cmd)
-		if err != nil {
-			log.Fatal().Err(err).Msg("could not get principals")
+		if len(principals) == 0 {
+			var suggestions []string
+			currentUser, err := user.Current()
+			if err == nil {
+				suggestions = []string{currentUser.Username}
+			}
+			principals = []string{tui.ReadInput("Enter principal", suggestions)}
 		}
 
 		publicKeyFile, err := cmd.Flags().GetString(sshSignKeyCmdFlagsPublicKeyFile)
@@ -41,29 +49,18 @@ var sshSignKeyCmd = &cobra.Command{
 
 		publicKeyFile = pkg.GetExpandedFile(publicKeyFile)
 
-		publicKeyStorage, err := ssh.NewAferoSink(publicKeyFile)
-		if err != nil {
-			return err
-		}
-
 		certificateFile, err := cmd.Flags().GetString(sshSignKeyCmdFlagsCertificateFile)
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not get flag")
 		}
-
-		certificateStorage, err := ssh.NewAferoSink(sshSignKeyCmdGetCertificateFile(publicKeyFile, certificateFile))
-		if err != nil {
-			return err
+		if certificateFile == "" && publicKeyFile != "" {
+			certificateFile = strings.Replace(publicKeyFile, ".pub", "", 1)
+			certificateFile = pkg.GetExpandedFile(fmt.Sprintf("%s-cert.pub", certificateFile))
 		}
 
 		ttl, err := cmd.Flags().GetString(sshSignKeyCmdFlagsTtl)
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not get flag")
-		}
-
-		address, err := vault.GetVaultAddress(cmd)
-		if err != nil {
-			log.Fatal().Err(err).Msg("could not sign public key")
 		}
 
 		mount, err := cmd.Flags().GetString(sshCmdFlagsSshMount)
@@ -76,7 +73,6 @@ var sshSignKeyCmd = &cobra.Command{
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 			availableRoles, err := client.SshListRoles(ctx, mount)
 			if err == nil {
 				role = tui.SelectInput("Enter role", availableRoles)
@@ -85,25 +81,90 @@ var sshSignKeyCmd = &cobra.Command{
 			}
 		}
 
-		signer, err := builder.BuildSshSigner(address, mount)
+		fs := afero.NewOsFs()
+		publicKeyData, err := afero.ReadFile(fs, publicKeyFile)
 		if err != nil {
-			log.Error().Err(err).Msg("could not build client to sign pubkey")
+			log.Fatal().Err(err).Msg("Could not read public key data")
 		}
 
-		req := signature.SignatureRequest{
+		requestNewCertificate, err := needsRequestNewCertificate(fs, certificateFile)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Can not proceed")
+		}
+
+		if !requestNewCertificate {
+			return
+		}
+
+		req := vault.SshSignatureRequest{
 			Ttl:        ttl,
 			Principals: principals,
 			Extensions: nil, // TODO
 			VaultRole:  role,
+			PublicKey:  string(publicKeyData),
 		}
 
-		result, err := signer.SignUserCert(req, publicKeyStorage, certificateStorage)
-		if err != nil {
-			log.Error().Err(err).Msg("could not sign key")
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		var certificateData string
+		if err := spinner.New().
+			Type(spinner.Line).
+			ActionWithErr(func(ctx context.Context) error {
+				certificateData, err = client.SignSshKey(ctx, mount, req)
+				return err
+			}).
+			Title("Sending signature request...").
+			Accessible(false).
+			Context(ctx).
+			Type(spinner.Dots).
+			Run(); err != nil {
+			log.Fatal().Err(err).Msg("could not sign public key")
 		}
-		logIssueResults(result)
-		return err
+
+		if err := afero.WriteFile(fs, certificateFile, []byte(certificateData), 0640); err != nil {
+			log.Error().Err(err).Msg("could not write signature")
+		}
+
+		cert, err := vault.ParseSshCertData([]byte(certificateData))
+		if err != nil {
+			log.Fatal().Err(err).Msg("Could not parse received cert data")
+		}
+		log.Info().Msgf("New certificate written to disk, valid until %v (%v)", cert.ValidBefore, time.Until(cert.ValidBefore).Round(time.Hour))
 	},
+}
+
+func needsRequestNewCertificate(fs afero.Fs, certificateFile string) (bool, error) {
+	_, err := os.Stat(certificateFile)
+	if err != nil && errors.Is(err, os.ErrNotExist) {
+		log.Info().Msg("No existing certificate, requesting new certificate")
+		return true, nil
+	}
+
+	// TODO: maybe need to check more potential errors
+	certData, err := afero.ReadFile(fs, certificateFile)
+	if err != nil {
+		return false, errors.New("could not read certificate file")
+	}
+
+	cert, err := vault.ParseSshCertData(certData)
+	if err != nil {
+		log.Warn().Err(err).Msg("could not parse existing cert data, requesting new certificate")
+		return true, nil
+	}
+
+	requestNewCertificate := time.Until(cert.ValidBefore) < time.Minute*3 || cert.GetPercentage() < 5
+	if time.Now().After(cert.ValidBefore) {
+		log.Info().Msgf("Certificate exists but already expired %v ago, requesting new one", time.Since(cert.ValidBefore).Round(time.Minute))
+	} else {
+		action := "Not requesting new certificate"
+		if requestNewCertificate {
+			action = "Requesting new certificate"
+		}
+		log.Info().Msgf("%s, certificate at %.0f%% (expires in %v)", action, cert.GetPercentage(), time.Until(cert.ValidBefore).Round(time.Minute))
+	}
+
+	return requestNewCertificate, nil
 }
 
 func init() {
@@ -135,6 +196,7 @@ func sshSignKeyCmdGetCertificateFile(publicKeyFile, certificateFile string) stri
 	return auto
 }
 
+/*
 func logIssueResults(result *signature.IssueResult) {
 	if result == nil || signature.Unknown == result.Status {
 		log.Warn().Msg("empty/unknown signature result returned")
@@ -155,3 +217,4 @@ func logIssueResults(result *signature.IssueResult) {
 		}
 	}
 }
+*/
