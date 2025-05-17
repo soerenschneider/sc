@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
 	"sync"
@@ -74,7 +75,8 @@ func setupLogLevel(debug bool) {
 
 func conditionallyLogLatestReleaseInfo(cmd *cobra.Command) {
 	disableTelemetry := isDisableTelemetry(cmd)
-	if disableTelemetry {
+	if disableTelemetry || rand.New(rand.NewSource(time.Now().Unix())).Float32() > 0.2 || !strings.HasPrefix(internal.BuildVersion, "v") {
+		log.Debug().Str("local_version", internal.BuildVersion).Msg("not performing check for update")
 		return
 	}
 
@@ -82,11 +84,6 @@ func conditionallyLogLatestReleaseInfo(cmd *cobra.Command) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if disableTelemetry || !strings.HasPrefix(internal.BuildVersion, "v") {
-			log.Debug().Str("local_version", internal.BuildVersion).Msg("not performing check for update")
-			return
-		}
-
 		httpClient := deps.GetHttpClient()
 		releaseNotifier, err := internal.NewReleaseNotifier(httpClient, internal.BuildVersion)
 		if err != nil {
@@ -94,7 +91,7 @@ func conditionallyLogLatestReleaseInfo(cmd *cobra.Command) {
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 		releaseNotifier.CheckRelease(ctx)
 	}()
