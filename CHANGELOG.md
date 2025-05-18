@@ -1,5 +1,38 @@
 # Changelog
 
+## [1.3.0](https://github.com/soerenschneider/sc/compare/v1.2.2...v1.3.0) (2025-05-18)
+
+
+### Features
+
+* add basic support for Vault ([9af30b4](https://github.com/soerenschneider/sc/commit/9af30b4815490885f3a4756d564d00ec7588779a))
+* add healthcheck ([8aa9c50](https://github.com/soerenschneider/sc/commit/8aa9c5091622c0c30190c8c4a32f266e8402dc20))
+* add subcommands to manage vault aws secret engine ([a9c479d](https://github.com/soerenschneider/sc/commit/a9c479de71b951181ba5e0f55e831e735674dc9f))
+* add support for vault mfa totp ([1b84bd6](https://github.com/soerenschneider/sc/commit/1b84bd6ac3f3f1f3974c62f21bb2771f375e6daf))
+
+
+### Bug Fixes
+
+* **deps:** bump github.com/go-jose/go-jose/v4 from 4.0.1 to 4.0.5 ([0eae9c3](https://github.com/soerenschneider/sc/commit/0eae9c3450ed55aac1359fe3836d16f2620d23e2))
+* **deps:** bump github.com/go-jose/go-jose/v4 from 4.0.1 to 4.0.5 ([1c21e0c](https://github.com/soerenschneider/sc/commit/1c21e0cac496bdb5fa1f4bbd56b2a4536ae291ff))
+* **deps:** bump github.com/jedib0t/go-pretty/v6 from 6.6.5 to 6.6.7 ([39f5fb4](https://github.com/soerenschneider/sc/commit/39f5fb4431dd0a24f2a786a5015a1570226918ea))
+* **deps:** bump github.com/jedib0t/go-pretty/v6 from 6.6.5 to 6.6.7 ([cd4f053](https://github.com/soerenschneider/sc/commit/cd4f0538191deee953b18f97d8a945cf9bf844c1))
+* **deps:** bump github.com/soerenschneider/sc-agent from 1.8.0 to 1.10.0 ([aa2ec30](https://github.com/soerenschneider/sc/commit/aa2ec300f6ff68ded03114bf6ccad640edb76913))
+* **deps:** bump github.com/soerenschneider/sc-agent from 1.8.0 to 1.10.0 ([d1e01d1](https://github.com/soerenschneider/sc/commit/d1e01d103879d0488ed87c2c102af902d7bd6d57))
+* **deps:** bump github.com/spf13/afero from 1.11.0 to 1.12.0 ([33ed6dc](https://github.com/soerenschneider/sc/commit/33ed6dc50879ff5de1f67a7fe8b59e0187b432c8))
+* **deps:** bump github.com/spf13/afero from 1.11.0 to 1.12.0 ([d424d62](https://github.com/soerenschneider/sc/commit/d424d62566034337bfe391f2bf0486d323c6034e))
+* **deps:** bump github.com/spf13/cobra from 1.8.1 to 1.9.1 ([a4761e0](https://github.com/soerenschneider/sc/commit/a4761e08c5bc8fdc69fe3ec60951fac76f5e214a))
+* **deps:** bump github.com/spf13/cobra from 1.8.1 to 1.9.1 ([58d7f53](https://github.com/soerenschneider/sc/commit/58d7f53e64ea3dba82a21102ec720e8d0fc0de8b))
+* **deps:** bump golang from 1.23.4 to 1.23.6 ([09beb64](https://github.com/soerenschneider/sc/commit/09beb64f3e49bc8bf891f2f52e0655eac86bd54e))
+* **deps:** bump golang from 1.23.4 to 1.23.6 ([11a314e](https://github.com/soerenschneider/sc/commit/11a314e40fb9cfda78f2602224c9a193fa0d0459))
+* **deps:** bump golang from 1.23.6 to 1.24.3 ([7d56453](https://github.com/soerenschneider/sc/commit/7d56453f607a7130f4d7bfc55e1ce9b6fe7d26f7))
+* **deps:** bump golang from 1.23.6 to 1.24.3 ([6e6e972](https://github.com/soerenschneider/sc/commit/6e6e972a666f2e45bc598f0621f97e5f9bd564ae))
+* **deps:** bump golang.org/x/net from 0.33.0 to 0.38.0 ([38a4aad](https://github.com/soerenschneider/sc/commit/38a4aad5857ffd56431a7aa35eb5b67a733bb473))
+* **deps:** bump golang.org/x/net from 0.33.0 to 0.38.0 ([0ede4ee](https://github.com/soerenschneider/sc/commit/0ede4ee64a9b384e1dffc1fcfe96341d8133facf))
+* **deps:** bump golang.org/x/term from 0.28.0 to 0.29.0 ([9ab8f0f](https://github.com/soerenschneider/sc/commit/9ab8f0f95fd22d3641f9dda0cc53e8b3078a0cd7))
+* **deps:** bump golang.org/x/term from 0.28.0 to 0.29.0 ([8809f77](https://github.com/soerenschneider/sc/commit/8809f7702e41ff3fc0ef1ae3464c9a5b0fa64695))
+* fix api change ([1e06154](https://github.com/soerenschneider/sc/commit/1e061544b77c82f22bc9a54a7a1babbd572908d8))
+
 ## [1.2.2](https://github.com/soerenschneider/sc/compare/v1.2.1...v1.2.2) (2025-01-12)
 
 
