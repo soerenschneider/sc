@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/vault/api v1.16.0
-	github.com/jedib0t/go-pretty/v6 v6.6.5
+	github.com/jedib0t/go-pretty/v6 v6.6.7
 	github.com/rs/zerolog v1.34.0
 	github.com/soerenschneider/sc-agent v1.10.0
 	github.com/soerenschneider/vault-pki-cli v1.15.1
