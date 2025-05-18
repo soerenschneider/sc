@@ -1,13 +1,43 @@
 package cmd
 
 import (
+	"time"
+
 	"github.com/spf13/cobra"
 )
 
 const (
-	vaultAddr      = "address"
-	vaultTokenFile = "token-file"
+	VaultAddr      = "address"
+	VaultTokenFile = "token-file"
+	VaultMountPath = "mount"
+	VaultTtl       = "ttl"
+	VaultRoleName  = "role"
+
+	vaultAwsDefaultMount = "aws"
+
+	vaultAwsProfile = "aws-profile"
+
+	vaultAwsDefaultTtl                 = "3600s"
+	vaultAwsDefaultCredentialsFilename = "~/.aws/credentials"
+	vaultAwsDefaultProfile             = "default"
+
+	vaulEntityName     = "entity-name"
+	vaultLoginUsername = "username"
+	vaultLoginOtp      = "otp"
+	vaultLoginMfaId    = "mfa-id"
+
+	vaultDefaultTimeout = 7 * time.Second
+
+	vaultIdentityEntityId = "entity-id"
+	vaultTotpMethodId     = "method-id"
+	vaultForce            = "force"
+
+	vaultIssuer         = "issuer"
+	vaultTotpMethodName = "method-name"
+	vaultAlgorithm      = "algorithm"
 )
+
+var vaultTotpAlgorithms = []string{"SHA1", "SHA256", "SHA512"}
 
 // vaultCmd represents the vault command
 var vaultCmd = &cobra.Command{
@@ -27,6 +57,6 @@ to quickly create a Cobra application.`,
 func init() {
 	rootCmd.AddCommand(vaultCmd)
 
-	vaultCmd.Flags().StringP(vaultAddr, "a", "", "Vault address. If not specified, tries to read env variable VAULT_ADDR.")
-	vaultCmd.Flags().StringP(vaultTokenFile, "t", "~/.vault-token", "Vault token file.")
+	vaultCmd.Flags().StringP(VaultAddr, "a", "", "Vault address. If not specified, tries to read env variable VAULT_ADDR.")
+	vaultCmd.Flags().StringP(VaultTokenFile, "t", "~/.vault-token", "Vault token file.")
 }

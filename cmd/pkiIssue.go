@@ -7,6 +7,8 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/pki/builder"
+	"github.com/soerenschneider/sc/internal/vault"
+	pkg2 "github.com/soerenschneider/sc/pkg"
 	"github.com/soerenschneider/vault-pki-cli/pkg"
 	"github.com/soerenschneider/vault-pki-cli/pkg/pki"
 	"github.com/soerenschneider/vault-pki-cli/pkg/renew_strategy"
@@ -31,42 +33,42 @@ var pkiIssueCmd = &cobra.Command{
 	Short: "Issues a x509 certificate",
 	Run: func(cmd *cobra.Command, args []string) {
 		commonName, err := cmd.Flags().GetString(pkiIssueCmdFlagsCommonName)
-		DieOnErr(err, "could not get flag")
+		pkg2.DieOnErr(err, "could not get flag")
 
-		vaultAddress, err := getVaultAddress(cmd)
-		DieOnErr(err, "could not get vault address")
+		vaultAddress, err := vault.GetVaultAddress(cmd)
+		pkg2.DieOnErr(err, "could not get vault address")
 
 		ttl, err := cmd.Flags().GetString(pkiIssueCmdFlagsTtl)
-		DieOnErr(err, "could not get flag")
+		pkg2.DieOnErr(err, "could not get flag")
 
 		role, err := cmd.Flags().GetString(pkiIssueCmdFlagsVaultRole)
-		DieOnErr(err, "could not get flag")
+		pkg2.DieOnErr(err, "could not get flag")
 
 		mount, err := cmd.Flags().GetString(pkiCmdFlagsPkiMount)
-		DieOnErr(err, "could not get flag")
+		pkg2.DieOnErr(err, "could not get flag")
 
 		ipSans, err := cmd.Flags().GetStringArray(pkiIssueCmdFlagsIpSans)
-		DieOnErr(err, "could not get flag")
+		pkg2.DieOnErr(err, "could not get flag")
 
 		altNames, err := cmd.Flags().GetStringArray(pkiIssueCmdFlagsAltNames)
-		DieOnErr(err, "could not get flag")
+		pkg2.DieOnErr(err, "could not get flag")
 
 		privateKeyFile, err := cmd.Flags().GetString(pkiIssueCmdFlagsPrivateKeyFile)
-		DieOnErr(err, "could not get flag")
+		pkg2.DieOnErr(err, "could not get flag")
 
 		certFile, err := cmd.Flags().GetString(pkiIssueCmdFlagsCertificateFile)
-		DieOnErr(err, "could not get flag")
+		pkg2.DieOnErr(err, "could not get flag")
 
 		caFile, err := cmd.Flags().GetString(pkiIssueCmdFlagsCaFile)
-		DieOnErr(err, "could not get flag")
+		pkg2.DieOnErr(err, "could not get flag")
 
 		// expand files
-		privateKeyFile = GetExpandedFile(privateKeyFile)
-		certFile = GetExpandedFile(certFile)
-		caFile = GetExpandedFile(caFile)
+		privateKeyFile = pkg2.GetExpandedFile(privateKeyFile)
+		certFile = pkg2.GetExpandedFile(certFile)
+		caFile = pkg2.GetExpandedFile(caFile)
 
 		pkiService, err := builder.BuildPki(vaultAddress, mount, role)
-		DieOnErr(err, "could not build pki service")
+		pkg2.DieOnErr(err, "could not build pki service")
 
 		issueArgs := pkg.IssueArgs{
 			CommonName: commonName,
@@ -78,19 +80,19 @@ var pkiIssueCmd = &cobra.Command{
 		var caStorage, certStorage, privateKeyStorage pki.StorageImplementation
 		if len(caFile) > 0 {
 			caStorage, err = backend.NewFilesystemStorageFromUri(caFile)
-			DieOnErr(err, "could not build ca storage")
+			pkg2.DieOnErr(err, "could not build ca storage")
 		}
 
 		if len(certFile) > 0 {
 			certStorage, err = backend.NewFilesystemStorageFromUri(certFile)
-			DieOnErr(err, "could not build cert storage")
+			pkg2.DieOnErr(err, "could not build cert storage")
 		}
 
 		privateKeyStorage, err = backend.NewFilesystemStorageFromUri(privateKeyFile)
-		DieOnErr(err, "could not build private key storage")
+		pkg2.DieOnErr(err, "could not build private key storage")
 
 		storageImpl, err := shape.NewKeyPairStorage(certStorage, privateKeyStorage, caStorage)
-		DieOnErr(err, "could not build storage impl")
+		pkg2.DieOnErr(err, "could not build storage impl")
 
 		// depending on the hardware of Vault, the available randomness and the key size it's possible that this
 		// operating takes quite some time
@@ -123,15 +125,15 @@ func init() {
 
 	pkiIssueCmd.Flags().StringP(pkiIssueCmdFlagsCommonName, "n", "", "The CN for the certificate")
 	err := pkiIssueCmd.MarkFlagRequired(pkiIssueCmdFlagsCommonName)
-	DieOnErr(err, "could not mark flag required")
+	pkg2.DieOnErr(err, "could not mark flag required")
 
 	pkiIssueCmd.Flags().StringP(pkiIssueCmdFlagsPrivateKeyFile, "k", "", "File to save the private key to")
 	err = pkiIssueCmd.MarkFlagRequired(pkiIssueCmdFlagsPrivateKeyFile)
-	DieOnErr(err, "could not mark flag required")
+	pkg2.DieOnErr(err, "could not mark flag required")
 
 	pkiIssueCmd.Flags().StringP(pkiIssueCmdFlagsVaultRole, "r", "", "Vault role")
 	err = pkiIssueCmd.MarkFlagRequired(pkiIssueCmdFlagsVaultRole)
-	DieOnErr(err, "could not mark flag required")
+	pkg2.DieOnErr(err, "could not mark flag required")
 
 	pkiIssueCmd.Flags().StringP(pkiIssueCmdFlagsCertificateFile, "c", "", "File to save the certificate to")
 	pkiIssueCmd.Flags().String(pkiIssueCmdFlagsCaFile, "", "File to save the ca to")

@@ -1,88 +1,93 @@
 package cmd
 
 import (
-	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"os"
-	"time"
+	"os/user"
+	"strings"
 
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
 	"github.com/charmbracelet/lipgloss"
-	vault "github.com/hashicorp/vault/api"
+	"github.com/hashicorp/vault/api"
 	"github.com/rs/zerolog/log"
+	"github.com/soerenschneider/sc/internal/tui"
+	"github.com/soerenschneider/sc/internal/vault"
+	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/cobra"
 )
 
-const (
-	vaultLoginUsername = "username"
-	vaultLoginOtp      = "otp"
-	vaultLoginMfaId    = "mfa-id"
-)
+const ()
 
 // vaultLoginCmd represents the vaultLogin command
 var vaultLoginCmd = &cobra.Command{
 	Use:   "login",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Authenticate with a Vault server using username and password",
+	Long: `Authenticate with a HashiCorp Vault server using the "userpass" authentication method.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+This command logs you into Vault using a username and password. If two-factor
+authentication is enabled, you may also provide a one-time password (OTP).
+
+After successful login, a Vault token is returned. The token is saved to a file.
+If the file cannot be written—due to permission issues or missing directories—the token is printed
+to stdout as a fallback.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		vaultAddr := cmp.Or(GetString(cmd, vaultAddr), getVaultAddr())
-		username := GetString(cmd, vaultLoginUsername)
-		otp := GetString(cmd, vaultLoginOtp)
-		mfaId := GetString(cmd, vaultLoginMfaId)
+		username := pkg.GetString(cmd, vaultLoginUsername)
+		otp := pkg.GetString(cmd, vaultLoginOtp)
+		mfaId := pkg.GetString(cmd, vaultLoginMfaId)
+		mount := pkg.GetString(cmd, VaultMountPath)
 
-		config := vault.DefaultConfig()
-		config.Address = vaultAddr
+		client := vault.MustBuildClient(cmd)
 
-		client, err := vault.NewClient(config)
-		if err != nil {
-			log.Fatal().Msgf("Error creating Vault client: %v", err)
+		validateFunc := func(val string) error {
+			if strings.TrimSpace(val) == "" {
+				return errors.New("input can not be empty")
+			}
+			return nil
 		}
 
+		var fields []huh.Field
 		if username == "" {
-			username, err = readNormal("Enter username")
-			if err != nil {
-				log.Fatal().Err(err).Msg("could not read username")
+			var suggestions []string
+			currentUser, err := user.Current()
+			if err == nil {
+				suggestions = []string{currentUser.Username}
 			}
+			fields = append(fields, huh.NewInput().Title("Username").Suggestions(suggestions).Value(&username).Validate(validateFunc))
 		}
 
 		var password string
-		if password == "" {
-			password, err = readSensitive("Enter password")
-			if err != nil {
-				log.Fatal().Err(err).Msg("could not read password")
-			}
+		fields = append(fields, huh.NewInput().Title("Password").EchoMode(huh.EchoModePassword).Value(&password).Validate(validateFunc))
+
+		if err := huh.NewForm(huh.NewGroup(fields...)).Run(); err != nil {
+			log.Fatal().Err(err).Msg("could not get info from user")
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)
 		defer cancel()
 
-		var vaultSecret *vault.Secret
+		var vaultSecret *api.Secret
 		sendPasswordFunc := func(ctx context.Context) error {
+			var err error
 			if mfaId != "" && otp != "" {
-				vaultSecret, err = vaultLoginSinglePhase(ctx, client, username, password, mfaId, otp)
+				vaultSecret, err = client.UserpassAuthMfa(ctx, username, password, mfaId, otp)
 				return err
 			} else {
-				vaultSecret, err = vaultSendPassword(ctx, client, username, password)
+				vaultSecret, err = client.UserpassAuth(ctx, mount, username, password)
 				return err
 			}
 		}
 
-		err = spinner.New().
+		if err := spinner.New().
 			Type(spinner.Line).
 			ActionWithErr(sendPasswordFunc).
-			Title("Sending request...").
+			Title("Sending login request...").
 			Accessible(false).
 			Context(ctx).
 			Type(spinner.Dots).
-			Run()
-
-		if err != nil {
+			Run(); err != nil {
 			log.Fatal().Err(err).Msg("sending login to request to Vault failed")
 		}
 
@@ -91,44 +96,41 @@ to quickly create a Cobra application.`,
 		}
 
 		if vaultSecret.Auth.MFARequirement != nil {
-			mfaReq, otpId, err := getVaultMfaRequirement(vaultSecret)
+			mfaReq, otpId, err := vault.GetVaultMfaRequirement(vaultSecret)
 			if err != nil {
-				log.Fatal().Err(err).Msg("yo")
+				log.Fatal().Err(err).Msg("error retrieving MFA information")
 			}
 
 			if otp == "" {
-				otp, err = readNormal(fmt.Sprintf("Enter TOTP for id %q", otpId))
-				if err != nil {
-					log.Fatal().Err(err).Msg("could not read otp")
-				}
+				otp = tui.ReadOtp(fmt.Sprintf("Enter OTP for id %q", otpId))
 			}
 
-			ctx, cancel = context.WithTimeout(context.Background(), time.Second*5)
+			ctx, cancel = context.WithTimeout(context.Background(), vaultDefaultTimeout)
 			defer cancel()
 			sendOtpFunc := func(ctx context.Context) error {
-				vaultSecret, err = vaultSendOtp(ctx, client, mfaReq, otp)
+				vaultSecret, err = client.SendOtp(ctx, mfaReq, otp)
 				return err
 			}
 
-			err = spinner.New().
+			if err := spinner.New().
 				Type(spinner.Line).
 				ActionWithErr(sendOtpFunc).
 				Title("Sending OTP...").
 				Accessible(false).
 				Context(ctx).
 				Type(spinner.Dots).
-				Run()
-
-			if err != nil {
+				Run(); err != nil {
 				log.Fatal().Err(err).Msg("sending OTP to Vault failed")
 			}
 		}
 
-		tokenFile, err := getVaultTokenFilePath()
+		tokenFile, err := vault.GetVaultTokenFilePath()
+		if err != nil {
+			printToken(vaultSecret.Auth.ClientToken)
+			return
+		}
 		if err := os.WriteFile(tokenFile, []byte(vaultSecret.Auth.ClientToken), 0600); err != nil {
-			var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("Vault token")
-			fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), vaultSecret.Auth.ClientToken))
-
+			printToken(vaultSecret.Auth.ClientToken)
 			log.Fatal().Msgf("Failed to save token to %s: %v", tokenFile, err)
 		}
 
@@ -137,10 +139,16 @@ to quickly create a Cobra application.`,
 	},
 }
 
+func printToken(token string) {
+	var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("Vault token")
+	fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), token))
+}
+
 func init() {
 	vaultCmd.AddCommand(vaultLoginCmd)
 
 	vaultLoginCmd.Flags().StringP(vaultLoginUsername, "u", "", "Username for login")
+	vaultLoginCmd.Flags().StringP(VaultMountPath, "m", "userpass", "Vault mount for userpass auth engine")
 	vaultLoginCmd.Flags().StringP(vaultLoginOtp, "o", "", "OTP value for non-interactive login")
 	vaultLoginCmd.Flags().StringP(vaultLoginMfaId, "", "", "MFA ID")
 }

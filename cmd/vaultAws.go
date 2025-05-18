@@ -5,10 +5,10 @@ import (
 )
 
 // vaultLoginCmd represents the vaultLogin command
-var vaultTokenCmd = &cobra.Command{
-	Use:   "token",
-	Short: "Manage Vault tokens",
-	Long: `The 'token' command group contains subcommands for interacting with Vault tokens.
+var vaultAwsCmd = &cobra.Command{
+	Use:   "aws",
+	Short: "Manage AWS secret engine",
+	Long: `The 'aws' command group contains subcommands for interacting with Vault AWS secret engine.
 
 This command itself does not perform any actions. Instead, use one of its subcommands
 to inspect or manage tokens.`,
@@ -18,5 +18,5 @@ to inspect or manage tokens.`,
 }
 
 func init() {
-	vaultCmd.AddCommand(vaultTokenCmd)
+	vaultCmd.AddCommand(vaultAwsCmd)
 }

@@ -4,10 +4,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const ()
+
 // vaultLoginCmd represents the vaultLogin command
-var vaultTokenCmd = &cobra.Command{
-	Use:   "token",
-	Short: "Manage Vault tokens",
+var vaultTotpCmd = &cobra.Command{
+	Use:   "totp",
+	Short: "Manage Vault totp",
 	Long: `The 'token' command group contains subcommands for interacting with Vault tokens.
 
 This command itself does not perform any actions. Instead, use one of its subcommands
@@ -18,5 +20,5 @@ to inspect or manage tokens.`,
 }
 
 func init() {
-	vaultCmd.AddCommand(vaultTokenCmd)
+	vaultCmd.AddCommand(vaultTotpCmd)
 }

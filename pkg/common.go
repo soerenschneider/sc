@@ -1,4 +1,4 @@
-package cmd
+package pkg
 
 import (
 	"os/user"
@@ -19,6 +19,11 @@ func MustGetString(cmd *cobra.Command, name string) string {
 
 func GetString(cmd *cobra.Command, name string) string {
 	val, _ := cmd.Flags().GetString(name)
+	return val
+}
+
+func GetInt(cmd *cobra.Command, name string) int {
+	val, _ := cmd.Flags().GetInt(name)
 	return val
 }
 
