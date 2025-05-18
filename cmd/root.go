@@ -75,6 +75,7 @@ func setupLogLevel(debug bool) {
 
 func conditionallyLogLatestReleaseInfo(cmd *cobra.Command) {
 	disableTelemetry := isDisableTelemetry(cmd)
+	//nolint G404: no cryptographic randomness required
 	if disableTelemetry || rand.New(rand.NewSource(time.Now().Unix())).Float32() > 0.2 || !strings.HasPrefix(internal.BuildVersion, "v") {
 		log.Debug().Str("local_version", internal.BuildVersion).Msg("not performing check for update")
 		return

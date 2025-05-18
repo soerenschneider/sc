@@ -54,7 +54,7 @@ func MustBuildClient(command *cobra.Command) *VaultClient {
 }
 
 func MustAuthenticateClient(client *VaultClient) *VaultClient {
-	if client == nil {
+	if client == nil { //nolint SA5011
 		log.Fatal().Msg("nil client passed")
 	}
 
@@ -63,7 +63,7 @@ func MustAuthenticateClient(client *VaultClient) *VaultClient {
 		log.Fatal().Err(err).Msg("unable to get Vault token")
 	}
 
-	client.client.SetToken(token)
+	client.client.SetToken(token) //nolint SA5011
 	return client
 }
 

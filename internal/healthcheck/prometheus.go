@@ -55,7 +55,10 @@ func QueryPrometheus(ctx context.Context, query, endpoint string) (map[string]fl
 			continue
 		}
 		var val float64
-		fmt.Sscanf(valueStr, "%f", &val)
+		_, err := fmt.Sscanf(valueStr, "%f", &val)
+		if err != nil {
+			return nil, err
+		}
 		results[instance] = val
 	}
 
@@ -81,9 +84,7 @@ func MergePrometheusResults(maps ...map[string]float64) [][]string {
 	for key, values := range merged {
 		// Create a row with the key and corresponding values
 		row := []string{key}
-		for _, val := range values {
-			row = append(row, val)
-		}
+		row = append(row, values...)
 		result = append(result, row)
 	}
 

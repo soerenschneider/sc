@@ -17,8 +17,9 @@ const (
 
 	vaultAwsProfile = "aws-profile"
 
-	vaultAwsDefaultTtl                 = "3600s"
-	vaultAwsDefaultCredentialsFilename = "~/.aws/credentials"
+	vaultAwsDefaultTtl = 3600
+
+	vaultAwsDefaultCredentialsFilename = "~/.aws/credentials" //nolint G101
 	vaultAwsDefaultProfile             = "default"
 
 	vaulEntityName     = "entity-name"

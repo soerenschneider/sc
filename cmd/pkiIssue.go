@@ -108,13 +108,14 @@ var pkiIssueCmd = &cobra.Command{
 }
 
 func handlePkiIssueResult(result pkg.IssueResult) {
-	if result.Status == pkg.Issued {
+	switch result.Status {
+	case pkg.Issued:
 		if result.ExistingCert != nil {
 			percentage := fmt.Sprintf("%.1f", renew_strategy.GetPercentage(*result.ExistingCert))
 			log.Info().Msgf("Existing certificate at %s%% expired or below threshold, valid from %v until %v", percentage, result.ExistingCert.NotBefore.Format(time.RFC3339), result.ExistingCert.NotAfter.Format(time.RFC3339))
 		}
 		log.Info().Msgf("New certificate valid until %v (%s)", result.IssuedCert.NotAfter.Format(time.RFC3339), time.Until(result.IssuedCert.NotAfter).Round(time.Second))
-	} else if result.Status == pkg.Noop {
+	case pkg.Noop:
 		percentage := fmt.Sprintf("%.1f", renew_strategy.GetPercentage(*result.ExistingCert))
 		log.Info().Msgf("Existing certificate at %s%%, valid until %v (%s)", percentage, result.ExistingCert.NotAfter.Format(time.RFC3339), time.Until(result.ExistingCert.NotAfter).Round(time.Second))
 	}

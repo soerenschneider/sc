@@ -32,7 +32,11 @@ var sshSignKeyCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 
-		principals, err := getPrincipals(cmd)
+		principals, err := cmd.Flags().GetStringArray(sshSignKeyCmdFlagsPrincipals)
+		if err != nil {
+			log.Fatal().Err(err).Msg("could not get principals")
+		}
+
 		if len(principals) == 0 {
 			var suggestions []string
 			currentUser, err := user.Current()
@@ -184,16 +188,6 @@ func init() {
 	sshSignKeyCmd.Flags().StringP(sshSignKeyCmdFlagsTtl, "t", "24h", "TTL of the certificate")
 
 	sshSignKeyCmd.Flags().StringArray(sshSignKeyCmdFlagsPrincipals, nil, "Principals")
-}
-
-func sshSignKeyCmdGetCertificateFile(publicKeyFile, certificateFile string) string {
-	if len(certificateFile) > 0 {
-		return certificateFile
-	}
-
-	auto := strings.Replace(publicKeyFile, ".pub", "", 1)
-	auto = pkg.GetExpandedFile(fmt.Sprintf("%s-cert.pub", auto))
-	return auto
 }
 
 /*

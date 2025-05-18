@@ -140,7 +140,7 @@ func init() {
 	vaultAwsCmd.AddCommand(vaultAwsGenCmd)
 
 	vaultAwsGenCmd.Flags().StringP(VaultMountPath, "m", vaultAwsDefaultMount, "Mount path for the AWS secret engine")
-	vaultAwsGenCmd.Flags().IntP(VaultTtl, "t", 3600, "Specify how long the credentials should be valid for in seconds")
+	vaultAwsGenCmd.Flags().IntP(VaultTtl, "t", vaultAwsDefaultTtl, "Specify how long the credentials should be valid for in seconds")
 	vaultAwsGenCmd.Flags().StringP(VaultRoleName, "r", "", "Specifies the name of the role to generate credentials for")
 	vaultAwsGenCmd.Flags().StringP(vaultAwsProfile, "p", vaultAwsDefaultProfile, "Specifies the name of the AWS credentials profile section")
 }
