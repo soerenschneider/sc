@@ -1,9 +1,9 @@
-## sc ssh sign-key
+## sc vault ssh sign-key
 
 Signs a SSH public key
 
 ```
-sc ssh sign-key [flags]
+sc vault ssh sign-key [flags]
 ```
 
 ### Options
@@ -28,5 +28,5 @@ sc ssh sign-key [flags]
 
 ### SEE ALSO
 
-* [sc ssh](sc_ssh.md)	 - Sign SSH certificates or retrieve SSH CA data
+* [sc vault ssh](sc_vault_ssh.md)	 - Sign SSH certificates or retrieve SSH CA data
 

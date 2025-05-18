@@ -1,9 +1,9 @@
-## sc ssh
+## sc vault ssh
 
 Sign SSH certificates or retrieve SSH CA data
 
 ```
-sc ssh [flags]
+sc vault ssh [flags]
 ```
 
 ### Options
@@ -23,6 +23,7 @@ sc ssh [flags]
 
 ### SEE ALSO
 
-* [sc](sc.md)	 - Universal Command Line Interface for soeren.cloud
-* [sc ssh sign-key](sc_ssh_sign-key.md)	 - Signs a SSH public key
+* [sc vault](sc_vault.md)	 - A brief description of your command
+* [sc vault ssh list-roles](sc_vault_ssh_list-roles.md)	 - Lists all roles for the SSH secrets engine
+* [sc vault ssh sign-key](sc_vault_ssh_sign-key.md)	 - Signs a SSH public key
 

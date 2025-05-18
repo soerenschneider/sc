@@ -9,7 +9,8 @@ sc agent certs ssh list-certificates [flags]
 ### Options
 
 ```
-  -h, --help   help for list-certificates
+      --cert-type string   The type of certs to return, must be either 'user' or 'host' (default "user")
+  -h, --help               help for list-certificates
 ```
 
 ### Options inherited from parent commands
