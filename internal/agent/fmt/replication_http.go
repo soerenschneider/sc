@@ -15,21 +15,22 @@ func PrintReplicationHttpItemsList(items []api.ReplicationHttpItem) {
 }
 
 func PrintReplicationHttpItem(item api.ReplicationHttpItem) {
-	expectedChecksum := "N/A"
-	if item.ExpectedChecksum != nil {
-		expectedChecksum = *item.ExpectedChecksum
+	fileValidation := "N/A"
+
+	if item.FileValidation != nil {
+		fileValidation = fmt.Sprintf("%v", item.FileValidation)
 	}
 
-	fmt.Printf(`  ID                : %s
-  Source            : %s
-  Destinations      : %v
-  Expected Checksum : %s
-  Status            : %s
+	fmt.Printf(`  ID                  : %s
+  Source              : %s
+  Destinations        : %v
+  File validation     : %v
+  Status              : %s
 `,
 		item.Id,
 		item.Source,
 		item.DestUris,
-		expectedChecksum,
+		fileValidation,
 		item.Status,
 	)
 
