@@ -21,7 +21,7 @@ require (
 	github.com/yeqown/go-qrcode/writer/terminal v1.1.2
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.37.0
-	golang.org/x/term v0.31.0
+	golang.org/x/term v0.32.0
 	gopkg.in/ini.v1 v1.67.0
 )
 
@@ -93,7 +93,7 @@ require (
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/sync v0.13.0 // indirect
-	golang.org/x/sys v0.32.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
