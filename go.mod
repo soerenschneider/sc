@@ -16,7 +16,7 @@ require (
 	github.com/soerenschneider/vault-pki-cli v1.15.1
 	github.com/spf13/afero v1.14.0
 	github.com/spf13/cobra v1.9.1
-	github.com/spf13/viper v1.19.0
+	github.com/spf13/viper v1.20.1
 	github.com/yeqown/go-qrcode/v2 v2.2.5
 	github.com/yeqown/go-qrcode/writer/terminal v1.1.2
 	go.uber.org/multierr v1.11.0
