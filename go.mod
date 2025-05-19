@@ -20,7 +20,7 @@ require (
 	github.com/yeqown/go-qrcode/v2 v2.2.5
 	github.com/yeqown/go-qrcode/writer/terminal v1.1.2
 	go.uber.org/multierr v1.11.0
-	golang.org/x/crypto v0.37.0
+	golang.org/x/crypto v0.38.0
 	golang.org/x/term v0.31.0
 	gopkg.in/ini.v1 v1.67.0
 )
