@@ -6,7 +6,7 @@ toolchain go1.23.4
 
 require (
 	github.com/charmbracelet/huh v0.6.0
-	github.com/charmbracelet/huh/spinner v0.0.0-20250213143221-71c9d72e6770
+	github.com/charmbracelet/huh/spinner d6f1597485e0
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/vault/api v1.16.0
