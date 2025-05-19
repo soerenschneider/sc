@@ -2,12 +2,9 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"sort"
-	"strings"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/rs/zerolog/log"
+	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/spf13/cobra"
 )
@@ -37,53 +34,8 @@ It attempts to authenticate using the following sources (in order):
 			log.Fatal().Msgf("could not lookup: %v", err)
 		}
 
-		writeOutput(secret.Data)
+		tui.PrintMapOutput(secret.Data)
 	},
-}
-
-func writeOutput(data map[string]any) {
-	keyStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("63")) // Blue
-
-	valueStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("245")) // Gray
-
-	// Get and sort keys
-	keys := make([]string, 0, len(data))
-	maxKeyLen := 0
-	for k := range data {
-		keys = append(keys, k)
-		if len(k) > maxKeyLen {
-			maxKeyLen = len(k)
-		}
-	}
-	sort.Strings(keys)
-
-	// Build output
-	indent := 2
-	var builder strings.Builder
-	for _, k := range keys {
-		v := data[k]
-		paddedKey := fmt.Sprintf("%-*s", maxKeyLen, k)
-		key := keyStyle.Render(paddedKey)
-		val := valueStyle.Render(fmt.Sprintf("%v", v))
-		spaces := strings.Repeat(" ", indent)
-		builder.WriteString(fmt.Sprintf("%s%s%s\n", key, spaces, val))
-	}
-
-	fmt.Println(builder.String())
-}
-
-func writeListOutput[T any](items []T) {
-	itemStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("245")) // Gray
-
-	var builder strings.Builder
-	for _, item := range items {
-		builder.WriteString(itemStyle.Render(fmt.Sprintf("- %v", item)) + "\n")
-	}
-	fmt.Println(builder.String())
 }
 
 func init() {

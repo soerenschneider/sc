@@ -18,14 +18,15 @@ import (
 	"gopkg.in/ini.v1"
 )
 
-// vaultLoginCmd represents the vaultLogin command
-var vaultAwsGenCmd = &cobra.Command{
-	Use:   "gen",
-	Short: "Manage AWS secret engine",
-	Long: `The 'aws' command group contains subcommands for interacting with Vault AWS secret engine.
+var vaultAwsGenerateCredentialsCmd = &cobra.Command{
+	Use:     "generate-credentials",
+	Aliases: []string{"gen-credentials", "gen"},
+	Short:   "Generate AWS credentials using Vault",
+	Long: `The 'generate-credentials' command is part of the 'aws' command group, which provides tools
+for working with the Vault AWS secrets engine.
 
-This command itself does not perform any actions. Instead, use one of its subcommands
-to inspect or manage tokens.`,
+This command is used to generate dynamic AWS credentials by interacting with Vault. 
+It requires appropriate configuration and permissions set in Vault to access the AWS secrets engine.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 
@@ -137,10 +138,10 @@ func updateAwsCredentialsFile(profile string, creds vault.AwsCredentials) error 
 }
 
 func init() {
-	vaultAwsCmd.AddCommand(vaultAwsGenCmd)
+	vaultAwsCmd.AddCommand(vaultAwsGenerateCredentialsCmd)
 
-	vaultAwsGenCmd.Flags().StringP(VaultMountPath, "m", vaultAwsDefaultMount, "Mount path for the AWS secret engine")
-	vaultAwsGenCmd.Flags().IntP(VaultTtl, "t", vaultAwsDefaultTtl, "Specify how long the credentials should be valid for in seconds")
-	vaultAwsGenCmd.Flags().StringP(VaultRoleName, "r", "", "Specifies the name of the role to generate credentials for")
-	vaultAwsGenCmd.Flags().StringP(vaultAwsProfile, "p", vaultAwsDefaultProfile, "Specifies the name of the AWS credentials profile section")
+	vaultAwsGenerateCredentialsCmd.Flags().StringP(VaultMountPath, "m", vaultAwsDefaultMount, "Mount path for the AWS secret engine")
+	vaultAwsGenerateCredentialsCmd.Flags().IntP(VaultTtl, "t", vaultAwsDefaultTtl, "Specify how long the credentials should be valid for in seconds")
+	vaultAwsGenerateCredentialsCmd.Flags().StringP(VaultRoleName, "r", "", "Specifies the name of the role to generate credentials for")
+	vaultAwsGenerateCredentialsCmd.Flags().StringP(vaultAwsProfile, "p", vaultAwsDefaultProfile, "Specifies the name of the AWS credentials profile section")
 }

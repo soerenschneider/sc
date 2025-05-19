@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/rs/zerolog/log"
+	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/spf13/cobra"
 )
@@ -15,11 +16,14 @@ var vaultIdentityListGroupsCmd = &cobra.Command{
 	Aliases: []string{
 		"groups",
 	},
-	Short: "Manage Vault totp",
-	Long: `The 'token' command group contains subcommands for interacting with Vault tokens.
+	Short: "List identity entities in Vault",
+	Long: `The 'list-entities' command is part of the 'identity' command group, which provides 
+tools for managing identity-related resources in Vault.
 
-This command itself does not perform any actions. Instead, use one of its subcommands
-to inspect or manage tokens.`,
+This command retrieves and lists all entities currently managed by the Vault identity system.
+It can be used to view entity IDs, names, and associated metadata.
+
+Note: Appropriate Vault permissions are required to access identity entity data.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 		ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)
@@ -31,7 +35,7 @@ to inspect or manage tokens.`,
 		}
 
 		sort.Strings(keys)
-		writeListOutput(keys)
+		tui.WriteListOutput(keys)
 	},
 }
 

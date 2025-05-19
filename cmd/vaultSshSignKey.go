@@ -67,7 +67,7 @@ var sshSignKeyCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("could not get flag")
 		}
 
-		mount, err := cmd.Flags().GetString(sshCmdFlagsSshMount)
+		mount, err := cmd.Flags().GetString(VaultMountPath)
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not get flag")
 		}

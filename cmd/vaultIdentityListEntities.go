@@ -5,11 +5,11 @@ import (
 	"sort"
 
 	"github.com/rs/zerolog/log"
+	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/spf13/cobra"
 )
 
-// vaultLoginCmd represents the vaultLogin command
 var vaultIdentityListEntitiesCmd = &cobra.Command{
 	Use: "list-entities",
 	Aliases: []string{
@@ -31,7 +31,7 @@ to inspect or manage tokens.`,
 		}
 
 		sort.Strings(keys)
-		writeListOutput(keys)
+		tui.WriteListOutput(keys)
 	},
 }
 

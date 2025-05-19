@@ -11,17 +11,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// vaultLoginCmd represents the vaultLogin command
 var vaultIdentityGetEntityCmd = &cobra.Command{
 	Use: "get-entity",
 	Aliases: []string{
 		"get",
 	},
-	Short: "Manage Vault totp",
-	Long: `The 'token' command group contains subcommands for interacting with Vault tokens.
+	Short: "Retrieve a Vault identity entity",
+	Long: `The 'get-entity' command is part of the 'identity' command group, which provides 
+functionality for interacting with Vault identity entities.
 
-This command itself does not perform any actions. Instead, use one of its subcommands
-to inspect or manage tokens.`,
+This command retrieves detailed information about a specific entity managed by the Vault identity system. 
+It can be useful for inspecting entity metadata, aliases, and associated policies.
+
+Note: This command may require appropriate Vault permissions to access identity resources.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 
@@ -60,7 +62,7 @@ to inspect or manage tokens.`,
 			log.Fatal().Err(err).Msg("could not list identity entities")
 		}
 
-		writeOutput(data)
+		tui.PrintMapOutput(data)
 	},
 }
 

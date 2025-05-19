@@ -5,7 +5,6 @@ import (
 )
 
 const (
-	sshCmdFlagsSshMount     = "mount"
 	sshCmdFlagsVaultAddress = "vault-address"
 )
 
@@ -20,5 +19,4 @@ var sshCmd = &cobra.Command{
 func init() {
 	vaultCmd.AddCommand(sshCmd)
 	sshCmd.PersistentFlags().StringP(VaultMountPath, "m", "ssh", "Path where the SSH secret engine is mounted")
-	sshCmd.PersistentFlags().StringP(sshCmdFlagsVaultAddress, "a", "", "Vault address")
 }

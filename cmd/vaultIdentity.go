@@ -6,15 +6,15 @@ import (
 
 // vaultLoginCmd represents the vaultLogin command
 var vaultIdentityCmd = &cobra.Command{
-	Use:   "identity",
+	Use: "identity",
 	Aliases: []string{
 		"id",
 	},
-	Short: "Manage Vault totp",
-	Long: `The 'token' command group contains subcommands for interacting with Vault tokens.
+	Short: "Manage Vault identities",
+	Long: `The 'identity' command group contains subcommands for interacting with Vault identities.
 
 This command itself does not perform any actions. Instead, use one of its subcommands
-to inspect or manage tokens.`,
+to inspect or manage identities.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Help()
 	},
