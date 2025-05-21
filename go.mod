@@ -2,7 +2,7 @@ module github.com/soerenschneider/sc
 
 go 1.23.0
 
-toolchain go1.23.4
+toolchain go1.24.3
 
 require (
 	github.com/charmbracelet/huh v0.6.0
