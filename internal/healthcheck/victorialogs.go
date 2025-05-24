@@ -8,7 +8,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -32,15 +34,45 @@ func TransformLogs(data []LogEntry) ([]string, [][]string) {
 	return headers, ret
 }
 
-func QueryVictorialogs(ctx context.Context, query, endpoint string) ([]LogEntry, error) {
+type VictorialogsQuery struct {
+	Address string
+	Query   string
+	Limit   int
+}
+
+func (q *VictorialogsQuery) GetLimit() int {
+	if q.Limit <= 0 || q.Limit > 500 {
+		return 25
+	}
+
+	return q.Limit
+}
+
+func buildURL(baseAddr, endpointPath string) (string, error) {
+	u, err := url.Parse(baseAddr)
+	if err != nil {
+		return "", err
+	}
+
+	u.Path = path.Join(u.Path, endpointPath)
+
+	return u.String(), nil
+}
+
+func QueryVictorialogs(ctx context.Context, args VictorialogsQuery) ([]LogEntry, error) {
+	endpoint, err := buildURL(args.Address, "select/logsql/query")
+	if err != nil {
+		return nil, fmt.Errorf("could not build url: %w", err)
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	q := url.Values{}
-	q.Set("query", query)
-	q.Set("limit", "10")
+	q.Set("query", args.Query)
+	q.Set("limit", strconv.Itoa(args.GetLimit()))
 	req.URL.RawQuery = q.Encode()
 	req.Header.Set("Content-Type", "application/json")
 

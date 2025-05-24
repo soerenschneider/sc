@@ -149,7 +149,12 @@ func fetchData(ctx context.Context, opts HealthcheckOptions) *Data {
 	wg.Add(1)
 	go func() {
 		var err error
-		data.logs, err = healthcheck.QueryVictorialogs(ctx, "error AND _time:15m", "https://logs.rs.soeren.cloud/select/logsql/query")
+		queryArgs := healthcheck.VictorialogsQuery{
+			Address: "https://logs.rs.soeren.cloud",
+			Query:   "error AND _time:15m",
+			Limit:   5,
+		}
+		data.logs, err = healthcheck.QueryVictorialogs(ctx, queryArgs)
 		if err != nil {
 			log.Error().Err(err).Msg("could not get logs")
 		}
