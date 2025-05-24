@@ -2,11 +2,13 @@ package tui
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
+	"golang.org/x/term"
 )
 
 func PrintTable(tableHeader string, headers []string, data [][]string) {
@@ -19,12 +21,18 @@ func PrintTable(tableHeader string, headers []string, data [][]string) {
 		Padding(0, 1)
 	redStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("0")).Background(lipgloss.Color("210")).Padding(0, 1)
 
+	width, _, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		fmt.Println("Error getting terminal size:", err)
+		return
+	}
+
 	t := table.New().
 		Border(lipgloss.NormalBorder()).
 		BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("240"))).
 		Headers(headers...).
 		Rows(data...).
-		//Width(160).
+		Width(width).
 		StyleFunc(func(row, col int) lipgloss.Style {
 			if row == table.HeaderRow {
 				return headerStyle
@@ -41,7 +49,7 @@ func PrintTable(tableHeader string, headers []string, data [][]string) {
 		}).
 		Wrap(false)
 
-	t.Wrap(false)
+	t.Wrap(true)
 
 	header := lipgloss.NewStyle().
 		Bold(true).
