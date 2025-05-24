@@ -1,11 +1,9 @@
-package vault
+package ssh
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"os"
-	"strings"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -32,15 +30,6 @@ func (l *CertInfo) AbsoluteTimeUntilExpiry() time.Duration {
 	return time.Until(l.ValidBefore)
 }
 
-type SshSignatureRequest struct {
-	PublicKey  string
-	Ttl        string
-	Principals []string
-	Extensions map[string]string
-
-	VaultRole string
-}
-
 func ParseSshCertData(pubKeyBytes []byte) (CertInfo, error) {
 	pubKey, _, _, _, err := ssh.ParseAuthorizedKey(pubKeyBytes)
 	if err != nil {
@@ -58,23 +47,6 @@ func ParseSshCertData(pubKeyBytes []byte) (CertInfo, error) {
 		ValidBefore: time.Unix(int64(cert.ValidBefore), 0).UTC(), //#nosec:G115
 		ValidAfter:  time.Unix(int64(cert.ValidAfter), 0).UTC(),  //#nosec:G115
 	}, nil
-}
-
-func convertUserKeyRequest(req SshSignatureRequest) map[string]any {
-	data := map[string]interface{}{
-		"public_key": req.PublicKey,
-		"cert_type":  "user",
-	}
-
-	if len(req.Ttl) > 0 {
-		data["ttl"] = req.Ttl
-	}
-
-	if len(req.Principals) > 0 {
-		data["valid_principals"] = strings.Join(req.Principals, ",")
-	}
-
-	return data
 }
 
 func ReadSshCertFromDisk(publicKeyFile string) (CertInfo, error) {
