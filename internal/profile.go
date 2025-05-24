@@ -61,7 +61,7 @@ func Get(command, profileName, key string) (string, bool) {
 	return "", false
 }
 
-func ApplyFlags(cmdName string, cmd *cobra.Command, profileName string) error {
+func ApplyFlags(cmdName string, cmd *cobra.Command, profileName string) {
 	flagNames := getAllFlagNames(cmd)
 
 	for _, key := range flagNames {
@@ -86,8 +86,6 @@ func ApplyFlags(cmdName string, cmd *cobra.Command, profileName string) error {
 			continue
 		}
 	}
-
-	return nil
 }
 
 // getAllFlagNames returns all local + persistent flag names for a command

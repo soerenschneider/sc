@@ -33,15 +33,17 @@ var rootCmd = &cobra.Command{
 	Short:             "Universal Command Line Interface for soeren.cloud",
 	DisableAutoGenTag: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		verbose, _ := cmd.Flags().GetBool(rootCmdFlagsVerbose)
+		setupLogger()
 
 		if profile != "" {
 			commandPath := cmd.CommandPath()
 			commandPath = strings.ReplaceAll(strings.TrimSpace(strings.Replace(commandPath, commandName, "", 1)), " ", "-")
-			return internal.ApplyFlags(commandPath, cmd, profile)
+			internal.ApplyFlags(commandPath, cmd, profile)
 		}
 
-		setupLogLevel(verbose)
+		verbose, _ := cmd.Flags().GetBool(rootCmdFlagsVerbose)
+		setLogLevel(verbose)
+
 		conditionallyLogLatestReleaseInfo(cmd)
 
 		return nil
@@ -71,12 +73,7 @@ func initConfig() {
 	}
 }
 
-func setupLogLevel(debug bool) {
-	level := zerolog.InfoLevel
-	if debug {
-		level = zerolog.DebugLevel
-	}
-	zerolog.SetGlobalLevel(level)
+func setupLogger() {
 	//#nosec:G115
 	if term.IsTerminal(int(os.Stdout.Fd())) {
 		log.Logger = log.Output(zerolog.ConsoleWriter{
@@ -84,6 +81,14 @@ func setupLogLevel(debug bool) {
 			TimeFormat: "15:04:05",
 		})
 	}
+}
+
+func setLogLevel(debug bool) {
+	level := zerolog.InfoLevel
+	if debug {
+		level = zerolog.DebugLevel
+	}
+	zerolog.SetGlobalLevel(level)
 }
 
 func conditionallyLogLatestReleaseInfo(cmd *cobra.Command) {
