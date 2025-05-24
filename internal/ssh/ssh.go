@@ -60,22 +60,6 @@ func ParseSshCertData(pubKeyBytes []byte) (CertInfo, error) {
 	}, nil
 }
 
-func (c *VaultClient) SignSshKey(ctx context.Context, mount string, req SshSignatureRequest) (string, error) {
-	data := convertUserKeyRequest(req)
-	path := fmt.Sprintf("%s/sign/%s", mount, req.VaultRole)
-	secret, err := c.client.Logical().WriteWithContext(ctx, path, data)
-	if err != nil {
-		// TODO
-		//var respErr *api.ResponseError
-		//if errors.As(err, &respErr) && !shouldRetry(respErr.StatusCode) {
-		//	return "", backoff.Permanent(err)
-		//}
-		return "", err
-	}
-
-	return fmt.Sprintf("%s", secret.Data["signed_key"]), nil
-}
-
 func convertUserKeyRequest(req SshSignatureRequest) map[string]any {
 	data := map[string]interface{}{
 		"public_key": req.PublicKey,
