@@ -42,7 +42,7 @@ var docsCmd = &cobra.Command{
 			log.Fatalf("Failed to create dir: %v", err)
 		}
 
-		if err = doc.GenMarkdownTree(sshCmd, sshDocsDir); err != nil {
+		if err = doc.GenMarkdownTree(vaultSshCmd, sshDocsDir); err != nil {
 			log.Fatalf("Could not generate docs: %v", err)
 		}
 
