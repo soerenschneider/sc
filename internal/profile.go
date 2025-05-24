@@ -61,7 +61,14 @@ func Get(command, profileName, key string) (string, bool) {
 	return "", false
 }
 
-func ApplyFlags(cmdName string, cmd *cobra.Command, profileName string) {
+var ErrProfileNotFound = errors.New("profile not found")
+
+func ApplyFlags(cmdName string, cmd *cobra.Command, profileName string) error {
+	_, found := profileData[profileName]
+	if !found {
+		return ErrProfileNotFound
+	}
+
 	flagNames := getAllFlagNames(cmd)
 
 	for _, key := range flagNames {
@@ -86,6 +93,8 @@ func ApplyFlags(cmdName string, cmd *cobra.Command, profileName string) {
 			continue
 		}
 	}
+
+	return nil
 }
 
 // getAllFlagNames returns all local + persistent flag names for a command

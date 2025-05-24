@@ -38,7 +38,9 @@ var rootCmd = &cobra.Command{
 		if profile != "" {
 			commandPath := cmd.CommandPath()
 			commandPath = strings.ReplaceAll(strings.TrimSpace(strings.Replace(commandPath, commandName, "", 1)), " ", "-")
-			internal.ApplyFlags(commandPath, cmd, profile)
+			if err := internal.ApplyFlags(commandPath, cmd, profile); err != nil {
+				log.Warn().Err(err).Msgf("could not apply flags for profile %q", profile)
+			}
 		}
 
 		verbose, _ := cmd.Flags().GetBool(rootCmdFlagsVerbose)
