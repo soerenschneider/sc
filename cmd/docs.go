@@ -37,21 +37,12 @@ var docsCmd = &cobra.Command{
 			log.Fatalf("Could not generate docs: %v", err)
 		}
 
-		sshDocsDir := filepath.Join(docsDir, "ssh")
-		if err = os.Mkdir(sshDocsDir, 0755); err != nil {
+		vaultDocsDir := filepath.Join(docsDir, "vault")
+		if err = os.Mkdir(vaultDocsDir, 0755); err != nil {
 			log.Fatalf("Failed to create dir: %v", err)
 		}
 
-		if err = doc.GenMarkdownTree(vaultSshCmd, sshDocsDir); err != nil {
-			log.Fatalf("Could not generate docs: %v", err)
-		}
-
-		pkiDocsDir := filepath.Join(docsDir, "pki")
-		if err = os.Mkdir(pkiDocsDir, 0755); err != nil {
-			log.Fatalf("Failed to create dir: %v", err)
-		}
-
-		if err = doc.GenMarkdownTree(pkiCmd, pkiDocsDir); err != nil {
+		if err = doc.GenMarkdownTree(vaultCmd, vaultDocsDir); err != nil {
 			log.Fatalf("Could not generate docs: %v", err)
 		}
 	},
