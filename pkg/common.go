@@ -17,6 +17,11 @@ func MustGetString(cmd *cobra.Command, name string) string {
 	return val
 }
 
+func GetStringArray(cmd *cobra.Command, name string) []string {
+	val, _ := cmd.Flags().GetStringArray(name)
+	return val
+}
+
 func GetString(cmd *cobra.Command, name string) string {
 	val, _ := cmd.Flags().GetString(name)
 	return val
@@ -24,6 +29,11 @@ func GetString(cmd *cobra.Command, name string) string {
 
 func GetInt(cmd *cobra.Command, name string) int {
 	val, _ := cmd.Flags().GetInt(name)
+	return val
+}
+
+func GetFloat32(cmd *cobra.Command, name string) float32 {
+	val, _ := cmd.Flags().GetFloat32(name)
 	return val
 }
 
