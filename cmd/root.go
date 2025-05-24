@@ -20,19 +20,31 @@ import (
 )
 
 const (
+	commandName             = "sc"
 	rootCmdFlagsVerbose     = "verbose"
+	rootCmdFlagsProfile     = "profile"
 	rootCmdFlagsNoTelemetry = "no-telemetry"
 )
 
+var profile string
+
 var rootCmd = &cobra.Command{
-	Use:               "sc",
+	Use:               commandName,
 	Short:             "Universal Command Line Interface for soeren.cloud",
 	DisableAutoGenTag: true,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		verbose, _ := cmd.Flags().GetBool(rootCmdFlagsVerbose)
-		setupLogLevel(verbose)
 
+		if profile != "" {
+			commandPath := cmd.CommandPath()
+			commandPath = strings.ReplaceAll(strings.TrimSpace(strings.Replace(commandPath, commandName, "", 1)), " ", "-")
+			return internal.ApplyFlags(commandPath, cmd, profile)
+		}
+
+		setupLogLevel(verbose)
 		conditionallyLogLatestReleaseInfo(cmd)
+
+		return nil
 	},
 }
 
@@ -46,6 +58,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
+	rootCmd.PersistentFlags().StringVar(&profile, rootCmdFlagsProfile, "", "Profile to use")
 	rootCmd.PersistentFlags().BoolP(rootCmdFlagsVerbose, "v", false, "Print debug logs")
 	rootCmd.PersistentFlags().Bool(rootCmdFlagsNoTelemetry, false, "Do not perform check for updated version")
 }
