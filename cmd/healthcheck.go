@@ -15,10 +15,21 @@ import (
 
 type Data struct {
 	prometheus     [][]string
+	TcpChecks      map[string]map[string]healthcheck.ProbeResult
 	internetAccess map[string]healthcheck.ProbeResult
-	vpn            map[string]healthcheck.ProbeResult
-	kubernetes     map[string]healthcheck.ProbeResult
-	dnsServers     map[string]healthcheck.ProbeResult
+	logs           []healthcheck.LogEntry
+	DnsChecks      map[string]map[string]healthcheck.ProbeResult
+}
+
+type DnsCheck struct {
+	DnsServers []string
+	DnsRecord  string
+}
+
+type HealthcheckOptions struct {
+	TcpChecks            map[string][]string
+	DnsChecks            map[string]DnsCheck
+	InternetConnectivity healthcheck.InternetConnectivityOpts
 }
 
 var healthcheckCmd = &cobra.Command{
@@ -34,10 +45,47 @@ var healthcheckCmd = &cobra.Command{
 
 		var data *Data
 
+		opts := HealthcheckOptions{
+			TcpChecks: map[string][]string{
+				"local": []string{
+					"router.dd.soeren.cloud:22",
+					"router.ez.soeren.cloud:22",
+					"router.pt.soeren.cloud:22",
+					"rs.soeren.cloud:22",
+					"swiss.soeren.cloud:22",
+				},
+				"kubernetes": []string{
+					"rs.soeren.cloud:6443",
+					"k8s.dd.soeren.cloud:6443",
+					"k8s.ez.soeren.cloud:6443",
+					"k8s.pt.soeren.cloud:6443",
+				},
+			},
+			DnsChecks: map[string]DnsCheck{
+				"routers": {
+					DnsServers: []string{
+						"192.168.65.1",
+						"192.168.2.3",
+						"192.168.73.1",
+						"192.168.200.1",
+					},
+					DnsRecord: "google.com",
+				},
+			},
+			InternetConnectivity: healthcheck.InternetConnectivityOpts{
+				DnsRecord:    "google.com",
+				HttpCheckUrl: "https://www.google.com/generate_204",
+				DnsServers: []string{
+					"1.1.1.1:53",
+					"8.8.8.8:53",
+					"8.8.4.4:53",
+				},
+			},
+		}
 		if err := spinner.New().
 			Type(spinner.Line).
 			ActionWithErr(func(ctx context.Context) error {
-				data = fetchData(ctx)
+				data = fetchData(ctx, opts)
 				return nil
 			}).
 			Title("Collection health data...").
@@ -51,67 +99,60 @@ var healthcheckCmd = &cobra.Command{
 		tableHeaders, tableData := transform(data.internetAccess)
 		tui.PrintTable("Internet Connectivity", tableHeaders, tableData)
 
-		tableHeaders, tableData = transform(data.dnsServers)
-		tui.PrintTable("Dns Servers", tableHeaders, tableData)
-
 		// Print in sorted order
-		tableHeaders, tableData = transform(data.vpn)
-		tui.PrintTable("VPN", tableHeaders, tableData)
+		for name, results := range data.TcpChecks {
+			tableHeaders, tableData = transform(results)
+			tui.PrintTable(name, tableHeaders, tableData)
+		}
 
-		tableHeaders, tableData = transform(data.kubernetes)
-		tui.PrintTable("Kubernetes Clusters", tableHeaders, tableData)
+		for name, results := range data.DnsChecks {
+			tableHeaders, tableData = transform(results)
+			tui.PrintTable(name, tableHeaders, tableData)
+		}
+
+		tableHeaders, tableData = healthcheck.TransformLogs(data.logs)
+		tui.PrintTable("Logs", tableHeaders, tableData)
 
 		tui.PrintTable("Prometheus", []string{"Instance", "Avg ", "Max"}, data.prometheus)
 	},
 }
 
-func fetchData(ctx context.Context) *Data {
-	endpoints := []string{
-		"router.dd.soeren.cloud:22",
-		"router.ez.soeren.cloud:22",
-		"router.pt.soeren.cloud:22",
-		"rs.soeren.cloud:22",
-		"swiss.soeren.cloud:22",
-	}
-
-	kubernetes := []string{
-		"rs.soeren.cloud:6443",
-		"k8s.dd.soeren.cloud:6443",
-		"k8s.ez.soeren.cloud:6443",
-		"k8s.pt.soeren.cloud:6443",
-	}
-
-	dnsServers := []string{
-		"192.168.65.1",
-		"192.168.2.3",
-		"192.168.73.1",
-		"192.168.200.1",
-	}
+func fetchData(ctx context.Context, opts HealthcheckOptions) *Data {
 
 	data := &Data{}
 
 	wg := sync.WaitGroup{}
+	for name, probes := range opts.TcpChecks {
+		data.TcpChecks = make(map[string]map[string]healthcheck.ProbeResult, len(opts.TcpChecks))
+		wg.Add(1)
+		go func() {
+			data.TcpChecks[name] = healthcheck.ProbeTcp(probes, 2*time.Second)
+			wg.Done()
+		}()
+	}
+
+	for name, probes := range opts.DnsChecks {
+		data.DnsChecks = make(map[string]map[string]healthcheck.ProbeResult, len(opts.DnsChecks))
+		wg.Add(1)
+		go func() {
+			data.DnsChecks[name] = healthcheck.CheckDnsServers(probes.DnsServers, probes.DnsRecord, 2*time.Second)
+			wg.Done()
+		}()
+	}
+
 	wg.Add(1)
 	go func() {
-		data.vpn = healthcheck.ProbeTcp(endpoints, 2*time.Second)
+		data.internetAccess = healthcheck.CheckInternetConnection(ctx, opts.InternetConnectivity)
 		wg.Done()
 	}()
 
 	wg.Add(1)
 	go func() {
-		data.internetAccess = healthcheck.CheckInternetConnection(ctx)
-		wg.Done()
-	}()
-
-	wg.Add(1)
-	go func() {
-		data.kubernetes = healthcheck.ProbeTcp(kubernetes, 2*time.Second)
-		wg.Done()
-	}()
-
-	wg.Add(1)
-	go func() {
-		data.dnsServers = healthcheck.CheckDnsServers(dnsServers, "google.com", 2*time.Second)
+		var err error
+		data.logs, err = healthcheck.QueryVictorialogs(ctx, "error AND _time:15m", "https://logs.rs.soeren.cloud/select/logsql/query")
+		if err != nil {
+			log.Error().Err(err).Msg("could not get logs")
+		}
 		wg.Done()
 	}()
 

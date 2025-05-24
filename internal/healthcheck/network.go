@@ -61,14 +61,14 @@ func CheckDnsServer(endpoints []string) (time.Duration, error) {
 	return time.Millisecond * time.Duration(avg), errs
 }
 
-func CheckInternetConnection(ctx context.Context) map[string]ProbeResult {
-	dnsResolutionHost := "google.com"
-	httpCheckUrl := "https://www.google.com/generate_204"
-	publicDnsServers := []string{
-		"1.1.1.1:53",
-		"8.8.8.8:53",
-		"8.8.4.4:53",
-	}
+type InternetConnectivityOpts struct {
+	DnsRecord           string
+	HttpCheckUrl        string
+	HttpCheckStatusCode int
+	DnsServers          []string
+}
+
+func CheckInternetConnection(ctx context.Context, opts InternetConnectivityOpts) map[string]ProbeResult {
 
 	ret := make(map[string]ProbeResult, 3)
 
@@ -80,7 +80,7 @@ func CheckInternetConnection(ctx context.Context) map[string]ProbeResult {
 	defer cancel()
 
 	go func() {
-		dur, err := CheckDnsResolution(ctx, dnsResolutionHost)
+		dur, err := CheckDnsResolution(ctx, opts.DnsRecord)
 		mu.Lock()
 		ret["DNS Check"] = ProbeResult{
 			Err:      err,
@@ -91,7 +91,7 @@ func CheckInternetConnection(ctx context.Context) map[string]ProbeResult {
 	}()
 
 	go func() {
-		dur, err := CheckHTTP(ctx, httpCheckUrl)
+		dur, err := CheckHTTP(ctx, opts.HttpCheckUrl)
 		mu.Lock()
 		ret["HTTP Check"] = ProbeResult{
 			Err:      err,
@@ -102,7 +102,7 @@ func CheckInternetConnection(ctx context.Context) map[string]ProbeResult {
 	}()
 
 	go func() {
-		dur, err := CheckDnsServer(publicDnsServers)
+		dur, err := CheckDnsServer(opts.DnsServers)
 		mu.Lock()
 		ret["TCP Check"] = ProbeResult{
 			Err:      err,
