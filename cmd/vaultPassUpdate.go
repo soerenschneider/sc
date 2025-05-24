@@ -27,7 +27,7 @@ This command allows a user to change their Vault password by providing their.`,
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 
 		username := pkg.GetString(cmd, vaultLoginUsername)
-		mount := pkg.GetString(cmd, VaultMountPath)
+		mount := pkg.GetString(cmd, vaultMountPath)
 
 		if username == "" {
 			var suggestions []string
@@ -85,5 +85,5 @@ func init() {
 	vaultCmd.AddCommand(vaultPassUpdateCmd)
 
 	vaultPassUpdateCmd.Flags().StringP(vaultLoginUsername, "u", "", "Username for login")
-	vaultPassUpdateCmd.Flags().StringP(VaultMountPath, "m", "userpass", "Vault mount for userpass auth engine")
+	vaultPassUpdateCmd.Flags().StringP(vaultMountPath, "m", "userpass", "Vault mount for userpass auth engine")
 }

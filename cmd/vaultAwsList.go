@@ -26,7 +26,7 @@ The command expects that the AWS secrets engine has been enabled and configured.
 	Run: func(cmd *cobra.Command, args []string) {
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 
-		mount := pkg.GetString(cmd, VaultMountPath)
+		mount := pkg.GetString(cmd, vaultMountPath)
 
 		ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)
 		defer cancel()
@@ -44,5 +44,5 @@ The command expects that the AWS secrets engine has been enabled and configured.
 func init() {
 	vaultAwsCmd.AddCommand(vaultAwsListCmd)
 
-	vaultAwsListCmd.Flags().StringP(VaultMountPath, "m", vaultAwsDefaultMount, "Mount path for the AWS secret engine")
+	vaultAwsListCmd.Flags().StringP(vaultMountPath, "m", vaultAwsDefaultMount, "Mount path for the AWS secret engine")
 }

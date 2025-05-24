@@ -7,11 +7,26 @@ import (
 )
 
 const (
-	VaultAddr      = "address"
-	VaultTokenFile = "token-file"
-	VaultMountPath = "mount"
-	VaultTtl       = "ttl"
-	VaultRoleName  = "role"
+	vaultAddr      = "address"
+	vaultTokenFile = "token-file"
+	vaultMountPath = "mount"
+	vaultTtl       = "ttl"
+	vaultRoleName  = "role"
+
+	vaultPrivateKeyFile  = "key-file"
+	vaultCertificateFile = "cert-file"
+	vaultCaFile          = "ca-file"
+	vaultCertMinLifetime = "min-lifetime"
+	vaultCertMinDuration = "min-duration"
+
+	vaultFullChain = "full-chain"
+
+	vaultPublicKeyFile = "pub-key-file"
+	vaultPrincipals    = "principals"
+
+	vaultCommonName = "common-name"
+	vaultIpSans     = "ip-sans"
+	vaultAltNames   = "alt-names"
 
 	vaultAwsDefaultMount = "aws"
 
@@ -58,6 +73,6 @@ to quickly create a Cobra application.`,
 func init() {
 	rootCmd.AddCommand(vaultCmd)
 
-	vaultCmd.Flags().StringP(VaultAddr, "a", "", "Vault address. If not specified, tries to read env variable VAULT_ADDR.")
-	vaultCmd.Flags().StringP(VaultTokenFile, "t", "~/.vault-token", "Vault token file.")
+	vaultCmd.Flags().StringP(vaultAddr, "a", "", "Vault address. If not specified, tries to read env variable VAULT_ADDR.")
+	vaultCmd.Flags().StringP(vaultTokenFile, "t", "~/.vault-token", "Vault token file.")
 }

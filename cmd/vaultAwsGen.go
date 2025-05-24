@@ -30,10 +30,10 @@ It requires appropriate configuration and permissions set in Vault to access the
 	Run: func(cmd *cobra.Command, args []string) {
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 
-		mount := pkg.GetString(cmd, VaultMountPath)
+		mount := pkg.GetString(cmd, vaultMountPath)
 		profile := pkg.GetString(cmd, vaultAwsProfile)
-		role := pkg.GetString(cmd, VaultRoleName)
-		ttl := pkg.GetInt(cmd, VaultTtl)
+		role := pkg.GetString(cmd, vaultRoleName)
+		ttl := pkg.GetInt(cmd, vaultTtl)
 
 		if role == "" {
 			var availableRoles []string
@@ -140,8 +140,8 @@ func updateAwsCredentialsFile(profile string, creds vault.AwsCredentials) error 
 func init() {
 	vaultAwsCmd.AddCommand(vaultAwsGenerateCredentialsCmd)
 
-	vaultAwsGenerateCredentialsCmd.Flags().StringP(VaultMountPath, "m", vaultAwsDefaultMount, "Mount path for the AWS secret engine")
-	vaultAwsGenerateCredentialsCmd.Flags().IntP(VaultTtl, "t", vaultAwsDefaultTtl, "Specify how long the credentials should be valid for in seconds")
-	vaultAwsGenerateCredentialsCmd.Flags().StringP(VaultRoleName, "r", "", "Specifies the name of the role to generate credentials for")
+	vaultAwsGenerateCredentialsCmd.Flags().StringP(vaultMountPath, "m", vaultAwsDefaultMount, "Mount path for the AWS secret engine")
+	vaultAwsGenerateCredentialsCmd.Flags().IntP(vaultTtl, "t", vaultAwsDefaultTtl, "Specify how long the credentials should be valid for in seconds")
+	vaultAwsGenerateCredentialsCmd.Flags().StringP(vaultRoleName, "r", "", "Specifies the name of the role to generate credentials for")
 	vaultAwsGenerateCredentialsCmd.Flags().StringP(vaultAwsProfile, "p", vaultAwsDefaultProfile, "Specifies the name of the AWS credentials profile section")
 }

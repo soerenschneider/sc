@@ -20,7 +20,7 @@ var sshListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 
-		mount := pkg.GetString(cmd, VaultMountPath)
+		mount := pkg.GetString(cmd, vaultMountPath)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -36,7 +36,5 @@ var sshListCmd = &cobra.Command{
 }
 
 func init() {
-	sshCmd.AddCommand(sshListCmd)
-
-	sshListCmd.Flags().StringP(VaultMountPath, "m", "ssh", "Mount path for the SSH secret engine")
+	vaultSshCmd.AddCommand(sshListCmd)
 }

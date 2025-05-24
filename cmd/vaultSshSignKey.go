@@ -11,19 +11,12 @@ import (
 
 	"github.com/charmbracelet/huh/spinner"
 	"github.com/rs/zerolog/log"
+	"github.com/soerenschneider/sc/internal/ssh"
 	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-)
-
-const (
-	sshSignKeyCmdFlagsPublicKeyFile   = "pub-key-file"
-	sshSignKeyCmdFlagsCertificateFile = "cert-file"
-	sshSignKeyCmdFlagsPrincipals      = "principals"
-	sshSignKeyCmdFlagsTtl             = "ttl"
-	sshSignKeyCmdFlagsVaultRole       = "role"
 )
 
 var sshSignKeyCmd = &cobra.Command{
@@ -32,56 +25,40 @@ var sshSignKeyCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 
-		principals, err := cmd.Flags().GetStringArray(sshSignKeyCmdFlagsPrincipals)
-		if err != nil {
-			log.Fatal().Err(err).Msg("could not get principals")
+		req := vault.SshSignatureRequest{
+			Ttl:        pkg.GetString(cmd, vaultTtl),
+			Principals: pkg.GetStringArray(cmd, vaultPrincipals),
+			Extensions: nil, // TODO
+			VaultRole:  pkg.GetString(cmd, vaultRoleName),
 		}
 
-		if len(principals) == 0 {
+		if len(req.Principals) == 0 {
 			var suggestions []string
 			currentUser, err := user.Current()
 			if err == nil {
 				suggestions = []string{currentUser.Username}
 			}
-			principals = []string{tui.ReadInput("Enter principal", suggestions)}
+			req.Principals = []string{tui.ReadInput("Enter principal", suggestions)}
 		}
 
-		publicKeyFile, err := cmd.Flags().GetString(sshSignKeyCmdFlagsPublicKeyFile)
-		if err != nil {
-			log.Fatal().Err(err).Msg("could not get flag")
-		}
-
-		publicKeyFile = pkg.GetExpandedFile(publicKeyFile)
-
-		certificateFile, err := cmd.Flags().GetString(sshSignKeyCmdFlagsCertificateFile)
-		if err != nil {
-			log.Fatal().Err(err).Msg("could not get flag")
-		}
+		publicKeyFile := pkg.GetExpandedFile(pkg.GetString(cmd, vaultPublicKeyFile))
+		certificateFile := pkg.GetString(cmd, vaultCertificateFile)
 		if certificateFile == "" && publicKeyFile != "" {
 			certificateFile = strings.Replace(publicKeyFile, ".pub", "", 1)
 			certificateFile = pkg.GetExpandedFile(fmt.Sprintf("%s-cert.pub", certificateFile))
 		}
 
-		ttl, err := cmd.Flags().GetString(sshSignKeyCmdFlagsTtl)
-		if err != nil {
-			log.Fatal().Err(err).Msg("could not get flag")
-		}
+		mount := pkg.GetString(cmd, vaultMountPath)
 
-		mount, err := cmd.Flags().GetString(VaultMountPath)
-		if err != nil {
-			log.Fatal().Err(err).Msg("could not get flag")
-		}
-
-		role := pkg.GetString(cmd, sshSignKeyCmdFlagsVaultRole)
-		if role == "" {
+		if req.VaultRole == "" {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
 			availableRoles, err := client.SshListRoles(ctx, mount)
 			if err == nil {
-				role = tui.SelectInput("Enter role", availableRoles)
+				req.VaultRole = tui.SelectInput("Enter role", availableRoles)
 			} else {
-				role = tui.ReadInput("Enter role", nil)
+				req.VaultRole = tui.ReadInput("Enter role", nil)
 			}
 		}
 
@@ -90,6 +67,7 @@ var sshSignKeyCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal().Err(err).Msg("Could not read public key data")
 		}
+		req.PublicKey = string(publicKeyData)
 
 		requestNewCertificate, err := needsRequestNewCertificate(fs, certificateFile)
 		if err != nil {
@@ -100,14 +78,6 @@ var sshSignKeyCmd = &cobra.Command{
 			return
 		}
 
-		req := vault.SshSignatureRequest{
-			Ttl:        ttl,
-			Principals: principals,
-			Extensions: nil, // TODO
-			VaultRole:  role,
-			PublicKey:  string(publicKeyData),
-		}
-
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 
@@ -115,7 +85,7 @@ var sshSignKeyCmd = &cobra.Command{
 		if err := spinner.New().
 			Type(spinner.Line).
 			ActionWithErr(func(ctx context.Context) error {
-				certificateData, err = client.SignSshKey(ctx, mount, req)
+				certificateData, err = client.SshSignKey(ctx, mount, req)
 				return err
 			}).
 			Title("Sending signature request...").
@@ -130,7 +100,7 @@ var sshSignKeyCmd = &cobra.Command{
 			log.Error().Err(err).Msg("could not write signature")
 		}
 
-		cert, err := vault.ParseSshCertData([]byte(certificateData))
+		cert, err := ssh.ParseSshCertData([]byte(certificateData))
 		if err != nil {
 			log.Fatal().Err(err).Msg("Could not parse received cert data")
 		}
@@ -151,7 +121,7 @@ func needsRequestNewCertificate(fs afero.Fs, certificateFile string) (bool, erro
 		return false, errors.New("could not read certificate file")
 	}
 
-	cert, err := vault.ParseSshCertData(certData)
+	cert, err := ssh.ParseSshCertData(certData)
 	if err != nil {
 		log.Warn().Err(err).Msg("could not parse existing cert data, requesting new certificate")
 		return true, nil
@@ -172,22 +142,20 @@ func needsRequestNewCertificate(fs afero.Fs, certificateFile string) (bool, erro
 }
 
 func init() {
-	sshCmd.AddCommand(sshSignKeyCmd)
+	vaultSshCmd.AddCommand(sshSignKeyCmd)
 
-	sshSignKeyCmd.Flags().StringP(sshSignKeyCmdFlagsPublicKeyFile, "p", "", "Location of the public key to sign")
-	if err := sshSignKeyCmd.MarkFlagRequired(sshSignKeyCmdFlagsPublicKeyFile); err != nil {
+	sshSignKeyCmd.Flags().StringP(vaultPublicKeyFile, "p", "", "Location of the public key to sign")
+	if err := sshSignKeyCmd.MarkFlagRequired(vaultPublicKeyFile); err != nil {
 		log.Fatal().Err(err).Msg("could not mark flag required")
 	}
 
-	sshSignKeyCmd.Flags().StringP(sshSignKeyCmdFlagsVaultRole, "r", "", "Vault role")
-	if err := sshSignKeyCmd.MarkFlagRequired(sshSignKeyCmdFlagsVaultRole); err != nil {
-		log.Fatal().Err(err).Msg("could not mark flag required")
-	}
+	sshSignKeyCmd.Flags().StringP(vaultRoleName, "r", "", "Vault role")
+	_ = sshSignKeyCmd.MarkFlagRequired(vaultRoleName)
 
-	sshSignKeyCmd.Flags().StringP(sshSignKeyCmdFlagsCertificateFile, "c", "", "Where to save the certificate to")
-	sshSignKeyCmd.Flags().StringP(sshSignKeyCmdFlagsTtl, "t", "24h", "TTL of the certificate")
+	sshSignKeyCmd.Flags().StringP(vaultCertificateFile, "c", "", "Where to save the certificate to")
+	sshSignKeyCmd.Flags().StringP(vaultTtl, "t", "24h", "TTL of the certificate")
 
-	sshSignKeyCmd.Flags().StringArray(sshSignKeyCmdFlagsPrincipals, nil, "Principals")
+	sshSignKeyCmd.Flags().StringArray(vaultPrincipals, nil, "Principals")
 }
 
 /*

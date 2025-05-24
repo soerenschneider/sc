@@ -4,11 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	sshCmdFlagsVaultAddress = "vault-address"
-)
-
-var sshCmd = &cobra.Command{
+var vaultSshCmd = &cobra.Command{
 	Use:   "ssh",
 	Short: "Sign SSH certificates or retrieve SSH CA data",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -17,6 +13,6 @@ var sshCmd = &cobra.Command{
 }
 
 func init() {
-	vaultCmd.AddCommand(sshCmd)
-	sshCmd.PersistentFlags().StringP(VaultMountPath, "m", "ssh", "Path where the SSH secret engine is mounted")
+	vaultCmd.AddCommand(vaultSshCmd)
+	vaultSshCmd.PersistentFlags().StringP(vaultMountPath, "m", "ssh", "Path where the SSH secret engine is mounted")
 }

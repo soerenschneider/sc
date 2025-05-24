@@ -37,7 +37,7 @@ to stdout as a fallback.`,
 		username := pkg.GetString(cmd, vaultLoginUsername)
 		otp := pkg.GetString(cmd, vaultLoginOtp)
 		mfaId := pkg.GetString(cmd, vaultLoginMfaId)
-		mount := pkg.GetString(cmd, VaultMountPath)
+		mount := pkg.GetString(cmd, vaultMountPath)
 
 		client := vault.MustBuildClient(cmd)
 
@@ -148,7 +148,7 @@ func init() {
 	vaultCmd.AddCommand(vaultLoginCmd)
 
 	vaultLoginCmd.Flags().StringP(vaultLoginUsername, "u", "", "Username for login")
-	vaultLoginCmd.Flags().StringP(VaultMountPath, "m", "userpass", "Vault mount for userpass auth engine")
+	vaultLoginCmd.Flags().StringP(vaultMountPath, "m", "userpass", "Vault mount for userpass auth engine")
 	vaultLoginCmd.Flags().StringP(vaultLoginOtp, "o", "", "OTP value for non-interactive login")
 	vaultLoginCmd.Flags().StringP(vaultLoginMfaId, "", "", "MFA ID")
 }

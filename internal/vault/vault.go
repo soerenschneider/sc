@@ -3,14 +3,19 @@ package vault
 import (
 	"cmp"
 	"context"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	vault "github.com/hashicorp/vault/api"
 	"github.com/rs/zerolog/log"
+	backend "github.com/soerenschneider/sc/internal/pki"
 	"github.com/spf13/cobra"
 )
 
@@ -167,7 +172,7 @@ func (c *VaultClient) SshListRoles(ctx context.Context, mount string) ([]string,
 	path := fmt.Sprintf("%s/roles", mount)
 	secret, err := c.client.Logical().ListWithContext(ctx, path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read AWS credentials: %w", err)
+		return nil, fmt.Errorf("failed to list roles: %w", err)
 	}
 
 	if secret == nil || secret.Data == nil {
@@ -437,4 +442,164 @@ func (c *VaultClient) IdentityListGroups(ctx context.Context) ([]string, error) 
 	}
 
 	return keys, nil
+}
+
+func (c *VaultClient) SshSignKey(ctx context.Context, mount string, req SshSignatureRequest) (string, error) {
+	data := convertUserKeyRequest(req)
+
+	path := fmt.Sprintf("%s/sign/%s", mount, req.VaultRole)
+	secret, err := c.client.Logical().WriteWithContext(ctx, path, data)
+	if err != nil {
+		// TODO
+		//var respErr *api.ResponseError
+		//if errors.As(err, &respErr) && !shouldRetry(respErr.StatusCode) {
+		//	return "", backoff.Permanent(err)
+		//}
+		return "", err
+	}
+
+	return fmt.Sprintf("%s", secret.Data["signed_key"]), nil
+}
+
+func convertUserKeyRequest(req SshSignatureRequest) map[string]any {
+	data := map[string]interface{}{
+		"public_key": req.PublicKey,
+		"cert_type":  "user",
+	}
+
+	if len(req.Ttl) > 0 {
+		data["ttl"] = req.Ttl
+	}
+
+	if len(req.Principals) > 0 {
+		data["valid_principals"] = strings.Join(req.Principals, ",")
+	}
+
+	return data
+}
+
+func (c *VaultClient) PkiIssueCert(ctx context.Context, mount string, args PkiIssueArgs) (*vault.Secret, error) {
+	path := fmt.Sprintf("%s/issue/%s", mount, args.Role)
+	data := buildIssueRequestArgs(args)
+
+	secret, err := c.client.Logical().WriteWithContext(ctx, path, data)
+	if err != nil {
+		var respErr *vault.ResponseError
+		if errors.As(err, &respErr) && !shouldRetry(respErr.StatusCode) {
+			return nil, err
+		}
+
+		return nil, fmt.Errorf("could not issue certificate: %w", err)
+	}
+
+	return secret, nil
+}
+
+func (c *VaultClient) PkiVerifyCert(ctx context.Context, mount string, cert *x509.Certificate) error {
+	caData, err := c.PkiGetCaChain(ctx, mount)
+	if err != nil {
+		return err
+	}
+
+	caBlock, _ := pem.Decode(caData)
+	ca, err := x509.ParseCertificate(caBlock.Bytes)
+	if err != nil {
+		return err
+	}
+
+	return backend.VerifyCertAgainstCa(cert, ca)
+}
+
+func (c *VaultClient) PkiGetCa(ctx context.Context, mount string, binary bool) ([]byte, error) {
+	path := fmt.Sprintf("%s/ca", mount)
+	if !binary {
+		path = path + "/pem"
+	}
+
+	return c.readRaw(ctx, path)
+}
+
+func (c *VaultClient) PkiGetCaChain(ctx context.Context, mount string) ([]byte, error) {
+	path := fmt.Sprintf("/%s/ca_chain", mount)
+	return c.readRaw(ctx, path)
+}
+
+func (c *VaultClient) PkiGetCrl(ctx context.Context, mount string, binary bool) ([]byte, error) {
+	path := fmt.Sprintf("%s/crl", mount)
+	if !binary {
+		path += "/pem"
+	}
+
+	return c.readRaw(ctx, path)
+}
+
+func (c *VaultClient) readRaw(ctx context.Context, path string) ([]byte, error) {
+	secret, err := c.client.Logical().ReadRawWithContext(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+
+	return io.ReadAll(secret.Body)
+}
+
+func (c *VaultClient) SshGetCa(ctx context.Context, mount string) ([]byte, error) {
+	path := fmt.Sprintf("%s/public_key", mount)
+	resp, err := c.client.Logical().ReadRawWithContext(ctx, path)
+	if err != nil {
+		return nil, fmt.Errorf("reading cert failed: %v", err)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("could not read body from response: %v", err)
+	}
+
+	return data, nil
+}
+
+func buildIssueRequestArgs(args PkiIssueArgs) map[string]any {
+	data := map[string]any{
+		"common_name": args.CommonName,
+		"ttl":         args.Ttl,
+		"format":      "pem",
+		"ip_sans":     strings.Join(args.IpSans, ","),
+		"alt_names":   strings.Join(args.AltNames, ","),
+	}
+
+	return data
+}
+
+func shouldRetry(statusCode int) bool {
+	switch statusCode {
+	case 400, // Bad Request
+		401, // Unauthorized
+		403, // Forbidden
+		404, // Not Found
+		405, // Method Not Allowed
+		406, // Not Acceptable
+		407, // Proxy Authentication Required
+		409, // Conflict
+		410, // Gone
+		411, // Length Required
+		412, // Precondition Failed
+		413, // Payload Too Large
+		414, // URI Too Long
+		415, // Unsupported Media Type
+		416, // Range Not Satisfiable
+		417, // Expectation Failed
+		418, // I'm a Teapot
+		421, // Misdirected Request
+		422, // Unprocessable Entity
+		423, // Locked (WebDAV)
+		424, // Failed Dependency (WebDAV)
+		425, // Too Early
+		426, // Upgrade Required
+		428, // Precondition Required
+		429, // Too Many Requests
+		431, // Request Header Fields Too Large
+		451: // Unavailable For Legal Reasons
+		return false
+	default:
+		return true
+	}
 }
