@@ -23,15 +23,16 @@ Usage:
 Available Commands:
   agent       Interact with a remote sc-agent instance
   completion  Generate the autocompletion script for the specified shell
+  healthcheck Sign, issue and revoke x509 certificates and retrieve x509 CA data
   help        Help about any command
-  pki         Sign, issue and revoke x509 certificates and retrieve x509 CA data
-  ssh         Sign SSH certificates or retrieve SSH CA data
+  vault       A brief description of your command
   version     Print version and exit
 
 Flags:
-  -h, --help           help for sc
-      --no-telemetry   Do not perform check for updated version
-  -v, --verbose        Print debug logs
+  -h, --help             help for sc
+      --no-telemetry     Do not perform check for updated version
+      --profile string   Profile to use
+  -v, --verbose          Print debug logs
 
 Use "sc [command] --help" for more information about a command.
 ```
@@ -40,8 +41,7 @@ Use "sc [command] --help" for more information about a command.
 
 Detailed documentation for all CLI sub commands is available below
 - [agent subcommand](./docs/cli/agent/sc_agent.md)
-- [pki subcommand](./docs/cli/pki/sc_pki.md)
-- [ssh subcommand](./docs/cli/ssh/sc_ssh.md)
+- [vault subcommand](./docs/cli/vault/sc_vault.md)
 
 ## Code Generation
 
