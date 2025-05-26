@@ -14,7 +14,7 @@ sc is a command-line interface (CLI) tool, similar to the AWS CLI, designed as a
 go install github.com/soerenschneider/sc@latest
 ```
 
-```shell
+```
 Universal Command Line Interface for soeren.cloud
 
 Usage:
