@@ -28,5 +28,5 @@ func init() {
 	rootCmd.AddCommand(logsCmd)
 
 	logsCmd.PersistentFlags().StringP(logsAddr, "a", "", "Victorialogs address.")
-
+	_ = logsCmd.MarkPersistentFlagRequired(logsAddr)
 }
