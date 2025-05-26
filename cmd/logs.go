@@ -10,16 +10,15 @@ const (
 	logsLimit = "limit"
 )
 
-// vaultCmd represents the vault command
 var logsCmd = &cobra.Command{
 	Use:   "logs",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Interact with VictoriaLogs for querying and managing logs",
+	Long: `The 'logs' command is the entry point for interacting with VictoriaLogs.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Use subcommands to query, tail, or manage logs stored in VictoriaLogs, a high-performance log database.
+
+Examples:
+  sc logs query -q='level="error"'   # Query logs with specific filters`,
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Help()
 	},

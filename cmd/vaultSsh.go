@@ -6,7 +6,7 @@ import (
 
 var vaultSshCmd = &cobra.Command{
 	Use:   "ssh",
-	Short: "Sign SSH certificates or retrieve SSH CA data",
+	Short: "Manages the Vault SSH secret engine",
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Help()
 	},

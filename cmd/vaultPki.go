@@ -6,9 +6,8 @@ import (
 
 var vaultPkiCmd = &cobra.Command{
 	Use:   "pki",
-	Short: "Manages the Vault pki secret engine",
+	Short: "Manages the Vault PKI secret engine",
 	Run: func(cmd *cobra.Command, args []string) {
-
 		_ = cmd.Help()
 	},
 }

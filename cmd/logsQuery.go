@@ -12,16 +12,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// vaultCmd represents the vault command
 var logsQueryCmd = &cobra.Command{
 	Use:   "query",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Query logs from VictoriaLogs using a logQL-like expression",
+	Long: `Query logs stored in VictoriaLogs by providing filter expressions and optional time ranges.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+This command allows you to search logs with filters, labels, and time constraints. It supports various output formats
+for integration with scripts or for human-readable views.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		queryArgs := healthcheck.VictorialogsQuery{
 			Address: pkg.GetString(cmd, logsAddr),
