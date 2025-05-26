@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.4.0](https://github.com/soerenschneider/sc/compare/v1.3.0...v1.4.0) (2025-05-26)
+
+
+### Features
+
+* add subcommand to query victorialogs ([ba75997](https://github.com/soerenschneider/sc/commit/ba75997a12ca459a7061fb053c254fa361446007))
+* add support for configuring healthchecks ([5e292d4](https://github.com/soerenschneider/sc/commit/5e292d40666a0c59aa083b52d67a184b26f796a9))
+* add support for victorialogs ([509c83b](https://github.com/soerenschneider/sc/commit/509c83b5f9b663f649e9a1a073fabe575d016750))
+* set max table size ([b7d5120](https://github.com/soerenschneider/sc/commit/b7d5120d125c591d45884313ce1de8e8f4a78322))
+* support for profiles ([b308eb8](https://github.com/soerenschneider/sc/commit/b308eb811d5878a50804c60ed82fa879c5a62b29))
+
+
+### Bug Fixes
+
+* bump all dependencies ([ff52cf5](https://github.com/soerenschneider/sc/commit/ff52cf5901e37b8252eaacd852f5f770b22bc57f))
+* do not exit prematurely if profile is supplied ([883ef9a](https://github.com/soerenschneider/sc/commit/883ef9afbb0864d6129a610192a8644543722ff4))
+* print warning when profile is not found ([afe3df4](https://github.com/soerenschneider/sc/commit/afe3df4d45ea364c0ec5b0b3096cd0a7d289c119))
+* update command ([538f2d4](https://github.com/soerenschneider/sc/commit/538f2d42ae52ca7e78a3b45e8bc46a7b1f27f347))
+
 ## [1.3.0](https://github.com/soerenschneider/sc/compare/v1.2.2...v1.3.0) (2025-05-18)
 
 
