@@ -47,7 +47,7 @@ for integration with scripts or for human-readable views.`,
 		}
 
 		tableHeaders, tableData := healthcheck.TransformLogs(logs)
-		tui.PrintTable("Logs", tableHeaders, tableData)
+		tui.PrintTable("Logs", tableHeaders, tableData, true)
 	},
 }
 

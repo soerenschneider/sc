@@ -26,13 +26,17 @@ func SelectInput(title string, choices []string) string {
 }
 
 func ReadInput(title string, suggestions []string) string {
+	return ReadInputWithValidation(title, suggestions, huh.ValidateNotEmpty())
+}
+
+func ReadInputWithValidation(title string, suggestions []string, validation func(string) error) string {
 	var input string
 	err := huh.NewInput().
 		Title(title).
 		Suggestions(suggestions).
 		Prompt(prompt).
 		Value(&input).
-		Validate(huh.ValidateNotEmpty()).
+		Validate(validation).
 		Run()
 
 	if err != nil {

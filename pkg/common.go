@@ -22,6 +22,17 @@ func GetStringArray(cmd *cobra.Command, name string) []string {
 	return val
 }
 
+func GetInt64Array(cmd *cobra.Command, name string) []int64 {
+	val, _ := cmd.Flags().GetInt64Slice(name)
+	return val
+}
+
+func GetBool(cmd *cobra.Command, name string) (bool, bool) {
+	val, _ := cmd.Flags().GetBool(name)
+	isChanged := cmd.Flags().Changed(name)
+	return val, isChanged
+}
+
 func GetString(cmd *cobra.Command, name string) string {
 	val, _ := cmd.Flags().GetString(name)
 	return val
