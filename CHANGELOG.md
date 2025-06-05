@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.5.0](https://github.com/soerenschneider/sc/compare/v1.4.0...v1.5.0) (2025-06-05)
+
+
+### Features
+
+* add support for oidc ([f8c810f](https://github.com/soerenschneider/sc/commit/f8c810f7a15c45304d262d44aa0640e923febf58))
+* add support torrents ([bf307d7](https://github.com/soerenschneider/sc/commit/bf307d75f0a6638dfdd111184c1eb9582ea58990))
+* support for linkding api ([1301d64](https://github.com/soerenschneider/sc/commit/1301d643b481de4be2e4532263cdad2b6f531f86))
+
+
+### Bug Fixes
+
+* fix build on linux(?) ([f5f49c6](https://github.com/soerenschneider/sc/commit/f5f49c698d9c82db8f8ec2ddb0efb19485f07ce2))
+* improve ux by marking persistent flag 'addr' required ([b64ba75](https://github.com/soerenschneider/sc/commit/b64ba7590eb63d132ea7c3bf6dd1ecf794391e3a))
+* resolve golangci-lint issues ([ab61070](https://github.com/soerenschneider/sc/commit/ab61070add9217b27d5e94ae08ae3c86d3733603))
+
 ## [1.4.0](https://github.com/soerenschneider/sc/compare/v1.3.0...v1.4.0) (2025-05-26)
 
 
