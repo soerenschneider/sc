@@ -36,9 +36,7 @@ Examples:
 			Type(spinner.Line).
 			ActionWithErr(func(ctx context.Context) error {
 				torrents, err = client.GetTorrents(ctx)
-				if err != nil {
-				}
-				return nil
+				return err
 			}).
 			Title("Fetching list of torrents...").
 			Accessible(false).
@@ -54,7 +52,10 @@ Examples:
 		}
 
 		headers, data := torrents.AsTable()
-		tui.PrintTable("Torrents", headers, data, false)
+		tableOpts := tui.TableOpts{
+			Wrap: true,
+		}
+		tui.PrintTable("Torrents", headers, data, tableOpts)
 	},
 }
 

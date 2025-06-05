@@ -1,18 +1,22 @@
 package tui
 
 import (
+	"cmp"
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
 	"golang.org/x/term"
 )
 
-func PrintTable(tableHeader string, headers []string, data [][]string, useFullWidth bool) {
-	// Define styles
+type TableOpts struct {
+	Wrap      bool
+	FullWidth bool
+	Style     *func(row, col int) lipgloss.Style
+}
+
+var defaultStyle = func(row, col int) lipgloss.Style {
 	headerTextStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("213")).
 		Bold(true).
@@ -21,17 +25,27 @@ func PrintTable(tableHeader string, headers []string, data [][]string, useFullWi
 	cellStyle := lipgloss.NewStyle().
 		Padding(0, 2)
 
-	highlightStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("231")). // bright white
-		Background(lipgloss.Color("161")). // rich red
-		Padding(0, 2)
+	//highlightStyle := lipgloss.NewStyle().
+	//	Foreground(lipgloss.Color("231")). // bright white
+	//	Background(lipgloss.Color("161")). // rich red
+	//	Padding(0, 2)
+
+	if row == table.HeaderRow {
+		return headerTextStyle
+	}
+
+	return cellStyle
+}
+
+func PrintTable(tableHeader string, headers []string, data [][]string, opts TableOpts) {
+	// Define styles
 
 	borderStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("240"))
 
 	tableTitleStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("99")). // magenta-like
+		Foreground(lipgloss.Color("99")).  // magenta-like
 		Background(lipgloss.Color("236")). // dark gray
 		Padding(0, 2).
 		Align(lipgloss.Center).
@@ -40,7 +54,7 @@ func PrintTable(tableHeader string, headers []string, data [][]string, useFullWi
 
 	// Get terminal width if needed
 	var width int
-	if useFullWidth {
+	if opts.FullWidth {
 		var err error
 		width, _, err = term.GetSize(int(os.Stdout.Fd()))
 		if err != nil {
@@ -49,6 +63,7 @@ func PrintTable(tableHeader string, headers []string, data [][]string, useFullWi
 		}
 	}
 
+	styleFunc := cmp.Or(opts.Style, &defaultStyle)
 	// Build the table
 	t := table.New().
 		Border(lipgloss.RoundedBorder()).
@@ -56,20 +71,8 @@ func PrintTable(tableHeader string, headers []string, data [][]string, useFullWi
 		Headers(headers...).
 		Rows(data...).
 		Width(width).
-		StyleFunc(func(row, col int) lipgloss.Style {
-			if row == table.HeaderRow {
-				return headerTextStyle
-			}
-			cell := data[row][col]
-			if num, err := strconv.ParseFloat(cell, 32); err == nil && num >= 2000 {
-				return highlightStyle
-			} else if strings.HasPrefix(strings.ToLower(cell), "down") {
-				return highlightStyle
-			}
-			return cellStyle
-		})
-
-	t.Wrap(true)
+		StyleFunc(*styleFunc).
+		Wrap(opts.Wrap)
 
 	// Print header and table
 	fmt.Println(tableTitleStyle.Render(" " + tableHeader + " "))

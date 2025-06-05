@@ -73,7 +73,7 @@ func (t *Torrent) String() string {
 		id = *t.ID
 	}
 
-	var status string = "Unknown"
+	var status = "Unknown"
 	if t.Status != nil {
 		status = t.Status.String()
 	}

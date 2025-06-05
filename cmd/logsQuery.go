@@ -47,7 +47,11 @@ for integration with scripts or for human-readable views.`,
 		}
 
 		tableHeaders, tableData := healthcheck.TransformLogs(logs)
-		tui.PrintTable("Logs", tableHeaders, tableData, true)
+		tableOpts := tui.TableOpts{
+			Wrap:      true,
+			FullWidth: true,
+		}
+		tui.PrintTable("Logs", tableHeaders, tableData, tableOpts)
 	},
 }
 

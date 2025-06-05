@@ -41,10 +41,9 @@ Examples:
 			if err := spinner.New().
 				Type(spinner.Line).
 				ActionWithErr(func(ctx context.Context) error {
+					var err error
 					torrents, err = client.GetTorrents(ctx)
-					if err != nil {
-					}
-					return nil
+					return err
 				}).
 				Title("Fetching list of torrents...").
 				Accessible(false).

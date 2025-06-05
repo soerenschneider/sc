@@ -15,7 +15,7 @@ var logsCmd = &cobra.Command{
 	Short: "Interact with VictoriaLogs for querying and managing logs",
 	Long: `The 'logs' command is the entry point for interacting with VictoriaLogs.
 
-Use subcommands to query, tail, or manage logs stored in VictoriaLogs, a high-performance log database.
+Use subcommands to query logs stored in VictoriaLogs, a high-performance log database.
 
 Examples:
   sc logs query -q='level="error"'   # Query logs with specific filters`,

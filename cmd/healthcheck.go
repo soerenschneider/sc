@@ -96,24 +96,29 @@ var healthcheckCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("collecting health data failed")
 		}
 
+		tableOpts := tui.TableOpts{
+			Wrap:      false,
+			FullWidth: false,
+			Style:     nil,
+		}
 		tableHeaders, tableData := transform(data.internetAccess)
-		tui.PrintTable("Internet Connectivity", tableHeaders, tableData, true)
+		tui.PrintTable("Internet Connectivity", tableHeaders, tableData, tableOpts)
 
 		// Print in sorted order
 		for name, results := range data.TcpChecks {
 			tableHeaders, tableData = transform(results)
-			tui.PrintTable(name, tableHeaders, tableData, true)
+			tui.PrintTable(name, tableHeaders, tableData, tableOpts)
 		}
 
 		for name, results := range data.DnsChecks {
 			tableHeaders, tableData = transform(results)
-			tui.PrintTable(name, tableHeaders, tableData, true)
+			tui.PrintTable(name, tableHeaders, tableData, tableOpts)
 		}
 
 		tableHeaders, tableData = healthcheck.TransformLogs(data.logs)
-		tui.PrintTable("Logs", tableHeaders, tableData, true)
+		tui.PrintTable("Logs", tableHeaders, tableData, tableOpts)
 
-		tui.PrintTable("Prometheus", []string{"Instance", "Avg ", "Max"}, data.prometheus, true)
+		tui.PrintTable("Prometheus", []string{"Instance", "Avg ", "Max"}, data.prometheus, tableOpts)
 	},
 }
 

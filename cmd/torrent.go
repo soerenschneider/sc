@@ -32,5 +32,5 @@ func init() {
 	rootCmd.AddCommand(torrentCmd)
 
 	torrentCmd.PersistentFlags().StringP(torrentAddr, "a", "", "Vault address. If not specified, tries to read env variable VAULT_ADDR.")
-	torrentCmd.MarkPersistentFlagRequired(torrentAddr)
+	_ = torrentCmd.MarkPersistentFlagRequired(torrentAddr)
 }
