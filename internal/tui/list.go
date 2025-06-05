@@ -32,20 +32,6 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	fmt.Fprintf(w, "%s%s\n", cursor, i.Title())
 }
 
-type readonlyItemDelegate struct{}
-
-func (d readonlyItemDelegate) Height() int                               { return 1 }
-func (d readonlyItemDelegate) Spacing() int                              { return 0 }
-func (d readonlyItemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
-func (d readonlyItemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
-	i, ok := listItem.(item)
-	if !ok {
-		return
-	}
-	cursor := " "
-	fmt.Fprintf(w, "%s%s\n", cursor, i.Title())
-}
-
 type model struct {
 	list list.Model
 }
