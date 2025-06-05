@@ -6,6 +6,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	scAgentProviderUrl = "provider"
+	scAgentClientID    = "client-id"
+)
+
 var agentCmd = &cobra.Command{
 	Use:   "agent",
 	Short: "Interact with a remote sc-agent instance",
