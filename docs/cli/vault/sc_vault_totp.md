@@ -29,7 +29,7 @@ sc vault totp [flags]
 
 ### SEE ALSO
 
-* [sc vault](sc_vault.md)	 - A brief description of your command
+* [sc vault](sc_vault.md)	 - Commands for interacting with HashiCorp Vault
 * [sc vault totp generate-method](sc_vault_totp_generate-method.md)	 - Manage Vault totp
 * [sc vault totp generate-secret](sc_vault_totp_generate-secret.md)	 - Manage Vault totp
 * [sc vault totp list-methods](sc_vault_totp_list-methods.md)	 - Manage Vault totp

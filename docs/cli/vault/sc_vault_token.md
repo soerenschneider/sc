@@ -29,6 +29,6 @@ sc vault token [flags]
 
 ### SEE ALSO
 
-* [sc vault](sc_vault.md)	 - A brief description of your command
+* [sc vault](sc_vault.md)	 - Commands for interacting with HashiCorp Vault
 * [sc vault token lookup](sc_vault_token_lookup.md)	 - Lookup and display information about the current Vault token
 

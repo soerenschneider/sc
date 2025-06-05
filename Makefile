@@ -55,4 +55,4 @@ pre-commit-update:
 .PHONY: docs
 docs:
 	rm -rf docs/cli/*.md
-	go run -tags=docgen main.go --server=xxx docs
+	go run -tags=docgen main.go docs

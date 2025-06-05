@@ -1,6 +1,6 @@
 ## sc vault ssh
 
-Sign SSH certificates or retrieve SSH CA data
+Manages the Vault SSH secret engine
 
 ```
 sc vault ssh [flags]
@@ -23,7 +23,7 @@ sc vault ssh [flags]
 
 ### SEE ALSO
 
-* [sc vault](sc_vault.md)	 - A brief description of your command
+* [sc vault](sc_vault.md)	 - Commands for interacting with HashiCorp Vault
 * [sc vault ssh list-roles](sc_vault_ssh_list-roles.md)	 - Lists all roles for the SSH secrets engine
 * [sc vault ssh read](sc_vault_ssh_read.md)	 - Reads ca data for the SSH secret engine
 * [sc vault ssh sign-key](sc_vault_ssh_sign-key.md)	 - Signs a SSH public key

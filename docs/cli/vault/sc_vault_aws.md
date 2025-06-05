@@ -29,7 +29,7 @@ sc vault aws [flags]
 
 ### SEE ALSO
 
-* [sc vault](sc_vault.md)	 - A brief description of your command
+* [sc vault](sc_vault.md)	 - Commands for interacting with HashiCorp Vault
 * [sc vault aws generate-credentials](sc_vault_aws_generate-credentials.md)	 - Generate AWS credentials using Vault
 * [sc vault aws list](sc_vault_aws_list.md)	 - Lists all existing roles in the AWS secrets engine.
 

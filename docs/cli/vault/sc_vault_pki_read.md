@@ -24,5 +24,5 @@ sc vault pki read [flags]
 
 ### SEE ALSO
 
-* [sc vault pki](sc_vault_pki.md)	 - Manages the Vault pki secret engine
+* [sc vault pki](sc_vault_pki.md)	 - Manages the Vault PKI secret engine
 

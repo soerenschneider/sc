@@ -1,15 +1,17 @@
 ## sc vault
 
-A brief description of your command
+Commands for interacting with HashiCorp Vault
 
 ### Synopsis
 
-A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+This command serves as the entry point for Vault-related functionality.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.
+Use one of the available subcommands to interact with HashiCorp Vault for tasks
+such as reading and writing secrets, authentication, or policy management.
+
+Examples:
+  sc vault login             # Authenticate with Vault
+  sc vault ssh sign-key      # Interact with SSH secret engine
 
 ```
 sc vault [flags]
@@ -37,8 +39,8 @@ sc vault [flags]
 * [sc vault aws](sc_vault_aws.md)	 - Manage AWS secret engine
 * [sc vault identity](sc_vault_identity.md)	 - Manage Vault identities
 * [sc vault login](sc_vault_login.md)	 - Authenticate with a Vault server using username and password
-* [sc vault pki](sc_vault_pki.md)	 - Manages the Vault pki secret engine
-* [sc vault ssh](sc_vault_ssh.md)	 - Sign SSH certificates or retrieve SSH CA data
+* [sc vault pki](sc_vault_pki.md)	 - Manages the Vault PKI secret engine
+* [sc vault ssh](sc_vault_ssh.md)	 - Manages the Vault SSH secret engine
 * [sc vault token](sc_vault_token.md)	 - Manage Vault tokens
 * [sc vault totp](sc_vault_totp.md)	 - Manage Vault totp
 * [sc vault update-password](sc_vault_update-password.md)	 - Update the password for Vault userpass authentication method

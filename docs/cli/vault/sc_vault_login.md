@@ -37,5 +37,5 @@ sc vault login [flags]
 
 ### SEE ALSO
 
-* [sc vault](sc_vault.md)	 - A brief description of your command
+* [sc vault](sc_vault.md)	 - Commands for interacting with HashiCorp Vault
 

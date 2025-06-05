@@ -29,7 +29,7 @@ sc vault identity [flags]
 
 ### SEE ALSO
 
-* [sc vault](sc_vault.md)	 - A brief description of your command
+* [sc vault](sc_vault.md)	 - Commands for interacting with HashiCorp Vault
 * [sc vault identity get-entity](sc_vault_identity_get-entity.md)	 - Retrieve a Vault identity entity
 * [sc vault identity list-entities](sc_vault_identity_list-entities.md)	 - Manage Vault totp
 * [sc vault identity list-groups](sc_vault_identity_list-groups.md)	 - List identity entities in Vault

@@ -1,6 +1,6 @@
 ## sc vault pki
 
-Manages the Vault pki secret engine
+Manages the Vault PKI secret engine
 
 ```
 sc vault pki [flags]
@@ -23,7 +23,7 @@ sc vault pki [flags]
 
 ### SEE ALSO
 
-* [sc vault](sc_vault.md)	 - A brief description of your command
+* [sc vault](sc_vault.md)	 - Commands for interacting with HashiCorp Vault
 * [sc vault pki issue](sc_vault_pki_issue.md)	 - Issues a x509 certificate
 * [sc vault pki read](sc_vault_pki_read.md)	 - Reads ca data for the PKI secret engine
 

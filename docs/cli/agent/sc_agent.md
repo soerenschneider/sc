@@ -30,6 +30,7 @@ sc agent [flags]
 * [sc agent certs](sc_agent_certs.md)	 - Interact with certificates
 * [sc agent k0s](sc_agent_k0s.md)	 - Interact with k0s
 * [sc agent libvirt](sc_agent_libvirt.md)	 - Interact with libvirt
+* [sc agent login](sc_agent_login.md)	 - Get OIDC token
 * [sc agent packages](sc_agent_packages.md)	 - Interact with the package component
 * [sc agent power-state](sc_agent_power-state.md)	 - Interacts with the power-state component to either shutdown or reboot a machine.
 * [sc agent replication](sc_agent_replication.md)	 - Interacts with the replication component

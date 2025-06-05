@@ -28,5 +28,5 @@ sc vault ssh sign-key [flags]
 
 ### SEE ALSO
 
-* [sc vault ssh](sc_vault_ssh.md)	 - Sign SSH certificates or retrieve SSH CA data
+* [sc vault ssh](sc_vault_ssh.md)	 - Manages the Vault SSH secret engine
 
