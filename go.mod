@@ -13,7 +13,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.14.1
 	github.com/dustin/go-humanize v1.0.1
 	github.com/hashicorp/go-retryablehttp v0.7.7
-	github.com/hashicorp/vault/api v1.16.0
+	github.com/hashicorp/vault/api v1.20.0
 	github.com/jedib0t/go-pretty/v6 v6.6.7
 	github.com/keybase/go-keychain v0.0.1
 	github.com/rs/zerolog v1.34.0
