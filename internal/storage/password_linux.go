@@ -13,6 +13,10 @@ type SecureStore struct {
 	service string
 }
 
+func NewStorage() *SecureStore {
+	panic("not implemented")
+}
+
 // SaveToken stores the token in the system keyring
 func (s *SecureStore) SaveToken(token *oauth2.Token) error {
 	data, err := json.Marshal(token)
