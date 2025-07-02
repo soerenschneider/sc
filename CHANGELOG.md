@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.5.0](https://github.com/soerenschneider/sc/compare/v1.4.0...v1.5.0) (2025-07-02)
+
+
+### Features
+
+* add command hierarchy for profiles ([c7ec117](https://github.com/soerenschneider/sc/commit/c7ec11745c33ae69edf4d945e77c3297ea728482))
+* add support for oidc ([f8c810f](https://github.com/soerenschneider/sc/commit/f8c810f7a15c45304d262d44aa0640e923febf58))
+* add support torrents ([bf307d7](https://github.com/soerenschneider/sc/commit/bf307d75f0a6638dfdd111184c1eb9582ea58990))
+* add userdata that remembers last used values for commands ([d5274e3](https://github.com/soerenschneider/sc/commit/d5274e3b4ebf6f4f40da0fe023d328ab0ccb020d))
+* improve output ([2a78343](https://github.com/soerenschneider/sc/commit/2a78343d3f9d1340a256f34e2e9d1d3422cba816))
+* support for linkding api ([1301d64](https://github.com/soerenschneider/sc/commit/1301d643b481de4be2e4532263cdad2b6f531f86))
+
+
+### Bug Fixes
+
+* actually only delete selected torrents ([e5d4e4f](https://github.com/soerenschneider/sc/commit/e5d4e4f44a706b88be17a137f1033b1cf9750851))
+* **deps:** bump github.com/go-viper/mapstructure/v2 from 2.2.1 to 2.3.0 ([b31db04](https://github.com/soerenschneider/sc/commit/b31db04cdf6df337828425314cf68238e98726ee))
+* **deps:** bump github.com/go-viper/mapstructure/v2 from 2.2.1 to 2.3.0 ([21ac91b](https://github.com/soerenschneider/sc/commit/21ac91b4d8d2323d02c47745d18ae7a10583807b))
+* **deps:** bump github.com/hashicorp/go-retryablehttp ([b549d2e](https://github.com/soerenschneider/sc/commit/b549d2ea56a13c158a47e6f303137514a62b6ce2))
+* **deps:** bump github.com/hashicorp/go-retryablehttp from 0.7.7 to 0.7.8 ([abc9165](https://github.com/soerenschneider/sc/commit/abc9165c28fe1af97f70ca66eece78bd9726fc22))
+* **deps:** bump golang from 1.24.3 to 1.24.4 ([d39df20](https://github.com/soerenschneider/sc/commit/d39df201a25af783fa5a951ebc50654647decbc5))
+* **deps:** bump golang from 1.24.3 to 1.24.4 ([9379c99](https://github.com/soerenschneider/sc/commit/9379c99e98a70ed87f6140ffd04a3cdace6dbb40))
+* **deps:** bump golang.org/x/crypto from 0.38.0 to 0.39.0 ([cb1ca8a](https://github.com/soerenschneider/sc/commit/cb1ca8ab82749c903289c8144fbab7c5536e0e26))
+* **deps:** bump golang.org/x/crypto from 0.38.0 to 0.39.0 ([d2b3223](https://github.com/soerenschneider/sc/commit/d2b3223644c3180fac51af9ac8924ef1db77b79e))
+* fix build on linux(?) ([f5f49c6](https://github.com/soerenschneider/sc/commit/f5f49c698d9c82db8f8ec2ddb0efb19485f07ce2))
+* improve ux by marking persistent flag 'addr' required ([b64ba75](https://github.com/soerenschneider/sc/commit/b64ba7590eb63d132ea7c3bf6dd1ecf794391e3a))
+* resolve golangci-lint issues ([ab61070](https://github.com/soerenschneider/sc/commit/ab61070add9217b27d5e94ae08ae3c86d3733603))
+
 ## [1.4.0](https://github.com/soerenschneider/sc/compare/v1.3.0...v1.4.0) (2025-05-26)
 
 
