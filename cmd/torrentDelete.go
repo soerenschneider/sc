@@ -58,14 +58,14 @@ Examples:
 				return
 			}
 
-			entryMap, entries := ToListEntries(torrents)
+			formattedTorrentsIdMap, formattedTorrents := ToListEntries(torrents)
 
-			var selectedIds []string
+			var selectedTorrents []string
 			fields := []huh.Field{
 				huh.NewMultiSelect[string]().
 					Title("Torrents to delete").
-					Options(huh.NewOptions(entries...)...).
-					Value(&selectedIds),
+					Options(huh.NewOptions(formattedTorrents...)...).
+					Value(&selectedTorrents),
 			}
 
 			if !isDeleteDataChanged {
@@ -85,8 +85,21 @@ Examples:
 				log.Fatal().Err(err).Msg("could not select torrents")
 			}
 
-			for _, value := range entryMap {
-				ids = append(ids, value)
+			if len(selectedTorrents) == 0 {
+				log.Info().Msg("No torrents selected for deletion")
+				return
+			}
+
+			var errs error
+			for _, value := range selectedTorrents {
+				id, found := formattedTorrentsIdMap[value]
+				if found {
+					ids = append(ids, id)
+				}
+			}
+
+			if errs != nil {
+				log.Warn().Err(err).Msg("could not get id for all selections")
 			}
 		}
 
