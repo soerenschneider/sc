@@ -24,9 +24,17 @@ const (
 	rootCmdFlagsVerbose     = "verbose"
 	rootCmdFlagsProfile     = "profile"
 	rootCmdFlagsNoTelemetry = "no-telemetry"
+
+	defaultProfileName = "default"
 )
 
 var profile string
+
+func getCommandName(cmd *cobra.Command) string {
+	commandPath := cmd.CommandPath()
+	commandPath = strings.ReplaceAll(strings.TrimSpace(strings.Replace(commandPath, commandName, "", 1)), " ", "-")
+	return commandPath
+}
 
 var rootCmd = &cobra.Command{
 	Use:               commandName,
@@ -36,8 +44,7 @@ var rootCmd = &cobra.Command{
 		setupLogger()
 
 		if profile != "" {
-			commandPath := cmd.CommandPath()
-			commandPath = strings.ReplaceAll(strings.TrimSpace(strings.Replace(commandPath, commandName, "", 1)), " ", "-")
+			commandPath := getCommandName(cmd)
 			if err := internal.ApplyFlags(commandPath, cmd, profile); err != nil {
 				log.Warn().Err(err).Msgf("could not apply flags for profile %q", profile)
 			}

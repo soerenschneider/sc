@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -14,12 +15,15 @@ import (
 	"github.com/hashicorp/vault/api"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/tui"
+	"github.com/soerenschneider/sc/internal/userdata"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/cobra"
 )
 
-const ()
+type vaultLoginUserdata struct {
+	LastUser string `json:"last_username"`
+}
 
 // vaultLoginCmd represents the vaultLogin command
 var vaultLoginCmd = &cobra.Command{
@@ -41,6 +45,13 @@ to stdout as a fallback.`,
 
 		client := vault.MustBuildClient(cmd)
 
+		// load userdata
+		commandName := getCommandName(cmd)
+		userData, err := userdata.LoadCommandData[vaultLoginUserdata](cmp.Or(profile, defaultProfileName), commandName)
+		if err != nil {
+			log.Warn().Err(err).Msg("could not load userdata")
+		}
+
 		validateFunc := func(val string) error {
 			if strings.TrimSpace(val) == "" {
 				return errors.New("input can not be empty")
@@ -51,9 +62,10 @@ to stdout as a fallback.`,
 		var fields []huh.Field
 		if username == "" {
 			var suggestions []string
+			username = userData.LastUser
 			currentUser, err := user.Current()
 			if err == nil {
-				suggestions = []string{currentUser.Username}
+				suggestions = append(suggestions, currentUser.Username)
 			}
 			fields = append(fields, huh.NewInput().Title("Username").Suggestions(suggestions).Value(&username).Validate(validateFunc))
 		}
@@ -136,6 +148,11 @@ to stdout as a fallback.`,
 
 		var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("Token saved")
 		fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), tokenFile))
+
+		userData.LastUser = username
+		if err := userdata.Upsert[vaultLoginUserdata](cmp.Or(profile, defaultProfileName), commandName, userData); err != nil {
+			log.Warn().Err(err).Msg("could not save userdata")
+		}
 	},
 }
 
