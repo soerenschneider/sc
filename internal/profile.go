@@ -35,26 +35,50 @@ func Load(path string) error {
 	return nil
 }
 
-func Get(command, profileName, key string) (string, bool) {
+func getCommandHierarchy(cmd string) []string {
+	elements := strings.Split(cmd, "-")
+	ret := make([]string, len(elements))
+
+	// Build from longest to shortest by removing suffixes
+	current := cmd
+	for i := 0; i < len(elements); i++ {
+		ret[i] = current
+
+		// Remove the last element and its separator for next iteration
+		if i < len(elements)-1 {
+			lastIdx := strings.LastIndex(current, "-")
+			if lastIdx != -1 {
+				current = current[:lastIdx]
+			}
+		}
+	}
+
+	return ret
+}
+
+func Get(cmdName, profileName, key string) (string, bool) {
 	if cmd, ok := profileData[profileName]; ok {
-		if section, ok := cmd[command]; ok {
-			switch v := section[key].(type) {
-			case string:
-				return v, true
-			case bool:
-				return strconv.FormatBool(v), true
-			case int:
-				return strconv.Itoa(v), true
-			case float64:
-				return strconv.FormatFloat(v, 'f', -1, 64), true
-			case []interface{}:
-				parts := []string{}
-				for _, item := range v {
-					parts = append(parts, fmt.Sprintf("%v", item))
+		commandHierarchy := getCommandHierarchy(cmdName)
+		for _, c := range commandHierarchy {
+			if section, ok := cmd[c]; ok {
+				switch v := section[key].(type) {
+				case string:
+					return v, true
+				case bool:
+					return strconv.FormatBool(v), true
+				case int:
+					return strconv.Itoa(v), true
+				case float64:
+					return strconv.FormatFloat(v, 'f', -1, 64), true
+				case []interface{}:
+					parts := []string{}
+					for _, item := range v {
+						parts = append(parts, fmt.Sprintf("%v", item))
+					}
+					return strings.Join(parts, ","), true
+				default:
+					return "", false
 				}
-				return strings.Join(parts, ","), true
-			default:
-				return "", false
 			}
 		}
 	}
@@ -71,8 +95,19 @@ func ApplyFlags(cmdName string, cmd *cobra.Command, profileName string) error {
 
 	flagNames := getAllFlagNames(cmd)
 
+	commandHierarchy := getCommandHierarchy(cmdName)
+	var cmdNameFound string
+	for _, c := range commandHierarchy {
+		if cmd, ok := profileData[profileName]; ok {
+			if _, ok := cmd[c]; ok {
+				cmdNameFound = c
+				log.Info().Msgf("Applying settings from parent command %q instead of %q", c, cmdName)
+			}
+		}
+	}
+
 	for _, key := range flagNames {
-		val, ok := Get(cmdName, profileName, key)
+		val, ok := Get(cmdNameFound, profileName, key)
 		if !ok {
 			continue
 		}
