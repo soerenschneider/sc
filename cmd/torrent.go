@@ -31,6 +31,6 @@ Examples:
 func init() {
 	rootCmd.AddCommand(torrentCmd)
 
-	torrentCmd.PersistentFlags().StringP(torrentAddr, "a", "", "Vault address. If not specified, tries to read env variable VAULT_ADDR.")
+	torrentCmd.PersistentFlags().StringP(torrentAddr, "a", "", "Transmission address.")
 	_ = torrentCmd.MarkPersistentFlagRequired(torrentAddr)
 }
