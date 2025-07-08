@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.6.0](https://github.com/soerenschneider/sc/compare/v1.5.0...v1.6.0) (2025-07-08)
+
+
+### Features
+
+* read profile from env variable ([26e6e1f](https://github.com/soerenschneider/sc/commit/26e6e1f95a721ecfb539050ea5ffdf0bd92c62ba))
+* unblock subcommands by running update check concurrently ([92d87e4](https://github.com/soerenschneider/sc/commit/92d87e4b50461b629af83f1925b3a79ea12adfe7))
+
+
+### Bug Fixes
+
+* fix condition ([0d7ef53](https://github.com/soerenschneider/sc/commit/0d7ef538cf2b95495dc41e909dbd396a494e82d2))
+
 ## [1.5.0](https://github.com/soerenschneider/sc/compare/v1.4.0...v1.5.0) (2025-07-02)
 
 
