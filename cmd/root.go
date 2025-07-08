@@ -20,11 +20,13 @@ import (
 )
 
 const (
-	commandName             = "sc"
+	commandName = "sc"
+
 	rootCmdFlagsVerbose     = "verbose"
 	rootCmdFlagsProfile     = "profile"
 	rootCmdFlagsNoTelemetry = "no-telemetry"
 
+	profileEnvKey      = "SC_PROFILE"
 	defaultProfileName = "default"
 )
 
@@ -42,6 +44,14 @@ var rootCmd = &cobra.Command{
 	DisableAutoGenTag: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		setupLogger()
+
+		if profile != "" {
+			var found bool
+			profile, found = os.LookupEnv(profileEnvKey)
+			if found {
+				log.Info().Msgf("Using profile %q defined by env var", profile)
+			}
+		}
 
 		if profile != "" {
 			commandPath := getCommandName(cmd)
