@@ -45,7 +45,7 @@ var rootCmd = &cobra.Command{
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		setupLogger()
 
-		if profile != "" {
+		if profile == "" {
 			var found bool
 			profile, found = os.LookupEnv(profileEnvKey)
 			if found {
