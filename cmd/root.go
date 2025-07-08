@@ -96,8 +96,10 @@ func setupLogger() {
 	//#nosec:G115
 	if term.IsTerminal(int(os.Stdout.Fd())) {
 		log.Logger = log.Output(zerolog.ConsoleWriter{
-			Out:        os.Stderr,
-			TimeFormat: "15:04:05",
+			Out: os.Stderr,
+			PartsExclude: []string{
+				zerolog.TimestampFieldName,
+			},
 		})
 	}
 }
