@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/cobra"
+	"golang.design/x/clipboard"
 )
 
 var torrentAddCmd = &cobra.Command{
@@ -38,7 +40,15 @@ Examples:
 
 				return errors.New("this magnet seems to be broken")
 			}
-			magnet = tui.ReadInputWithValidation("Please enter magnet link", nil, validation)
+
+			err := clipboard.Init()
+			if err == nil {
+				clipboardContent := clipboard.Read(clipboard.FmtText)
+				if bytes.HasPrefix(bytes.ToLower(clipboardContent), []byte("magnet:")) {
+					magnet = string(clipboardContent)
+				}
+			}
+			tui.ReadInputSuggestionWithValidation(&magnet, "Please enter magnet link", nil, validation)
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)
