@@ -19,6 +19,7 @@ import (
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/cobra"
+	"golang.design/x/clipboard"
 )
 
 type vaultLoginUserdata struct {
@@ -114,7 +115,15 @@ to stdout as a fallback.`,
 			}
 
 			if otp == "" {
-				otp = tui.ReadOtp(fmt.Sprintf("Enter OTP for id %q", otpId))
+				// try to parse OTP from clipboard (for cases when pass otp or similar is used to generate otp)
+				err := clipboard.Init()
+				if err == nil {
+					clipboardContent := string(clipboard.Read(clipboard.FmtText))
+					if (len(clipboardContent) == 6 || len(clipboardContent) == 8) && pkg.IsAsciiNumeric(clipboardContent) {
+						otp = clipboardContent
+					}
+				}
+				tui.ReadInputSuggestionWithValidation(&otp, fmt.Sprintf("Enter OTP for id %q", otpId), nil, pkg.OtpValidation)
 			}
 
 			ctx, cancel = context.WithTimeout(context.Background(), vaultDefaultTimeout)
