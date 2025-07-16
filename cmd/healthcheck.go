@@ -37,7 +37,7 @@ var healthcheckCmd = &cobra.Command{
 	Aliases: []string{
 		"health",
 	},
-	Short: "Sign, issue and revoke x509 certificates and retrieve x509 CA data",
+	Short: "Performs a healthcheck for internet connectivity",
 	Run: func(cmd *cobra.Command, args []string) {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
