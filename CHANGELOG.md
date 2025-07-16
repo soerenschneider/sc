@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/soerenschneider/sc/compare/v1.6.0...v1.7.0) (2025-07-16)
+
+
+### Features
+
+* try to automatically parse magnet link from clipboard ([7d18531](https://github.com/soerenschneider/sc/commit/7d1853117a66056357c8c7c633f7a1635c23c2b3))
+
 ## [1.6.0](https://github.com/soerenschneider/sc/compare/v1.5.0...v1.6.0) (2025-07-08)
 
 
