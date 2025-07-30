@@ -43,7 +43,7 @@ It attempts to authenticate using the following sources (in order):
 		// re-format times
 		var problematicColumns []string
 		expiry, ok := secret.Data["expire_time"]
-		if ok {
+		if ok && expiry != nil {
 			updatedValue, parsedTime := reformatTimestamp(expiry.(string))
 			if parsedTime != nil && time.Now().After(*parsedTime) {
 				problematicColumns = append(problematicColumns, "expire_time")
@@ -52,7 +52,7 @@ It attempts to authenticate using the following sources (in order):
 		}
 
 		issue, ok := secret.Data["issue_time"]
-		if ok {
+		if ok && issue != nil {
 			updatedValue, _ := reformatTimestamp(issue.(string))
 			secret.Data["issue_time"] = updatedValue
 		}
