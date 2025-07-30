@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/huh v0.7.0
 	github.com/charmbracelet/huh/spinner v0.0.0-20250603124601-31a1db2cbc39
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/coreos/go-oidc/v3 v3.14.1
+	github.com/coreos/go-oidc/v3 v3.15.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/hashicorp/vault/api v1.20.0
@@ -26,6 +26,7 @@ require (
 	github.com/yeqown/go-qrcode/writer/terminal v1.1.2
 	github.com/zalando/go-keyring v0.2.6
 	go.uber.org/multierr v1.11.0
+	golang.design/x/clipboard v0.7.1
 	golang.org/x/crypto v0.39.0
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sys v0.33.0
@@ -96,7 +97,6 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/yeqown/reedsolomon v1.0.0 // indirect
-	golang.design/x/clipboard v0.7.1 // indirect
 	golang.org/x/exp/shiny v0.0.0-20250606033433-dcc06ee1d476 // indirect
 	golang.org/x/image v0.28.0 // indirect
 	golang.org/x/mobile v0.0.0-20250606033058-a2a15c67f36f // indirect
