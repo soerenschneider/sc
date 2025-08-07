@@ -74,7 +74,14 @@ to stdout as a fallback.`,
 		var password string
 		fields = append(fields, huh.NewInput().Title("Password").EchoMode(huh.EchoModePassword).Value(&password).Validate(validateFunc))
 
-		if err := huh.NewForm(huh.NewGroup(fields...)).Run(); err != nil {
+		form := huh.NewForm(huh.NewGroup(fields...))
+
+		// Jump directly to the password field if the username field is already filled out
+		if username != "" {
+			form.NextField()
+		}
+
+		if err := form.Run(); err != nil {
 			log.Fatal().Err(err).Msg("could not get info from user")
 		}
 
