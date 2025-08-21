@@ -26,6 +26,7 @@ require (
 	github.com/yeqown/go-qrcode/writer/terminal v1.1.2
 	github.com/zalando/go-keyring v0.2.6
 	go.uber.org/multierr v1.11.0
+	golang.design/x/clipboard v0.7.1
 	golang.org/x/crypto v0.39.0
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sys v0.33.0
@@ -54,7 +55,7 @@ require (
 	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -96,7 +97,6 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/yeqown/reedsolomon v1.0.0 // indirect
-	golang.design/x/clipboard v0.7.1 // indirect
 	golang.org/x/exp/shiny v0.0.0-20250606033433-dcc06ee1d476 // indirect
 	golang.org/x/image v0.28.0 // indirect
 	golang.org/x/mobile v0.0.0-20250606033058-a2a15c67f36f // indirect
