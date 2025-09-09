@@ -18,8 +18,8 @@ import (
 	"github.com/soerenschneider/sc/internal/userdata"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/soerenschneider/sc/pkg"
+	"github.com/soerenschneider/sc/pkg/clipboard"
 	"github.com/spf13/cobra"
-	"golang.design/x/clipboard"
 )
 
 type vaultLoginUserdata struct {
@@ -123,9 +123,8 @@ to stdout as a fallback.`,
 
 			if otp == "" {
 				// try to parse OTP from clipboard (for cases when pass otp or similar is used to generate otp)
-				err := clipboard.Init()
+				clipboardContent, err := clipboard.PasteClipboard()
 				if err == nil {
-					clipboardContent := string(clipboard.Read(clipboard.FmtText))
 					if (len(clipboardContent) == 6 || len(clipboardContent) == 8) && pkg.IsAsciiNumeric(clipboardContent) {
 						otp = clipboardContent
 					}

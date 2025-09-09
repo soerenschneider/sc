@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"strings"
@@ -10,9 +9,17 @@ import (
 	"github.com/soerenschneider/sc/internal/transmission"
 	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/pkg"
+	"github.com/soerenschneider/sc/pkg/clipboard"
 	"github.com/spf13/cobra"
-	"golang.design/x/clipboard"
 )
+
+var validation = func(input string) error {
+	if strings.HasPrefix(input, "magnet:") {
+		return nil
+	}
+
+	return errors.New("this magnet seems to be broken")
+}
 
 var torrentAddCmd = &cobra.Command{
 	Use:   "add",
@@ -33,21 +40,13 @@ Examples:
 
 		magnet := pkg.GetString(cmd, torrentMagnet)
 		if magnet == "" {
-			validation := func(input string) error {
-				if strings.HasPrefix(input, "magnet:") {
-					return nil
-				}
-
-				return errors.New("this magnet seems to be broken")
+			clipboardContent, err := clipboard.PasteClipboard()
+			if err == nil && strings.HasPrefix(strings.ToLower(clipboardContent), "magnet:") {
+				magnet = clipboardContent
+			} else {
+				log.Warn().Err(err).Msg("could not paste clipboard content")
 			}
 
-			err := clipboard.Init()
-			if err == nil {
-				clipboardContent := clipboard.Read(clipboard.FmtText)
-				if bytes.HasPrefix(bytes.ToLower(clipboardContent), []byte("magnet:")) {
-					magnet = string(clipboardContent)
-				}
-			}
 			tui.ReadInputSuggestionWithValidation(&magnet, "Please enter magnet link", nil, validation)
 		}
 
