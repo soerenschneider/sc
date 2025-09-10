@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/charmbracelet/huh/spinner"
 	"github.com/charmbracelet/lipgloss"
@@ -93,6 +94,19 @@ It requires appropriate configuration and permissions set in Vault to access the
 			fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), creds.SecretAccessKey))
 
 			log.Fatal().Err(err).Msg("could not write credentials to file")
+		}
+
+		if err := spinner.New().
+			Type(spinner.Line).
+			Action(func() {
+				time.Sleep(5 * time.Second)
+			}).
+			Title("Waiting for credentials to become effective").
+			Accessible(false).
+			Context(ctx).
+			Type(spinner.Dots).
+			Run(); err != nil {
+			log.Warn().Err(err).Msg("could not display spinner")
 		}
 
 		var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("Wrote credentials")
