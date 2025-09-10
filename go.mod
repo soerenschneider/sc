@@ -16,7 +16,10 @@ require (
 	github.com/hashicorp/vault/api v1.20.0
 	github.com/jedib0t/go-pretty/v6 v6.6.7
 	github.com/keybase/go-keychain v0.0.1
+	github.com/liyue201/goqr v0.0.0-20200803022322-df443203d4ea
+	github.com/mdp/qrterminal/v3 v3.2.1
 	github.com/rs/zerolog v1.34.0
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/soerenschneider/sc-agent v1.10.0
 	github.com/spf13/afero v1.14.0
 	github.com/spf13/cobra v1.9.1
@@ -26,6 +29,7 @@ require (
 	github.com/yeqown/go-qrcode/writer/terminal v1.1.2
 	github.com/zalando/go-keyring v0.2.6
 	go.uber.org/multierr v1.11.0
+	golang.design/x/clipboard v0.7.1
 	golang.org/x/crypto v0.39.0
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sys v0.33.0
@@ -69,7 +73,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
@@ -96,7 +100,6 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/yeqown/reedsolomon v1.0.0 // indirect
-	golang.design/x/clipboard v0.7.1 // indirect
 	golang.org/x/exp/shiny v0.0.0-20250606033433-dcc06ee1d476 // indirect
 	golang.org/x/image v0.28.0 // indirect
 	golang.org/x/mobile v0.0.0-20250606033058-a2a15c67f36f // indirect
@@ -104,4 +107,5 @@ require (
 	golang.org/x/sync v0.15.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
+	rsc.io/qr v0.2.0 // indirect
 )
