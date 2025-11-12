@@ -1,6 +1,6 @@
 module github.com/soerenschneider/sc
 
-go 1.24
+go 1.24.0
 
 toolchain go1.24.4
 
@@ -30,10 +30,10 @@ require (
 	github.com/zalando/go-keyring v0.2.6
 	go.uber.org/multierr v1.11.0
 	golang.design/x/clipboard v0.7.1
-	golang.org/x/crypto v0.39.0
+	golang.org/x/crypto v0.44.0
 	golang.org/x/oauth2 v0.30.0
-	golang.org/x/sys v0.33.0
-	golang.org/x/term v0.32.0
+	golang.org/x/sys v0.38.0
+	golang.org/x/term v0.37.0
 	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -103,9 +103,9 @@ require (
 	golang.org/x/exp/shiny v0.0.0-20250606033433-dcc06ee1d476 // indirect
 	golang.org/x/image v0.28.0 // indirect
 	golang.org/x/mobile v0.0.0-20250606033058-a2a15c67f36f // indirect
-	golang.org/x/net v0.39.0 // indirect
-	golang.org/x/sync v0.15.0 // indirect
-	golang.org/x/text v0.26.0 // indirect
+	golang.org/x/net v0.46.0 // indirect
+	golang.org/x/sync v0.18.0 // indirect
+	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
 	rsc.io/qr v0.2.0 // indirect
 )
