@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.7.0](https://github.com/soerenschneider/sc/compare/v1.6.0...v1.7.0) (2025-12-02)
+
+
+### Features
+
+* block until credentials are effective ([bf818a4](https://github.com/soerenschneider/sc/commit/bf818a46ef8608ef8a4d9ecc7d31dd42d481fb26))
+* display and decode qr codes ([bd2c4d0](https://github.com/soerenschneider/sc/commit/bd2c4d0c9b08b4f09a8dbc4cbcc80f8d8eaf087c))
+* skip to password field if username already exists ([1d3004f](https://github.com/soerenschneider/sc/commit/1d3004f8cb30dcead8b0c499b583fd2f65e75a2e))
+* try to automatically parse magnet link from clipboard ([7d18531](https://github.com/soerenschneider/sc/commit/7d1853117a66056357c8c7c633f7a1635c23c2b3))
+
+
+### Bug Fixes
+
+* fix potential nil pointer access ([a30f431](https://github.com/soerenschneider/sc/commit/a30f431f30e65b49828afc37dc473c471b76b347))
+
 ## [1.6.0](https://github.com/soerenschneider/sc/compare/v1.5.0...v1.6.0) (2025-07-08)
 
 
