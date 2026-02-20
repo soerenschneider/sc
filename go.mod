@@ -22,8 +22,8 @@ require (
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/soerenschneider/sc-agent v1.10.0
 	github.com/spf13/afero v1.14.0
-	github.com/spf13/cobra v1.9.1
-	github.com/spf13/pflag v1.0.6
+	github.com/spf13/cobra v1.10.2
+	github.com/spf13/pflag v1.0.9
 	github.com/spf13/viper v1.20.1
 	github.com/yeqown/go-qrcode/v2 v2.2.5
 	github.com/yeqown/go-qrcode/writer/terminal v1.1.2
@@ -103,6 +103,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/yeqown/reedsolomon v1.0.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/exp/shiny v0.0.0-20250606033433-dcc06ee1d476 // indirect
 	golang.org/x/image v0.28.0 // indirect
 	golang.org/x/mobile v0.0.0-20250606033058-a2a15c67f36f // indirect
