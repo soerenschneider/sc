@@ -72,10 +72,10 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func Execute() {
+func Execute(ctx context.Context) {
 	defer checkUpdateWaitGroup.Wait()
 
-	err := rootCmd.Execute()
+	err := rootCmd.ExecuteContext(ctx)
 	if err != nil {
 		os.Exit(1)
 	}
