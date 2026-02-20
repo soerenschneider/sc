@@ -1,5 +1,59 @@
 # Changelog
 
+## [1.7.0](https://github.com/soerenschneider/sc/compare/v1.6.0...v1.7.0) (2026-02-20)
+
+
+### Features
+
+* block until credentials are effective ([bf818a4](https://github.com/soerenschneider/sc/commit/bf818a46ef8608ef8a4d9ecc7d31dd42d481fb26))
+* clean inactive torrents ([fbfc16d](https://github.com/soerenschneider/sc/commit/fbfc16d62bfe9ab7929d304f24bf44a449a78ffb))
+* display and decode qr codes ([bd2c4d0](https://github.com/soerenschneider/sc/commit/bd2c4d0c9b08b4f09a8dbc4cbcc80f8d8eaf087c))
+* enable writing to clipboard ([15e1a34](https://github.com/soerenschneider/sc/commit/15e1a34030afcc5c552c53416987767d4a407dc1))
+* generate xkcd-style passwords ([c01fa74](https://github.com/soerenschneider/sc/commit/c01fa7480792786a1159897080b28bbea9fcbfe9))
+* listen for signal and transport context to cobra ([6113f05](https://github.com/soerenschneider/sc/commit/6113f0506be95c52cff7134eb5a4a8f6dd719e30))
+* skip to password field if username already exists ([1d3004f](https://github.com/soerenschneider/sc/commit/1d3004f8cb30dcead8b0c499b583fd2f65e75a2e))
+* try to automatically parse magnet link from clipboard ([7d18531](https://github.com/soerenschneider/sc/commit/7d1853117a66056357c8c7c633f7a1635c23c2b3))
+
+
+### Bug Fixes
+
+* **deps:** Update dependency go to v1.26.0 ([a91bae5](https://github.com/soerenschneider/sc/commit/a91bae53a6fe2cc23c145337007623c22460d2d3))
+* **deps:** Update dependency go to v1.26.0 ([5cc25d8](https://github.com/soerenschneider/sc/commit/5cc25d83f258ca93ccbc42fe6b7026a622891fbd))
+* **deps:** Update github.com/charmbracelet/huh/spinner digest to bffc99a ([59b8830](https://github.com/soerenschneider/sc/commit/59b8830789478762cbff5e1d401e30549791f4b7))
+* **deps:** Update github.com/charmbracelet/huh/spinner digest to bffc99a ([da81c75](https://github.com/soerenschneider/sc/commit/da81c75d38c988f55de1c97116d3596658b5ed52))
+* **deps:** Update module github.com/charmbracelet/bubbles to v0.21.1 ([3b7df45](https://github.com/soerenschneider/sc/commit/3b7df455fe76257048024df01279e9153ac103ab))
+* **deps:** Update module github.com/charmbracelet/bubbles to v0.21.1 ([1bf556e](https://github.com/soerenschneider/sc/commit/1bf556e9a821561cbd4d37d62e4f2eb4cd3bb56d))
+* **deps:** Update module github.com/charmbracelet/bubbles to v1 ([15043d6](https://github.com/soerenschneider/sc/commit/15043d6b712a5bb612ec374bbf1a70ee7b6e7896))
+* **deps:** Update module github.com/charmbracelet/bubbles to v1 ([e10283c](https://github.com/soerenschneider/sc/commit/e10283cf5e222c467924b03510a76b4a0c296cfa))
+* **deps:** Update module github.com/charmbracelet/huh to v0.8.0 ([ded5307](https://github.com/soerenschneider/sc/commit/ded53072d4722ad92fed218a5c5218622a7e7197))
+* **deps:** Update module github.com/charmbracelet/huh to v0.8.0 ([289c241](https://github.com/soerenschneider/sc/commit/289c24164e6b1dde07a464fe1e14d81b3dca8f9a))
+* **deps:** Update module github.com/coreos/go-oidc/v3 to v3.17.0 ([e0e6da1](https://github.com/soerenschneider/sc/commit/e0e6da15a743152bbfcdd3fba6a32a836a5ddc61))
+* **deps:** Update module github.com/coreos/go-oidc/v3 to v3.17.0 ([5c2bfb9](https://github.com/soerenschneider/sc/commit/5c2bfb9079f0914e2d05651ae2ef01d8f5db3d5a))
+* **deps:** Update module github.com/hashicorp/vault/api to v1.22.0 ([1a35dd9](https://github.com/soerenschneider/sc/commit/1a35dd9c61f2ae1d7e4418a5c11d2e460b7e9fb5))
+* **deps:** Update module github.com/hashicorp/vault/api to v1.22.0 ([3b0f4c7](https://github.com/soerenschneider/sc/commit/3b0f4c7b9465de2c6655b09e8bda430d665c4a60))
+* **deps:** Update module github.com/jedib0t/go-pretty/v6 to v6.7.8 ([2ca742f](https://github.com/soerenschneider/sc/commit/2ca742f2b1ea728e6801def8676753d88e442102))
+* **deps:** Update module github.com/jedib0t/go-pretty/v6 to v6.7.8 ([897371f](https://github.com/soerenschneider/sc/commit/897371fd63aa947c409731816a8aa529ee66714f))
+* **deps:** Update module github.com/soerenschneider/sc-agent to v1.13.1 ([75c5872](https://github.com/soerenschneider/sc/commit/75c5872c52f6bfa685efecb041baf54bc0bae346))
+* **deps:** Update module github.com/soerenschneider/sc-agent to v1.13.1 ([94926d1](https://github.com/soerenschneider/sc/commit/94926d101420d1feb052b4f843858a7fd0eb94ed))
+* **deps:** Update module github.com/spf13/afero to v1.15.0 ([7268716](https://github.com/soerenschneider/sc/commit/72687168f5521985a5c8314a2216ca574d678e21))
+* **deps:** Update module github.com/spf13/afero to v1.15.0 ([cc7e002](https://github.com/soerenschneider/sc/commit/cc7e002b081444b93b102b4f8562c8c3f7456c1d))
+* **deps:** Update module github.com/spf13/cobra to v1.10.2 ([dd5d24c](https://github.com/soerenschneider/sc/commit/dd5d24c1eddb8f6adc4a9135d1dbca3b0cdcc619))
+* **deps:** Update module github.com/spf13/cobra to v1.10.2 ([872cc69](https://github.com/soerenschneider/sc/commit/872cc69e9eff131176c42a235d5916b0d6069983))
+* **deps:** Update module github.com/spf13/viper to v1.21.0 ([f144f8d](https://github.com/soerenschneider/sc/commit/f144f8d65bf643e40afeba2ea62afa09b0dcf54d))
+* **deps:** Update module github.com/spf13/viper to v1.21.0 ([15fc3af](https://github.com/soerenschneider/sc/commit/15fc3af404d4636547a4f61c2d7414805b50eaf2))
+* **deps:** Update module golang.org/x/crypto to v0.45.0 [SECURITY] ([423998b](https://github.com/soerenschneider/sc/commit/423998bea2b963512f98ff613b728725e32ec321))
+* **deps:** Update module golang.org/x/crypto to v0.45.0 [SECURITY] ([55f58e6](https://github.com/soerenschneider/sc/commit/55f58e6724f3ab2e892400e13a31f0df8565d47c))
+* **deps:** Update module golang.org/x/oauth2 to v0.35.0 ([a697299](https://github.com/soerenschneider/sc/commit/a697299df3e9db693acd6b1a27f2b21d6a90b932))
+* **deps:** Update module golang.org/x/oauth2 to v0.35.0 ([d7f140a](https://github.com/soerenschneider/sc/commit/d7f140ac9eee00b9b37abffc0d5e38c1dfb05419))
+* **deps:** Update module golang.org/x/sys to v0.41.0 ([9431d71](https://github.com/soerenschneider/sc/commit/9431d711b5d6e96489b90b547ae48decdd13c94c))
+* **deps:** Update module golang.org/x/sys to v0.41.0 ([2fba4c6](https://github.com/soerenschneider/sc/commit/2fba4c60ee239188b45c777195e46a3856362b04))
+* **deps:** Update module golang.org/x/term to v0.40.0 ([6765300](https://github.com/soerenschneider/sc/commit/67653000454aa372f2754001cef125bd3e4f2c99))
+* **deps:** Update module golang.org/x/term to v0.40.0 ([4d2fd41](https://github.com/soerenschneider/sc/commit/4d2fd411dad09bdc9423f4cbb89c6fc9460fe02a))
+* **deps:** Update module gopkg.in/ini.v1 to v1.67.1 ([004f93d](https://github.com/soerenschneider/sc/commit/004f93d62be8dc3e9b0c4a27b3625dbeb57928eb))
+* **deps:** Update module gopkg.in/ini.v1 to v1.67.1 ([37ac8d8](https://github.com/soerenschneider/sc/commit/37ac8d83ef7abd9bcd9307f84dd1c73990f6b10b))
+* fix cancelled context in spinner wait time ([c4ef119](https://github.com/soerenschneider/sc/commit/c4ef11937b807a04ee06df010a04868e7b29b2fa))
+* fix potential nil pointer access ([a30f431](https://github.com/soerenschneider/sc/commit/a30f431f30e65b49828afc37dc473c471b76b347))
+
 ## [1.6.0](https://github.com/soerenschneider/sc/compare/v1.5.0...v1.6.0) (2025-07-08)
 
 
