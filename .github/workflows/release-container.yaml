@@ -28,7 +28,7 @@ jobs:
           package-name: ${{ github.repository }}
 
       - name: Checkout
-        uses: actions/checkout@v4.3.1
+        uses: actions/checkout@v6.0.2
         if: ${{ steps.release.outputs.release_created }}
 
       - name: Log in to the container registry
@@ -49,7 +49,7 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
 
       - name: Build and push container image
-        uses: docker/build-push-action@v6.18.0
+        uses: docker/build-push-action@v6.19.2
         with:
           context: .
           push: true
