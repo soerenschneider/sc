@@ -67,33 +67,35 @@ It requires appropriate configuration and permissions set in Vault to access the
 			}
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)
-		defer cancel()
+		{
+			ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)
+			defer cancel()
 
-		var creds *vault.AwsCredentials
-		if err := spinner.New().
-			Type(spinner.Line).
-			ActionWithErr(func(ctx context.Context) error {
-				var err error
-				creds, err = client.AwsGenCreds(ctx, mount, role, strconv.Itoa(ttl))
-				return err
-			}).
-			Title(fmt.Sprintf("Generating credentials for role %s", role)).
-			Accessible(false).
-			Context(ctx).
-			Type(spinner.Dots).
-			Run(); err != nil {
-			log.Fatal().Err(err).Msg("failed to generate credentials")
-		}
+			var creds *vault.AwsCredentials
+			if err := spinner.New().
+				Type(spinner.Line).
+				ActionWithErr(func(ctx context.Context) error {
+					var err error
+					creds, err = client.AwsGenCreds(ctx, mount, role, strconv.Itoa(ttl))
+					return err
+				}).
+				Title(fmt.Sprintf("Generating credentials for role %s", role)).
+				Accessible(false).
+				Context(ctx).
+				Type(spinner.Dots).
+				Run(); err != nil {
+				log.Fatal().Err(err).Msg("failed to generate credentials")
+			}
 
-		if err := updateAwsCredentialsFile(profile, *creds); err != nil {
-			var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("access_key")
-			fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), creds.AccessKeyID))
+			if err := updateAwsCredentialsFile(profile, *creds); err != nil {
+				var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("access_key")
+				fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), creds.AccessKeyID))
 
-			outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("secret_key")
-			fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), creds.SecretAccessKey))
+				outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("secret_key")
+				fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), creds.SecretAccessKey))
 
-			log.Fatal().Err(err).Msg("could not write credentials to file")
+				log.Fatal().Err(err).Msg("could not write credentials to file")
+			}
 		}
 
 		if err := spinner.New().
@@ -103,7 +105,6 @@ It requires appropriate configuration and permissions set in Vault to access the
 			}).
 			Title("Waiting for credentials to become effective").
 			Accessible(false).
-			Context(ctx).
 			Type(spinner.Dots).
 			Run(); err != nil {
 			log.Warn().Err(err).Msg("could not display spinner")
