@@ -65,12 +65,14 @@ func clearPassword(ctx context.Context, generatedPw string) {
 }
 
 func printPasswordTemporarily(ctx context.Context, pw string) {
-	fd := int(os.Stdin.Fd())
+	fd := int(os.Stdin.Fd()) //#nosec:G115
 
 	// put terminal in raw mode (no Enter key, no echo)
 	oldState, err := term.MakeRaw(fd)
 	if err == nil {
-		defer term.Restore(fd, oldState)
+		defer func() {
+			_ = term.Restore(fd, oldState)
+		}()
 	}
 
 	fmt.Print(pw)

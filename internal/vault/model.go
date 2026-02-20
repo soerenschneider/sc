@@ -26,7 +26,7 @@ type PkiIssueArgs struct {
 }
 
 type PkiCertData struct {
-	PrivateKey  []byte
+	PrivateKey  []byte //#nosec:G117
 	Certificate []byte
 	CaData      []byte
 	Csr         []byte

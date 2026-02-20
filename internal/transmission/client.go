@@ -156,6 +156,7 @@ func (c *TransmissionClient) doRequestWithRetry(ctx context.Context, payload any
 		req.SetBasicAuth(c.username, c.password)
 	}
 
+	// #nosec G704
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err

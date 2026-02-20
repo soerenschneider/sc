@@ -10,9 +10,9 @@ import (
 func agentFormatPostHooks(hooks []api.PostHooks) string {
 	var sb strings.Builder
 	for _, hook := range hooks {
-		sb.WriteString(fmt.Sprintf(`  Name: %s
+		_, _ = fmt.Fprintf(&sb, `  Name: %s
   Cmd : %s
-`, hook.Name, hook.Cmd))
+`, hook.Name, hook.Cmd)
 	}
 	return sb.String()
 }

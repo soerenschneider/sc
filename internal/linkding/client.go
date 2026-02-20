@@ -64,6 +64,7 @@ func (c *LinkdingClient) AddBookmark(ctx context.Context, bookmark Bookmark) (in
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Token "+c.token)
 
+	// #nosec G704
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return -1, err
@@ -106,6 +107,7 @@ func (c *LinkdingClient) ListBookmarks(ctx context.Context, query string, limit 
 		}
 		req.Header.Set("Authorization", "Token "+c.token)
 
+		// #nosec G704
 		resp, err := c.client.Do(req)
 		if err != nil {
 			return err
@@ -158,6 +160,7 @@ func (c *LinkdingClient) GetAllTags(ctx context.Context) ([]Tag, error) {
 		}
 		req.Header.Set("Authorization", "Token "+c.token)
 
+		// #nosec G704
 		resp, err := c.client.Do(req)
 		if err != nil {
 			return err

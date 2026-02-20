@@ -43,7 +43,7 @@ func PrintMapOutput(data map[string]any, problematicColumns ...string) {
 
 		val := valueStyle.Render(fmt.Sprintf("%v", v))
 		spaces := strings.Repeat(" ", indent)
-		builder.WriteString(fmt.Sprintf("%s%s%s\n", key, spaces, val))
+		_, _ = fmt.Fprintf(&builder, "%s%s%s\n", key, spaces, val)
 	}
 
 	rendered := builder.String()

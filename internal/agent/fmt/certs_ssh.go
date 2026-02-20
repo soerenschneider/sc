@@ -116,7 +116,7 @@ func formatMap(m map[string]string) string {
 
 	var sb strings.Builder
 	for key, value := range m {
-		sb.WriteString(fmt.Sprintf("%s: %s; ", key, value))
+		_, _ = fmt.Fprintf(&sb, "%s: %s; ", key, value)
 	}
 
 	return strings.TrimSuffix(sb.String(), "; ")

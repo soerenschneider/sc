@@ -104,10 +104,10 @@ func formatPkiCertificateConfig(c api.X509CertificateConfig) string {
 func formatPkiCertificateStorages(storageConfigs []api.X509CertificateStorage) string {
 	var sb strings.Builder
 	for _, storage := range storageConfigs {
-		sb.WriteString(fmt.Sprintf(`  CA File    : %s
+		_, _ = fmt.Fprintf(&sb, `  CA File    : %s
   Cert File  : %s
   Key File   : %s
-`, storage.CaFile, storage.CertFile, storage.KeyFile))
+`, storage.CaFile, storage.CertFile, storage.KeyFile)
 	}
 	return sb.String()
 }

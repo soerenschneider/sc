@@ -31,11 +31,13 @@ func QueryPrometheus(ctx context.Context, query, endpoint string) (map[string]fl
 	q.Set("query", query)
 	req.URL.RawQuery = q.Encode()
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req) //#nosec:G704
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)

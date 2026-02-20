@@ -76,7 +76,8 @@ func QueryVictorialogs(ctx context.Context, args VictorialogsQuery) ([]LogEntry,
 	req.URL.RawQuery = q.Encode()
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	// #nosec:G704
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

@@ -56,7 +56,7 @@ func PrintTable(tableHeader string, headers []string, data [][]string, opts Tabl
 	var width int
 	if opts.FullWidth {
 		var err error
-		width, _, err = term.GetSize(int(os.Stdout.Fd()))
+		width, _, err = term.GetSize(int(os.Stdout.Fd())) //#nosec:G115
 		if err != nil {
 			fmt.Println("Error getting terminal size:", err)
 			return

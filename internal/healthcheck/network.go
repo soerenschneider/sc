@@ -28,11 +28,8 @@ func CheckHTTP(ctx context.Context, url string) (time.Duration, error) {
 		return 0, err
 	}
 
-	client := http.Client{
-		Timeout: 3 * time.Second,
-	}
 	start := time.Now()
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req) //#nosec:G704
 	duration := time.Since(start)
 	if err != nil {
 		return duration, err
