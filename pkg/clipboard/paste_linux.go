@@ -1,7 +1,9 @@
 package clipboard
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 )
 
@@ -14,7 +16,7 @@ func PasteClipboard() (string, error) {
 		return string(out), err
 	}
 
-	return fmt.Errorf("%w: wl-paste", ErrToolNotFound)
+	return "", fmt.Errorf("%w: wl-paste", ErrToolNotFound)
 }
 
 func CopyClipboard(text string) error {
