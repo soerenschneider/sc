@@ -2,7 +2,7 @@ module github.com/soerenschneider/sc
 
 go 1.24
 
-toolchain go1.24.4
+toolchain go1.26.0
 
 require (
 	github.com/charmbracelet/bubbles v0.21.0
