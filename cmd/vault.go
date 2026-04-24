@@ -46,6 +46,10 @@ const (
 
 	vaultForce          = "force"
 	vaultDefaultTimeout = 7 * time.Second
+
+	vaultSecretSyncName   = "name"
+	vaultSecretSyncConfig = "sync-config"
+	vaultSecretSyncAll    = "all"
 )
 
 var vaultTotpAlgorithms = []string{"SHA1", "SHA256", "SHA512"}
