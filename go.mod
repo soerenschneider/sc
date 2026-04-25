@@ -2,23 +2,24 @@ module github.com/soerenschneider/sc
 
 go 1.25.0
 
-toolchain go1.26.0
+toolchain go1.26.2
 
 require (
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10
-	github.com/charmbracelet/huh v0.8.0
+	github.com/charmbracelet/huh/v2 v2.0.3
 	github.com/charmbracelet/huh/spinner v0.0.0-20260216111231-bffc99a26329
-	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/coreos/go-oidc/v3 v3.17.0
+	github.com/charmbracelet/lipgloss/v2 v2.0.3
+	github.com/coreos/go-oidc/v3 v3.18.0
 	github.com/dustin/go-humanize v1.0.1
+	github.com/go-playground/validator/v10 v10.30.1
 	github.com/hashicorp/go-retryablehttp v0.7.8
-	github.com/hashicorp/vault/api v1.22.0
-	github.com/jedib0t/go-pretty/v6 v6.7.8
+	github.com/hashicorp/vault/api v1.23.0
+	github.com/jedib0t/go-pretty/v6 v6.7.10
 	github.com/keybase/go-keychain v0.0.1
 	github.com/liyue201/goqr v0.0.0-20200803022322-df443203d4ea
 	github.com/mdp/qrterminal/v3 v3.2.1
-	github.com/rs/zerolog v1.34.0
+	github.com/rs/zerolog v1.35.1
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/soerenschneider/sc-agent v1.13.1
 	github.com/spf13/afero v1.15.0
@@ -32,8 +33,8 @@ require (
 	golang.design/x/clipboard v0.7.1
 	golang.org/x/crypto v0.47.0
 	golang.org/x/oauth2 v0.35.0
-	golang.org/x/sys v0.41.0
-	golang.org/x/term v0.40.0
+	golang.org/x/sys v0.43.0
+	golang.org/x/term v0.42.0
 	gopkg.in/ini.v1 v1.67.1
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -57,10 +58,13 @@ require (
 	github.com/danieljoos/wincred v1.2.2 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.12 // indirect
 	github.com/getkin/kin-openapi v0.133.0 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
+	github.com/go-playground/locales v0.14.1 // indirect
+	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -74,6 +78,7 @@ require (
 	github.com/hashicorp/hcl v1.0.1-vault-7 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
+	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
