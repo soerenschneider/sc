@@ -48,6 +48,10 @@ var vaultSecretSyncCmd = &cobra.Command{
 		secretName := pkg.GetString(cmd, vaultSecretSyncName)
 		syncAllSecrets, _ := pkg.GetBool(cmd, vaultSecretSyncAll)
 
+		if secretName == "" && !syncAllSecrets {
+			log.Fatal().Msg("No secret name given")
+		}
+
 		config, err := readSecretsConfiguration(syncConfig)
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not read secrets configuration")
@@ -63,7 +67,7 @@ var vaultSecretSyncCmd = &cobra.Command{
 		if !syncAllSecrets {
 			item, found := config.Items[secretName]
 			if !found {
-				log.Fatal().Msgf("secret %s not found", secretName)
+				log.Fatal().Msgf("secret %q not found in configuration", secretName)
 			}
 
 			if err := syncItem(ctx, client, mount, item); err != nil {
@@ -204,6 +208,7 @@ func init() {
 
 	vaultSecretSyncCmd.Flags().BoolP(vaultSecretSyncAll, "a", false, "Flag to sync all secrets")
 	vaultSecretSyncCmd.Flags().StringP(vaultSecretSyncName, "n", "", "Name of the secret to sync")
+	vaultSecretSyncCmd.MarkFlagsMutuallyExclusive(vaultSecretSyncAll, vaultSecretSyncName)
 
 	vaultSecretSyncCmd.Flags().StringP(vaultSecretSyncConfig, "c", "", "Config file that holds secret sync configuration")
 	if err := vaultSecretSyncCmd.MarkFlagRequired(vaultSecretSyncConfig); err != nil {
