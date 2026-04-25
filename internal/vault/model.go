@@ -32,19 +32,19 @@ type PkiCertData struct {
 	Csr         []byte
 }
 
-func (certData *PkiCertData) AsContainer() string {
+func (cert *PkiCertData) AsContainer() string {
 	var buffer strings.Builder
 
-	if certData.HasCaData() {
-		buffer.Write(certData.CaData)
+	if cert.HasCaData() {
+		buffer.Write(cert.CaData)
 		buffer.Write([]byte("\n"))
 	}
 
-	buffer.Write(certData.Certificate)
+	buffer.Write(cert.Certificate)
 	buffer.Write([]byte("\n"))
 
-	if certData.HasPrivateKey() {
-		buffer.Write(certData.PrivateKey)
+	if cert.HasPrivateKey() {
+		buffer.Write(cert.PrivateKey)
 		buffer.Write([]byte("\n"))
 	}
 
@@ -71,4 +71,17 @@ type PkiSignature struct {
 
 func (cert *PkiSignature) HasCaData() bool {
 	return len(cert.CaData) > 0
+}
+
+type Kv2SyncConfig struct {
+	SecretPath    string                 `yaml:"secret_path" validate:"required"`
+	DestUri       string                 `yaml:"dest_uri" validate:"required,filepath"`
+	Formatter     string                 `yaml:"formatter" validate:"oneof=env template json yaml"`
+	FormatterArgs map[string]interface{} `yaml:"formatter_args"`
+}
+
+type StorageImplementation interface {
+	Read() ([]byte, error)
+	CanRead() error
+	Write([]byte) error
 }
