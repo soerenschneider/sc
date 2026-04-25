@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/charmbracelet/huh/spinner"
+	"charm.land/huh/v2/spinner"
 	"github.com/hashicorp/vault/api"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/pki"
@@ -83,7 +83,7 @@ var vaultPkiIssueCmd = &cobra.Command{
 
 func issuePkiCert(client *vault.VaultClient, storageImpl pkiStorage, opts vaultPkiIssueOpts, issueArgs vault.PkiIssueArgs) {
 	existingCert, err := storageImpl.ReadCert()
-	if err != nil && !errors.Is(err, pki.ErrNoCertFound) {
+	if err != nil && !errors.Is(err, pki.ErrNotFound) {
 		log.Fatal().Err(err).Msg("could not read certificate")
 	}
 
@@ -106,7 +106,6 @@ func issuePkiCert(client *vault.VaultClient, storageImpl pkiStorage, opts vaultP
 			return err
 		}).
 		Title("Issuing new x509 certificate...").
-		Accessible(false).
 		Context(ctx).
 		Type(spinner.Dots).
 		Run(); err != nil {
@@ -140,7 +139,6 @@ func isIssueNewCert(ctx context.Context, client *vault.VaultClient, opts vaultPk
 			return err
 		}).
 		Title("Fetching ca-chain from Vault").
-		Accessible(false).
 		Context(ctx).
 		Type(spinner.Dots).
 		Run(); err != nil {

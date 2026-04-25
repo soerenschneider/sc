@@ -9,9 +9,9 @@ import (
 	"os/user"
 	"strings"
 
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/huh/spinner"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/huh/v2"
+	"charm.land/huh/v2/spinner"
+	"charm.land/lipgloss/v2"
 	"github.com/hashicorp/vault/api"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/tui"
@@ -104,7 +104,6 @@ to stdout as a fallback.`,
 			Type(spinner.Line).
 			ActionWithErr(sendPasswordFunc).
 			Title("Sending login request...").
-			Accessible(false).
 			Context(ctx).
 			Type(spinner.Dots).
 			Run(); err != nil {
@@ -143,7 +142,6 @@ to stdout as a fallback.`,
 				Type(spinner.Line).
 				ActionWithErr(sendOtpFunc).
 				Title("Sending OTP...").
-				Accessible(false).
 				Context(ctx).
 				Type(spinner.Dots).
 				Run(); err != nil {

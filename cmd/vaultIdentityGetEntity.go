@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 
-	"github.com/charmbracelet/huh/spinner"
+	"charm.land/huh/v2/spinner"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"
@@ -44,7 +44,6 @@ Note: This command may require appropriate Vault permissions to access identity 
 					return nil
 				}).
 				Title("Loading available entities...").
-				Accessible(false).
 				Context(ctx).
 				Type(spinner.Dots).
 				Run(); err != nil {

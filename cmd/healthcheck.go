@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charmbracelet/huh/spinner"
+	"charm.land/huh/v2/spinner"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/healthcheck"
 	"github.com/soerenschneider/sc/internal/tui"
@@ -89,7 +89,6 @@ var healthcheckCmd = &cobra.Command{
 				return nil
 			}).
 			Title("Collection health data...").
-			Accessible(false).
 			Context(ctx).
 			Type(spinner.Dots).
 			Run(); err != nil {

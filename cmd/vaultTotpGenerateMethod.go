@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/huh/spinner"
+	"charm.land/huh/v2"
+	"charm.land/huh/v2/spinner"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/soerenschneider/sc/pkg"
@@ -70,7 +70,6 @@ to inspect or manage tokens.`,
 				return err
 			}).
 			Title("Generating TOTP method").
-			Accessible(false).
 			Context(ctx).
 			Type(spinner.Dots).
 			Run(); err != nil {

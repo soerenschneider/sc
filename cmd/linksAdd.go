@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/charmbracelet/huh/spinner"
+	"charm.land/huh/v2/spinner"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/linkding"
 	"github.com/soerenschneider/sc/internal/tui"
@@ -59,7 +59,6 @@ Examples:
 				return err
 			}).
 			Title("Adding bookmark...").
-			Accessible(false).
 			Context(ctx).
 			Type(spinner.Dots).
 			Run(); err != nil {

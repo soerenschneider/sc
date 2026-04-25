@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/huh/spinner"
+	"charm.land/huh/v2"
+	"charm.land/huh/v2/spinner"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/transmission"
 	"github.com/soerenschneider/sc/pkg"
@@ -46,7 +46,6 @@ Examples:
 					return err
 				}).
 				Title("Fetching list of torrents...").
-				Accessible(false).
 				Context(ctx).
 				Type(spinner.Dots).
 				Run(); err != nil {

@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/charmbracelet/huh/spinner"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/huh/v2/spinner"
+	"charm.land/lipgloss/v2"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"
@@ -52,7 +52,6 @@ It requires appropriate configuration and permissions set in Vault to access the
 					return nil
 				}).
 				Title("Loading available roles...").
-				Accessible(false).
 				Context(ctx).
 				Type(spinner.Dots).
 				Run(); err != nil {
@@ -80,7 +79,6 @@ It requires appropriate configuration and permissions set in Vault to access the
 					return err
 				}).
 				Title(fmt.Sprintf("Generating credentials for role %s", role)).
-				Accessible(false).
 				Context(ctx).
 				Type(spinner.Dots).
 				Run(); err != nil {
@@ -104,7 +102,6 @@ It requires appropriate configuration and permissions set in Vault to access the
 				time.Sleep(5 * time.Second)
 			}).
 			Title("Waiting for credentials to become effective").
-			Accessible(false).
 			Type(spinner.Dots).
 			Run(); err != nil {
 			log.Warn().Err(err).Msg("could not display spinner")

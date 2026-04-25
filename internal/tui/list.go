@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/list"
+	tea "charm.land/bubbletea/v2"
 )
 
 type item string
@@ -80,8 +80,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m model) View() string {
-	return m.list.View()
+func (m model) View() tea.View {
+	return tea.NewView(m.list.View())
 }
 
 func DisplayList(items []string, readonly bool) {

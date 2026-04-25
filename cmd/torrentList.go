@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 
-	"github.com/charmbracelet/huh/spinner"
+	"charm.land/huh/v2/spinner"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/transmission"
 	"github.com/soerenschneider/sc/internal/tui"
@@ -39,7 +39,6 @@ Examples:
 				return err
 			}).
 			Title("Fetching list of torrents...").
-			Accessible(false).
 			Context(ctx).
 			Type(spinner.Dots).
 			Run(); err != nil {

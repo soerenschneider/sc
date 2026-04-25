@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/huh/spinner"
+	"charm.land/huh/v2/spinner"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/ssh"
 	"github.com/soerenschneider/sc/internal/tui"
@@ -89,7 +89,6 @@ var sshSignKeyCmd = &cobra.Command{
 				return err
 			}).
 			Title("Sending signature request...").
-			Accessible(false).
 			Context(ctx).
 			Type(spinner.Dots).
 			Run(); err != nil {
