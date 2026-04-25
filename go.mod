@@ -1,15 +1,10 @@
 module github.com/soerenschneider/sc
 
-go 1.25.0
+go 1.25.8
 
 toolchain go1.26.2
 
 require (
-	github.com/charmbracelet/bubbles v1.0.0
-	github.com/charmbracelet/bubbletea v1.3.10
-	github.com/charmbracelet/huh/v2 v2.0.3
-	github.com/charmbracelet/huh/spinner v0.0.0-20260216111231-bffc99a26329
-	github.com/charmbracelet/lipgloss/v2 v2.0.3
 	github.com/coreos/go-oidc/v3 v3.18.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-playground/validator/v10 v10.30.1
@@ -32,28 +27,36 @@ require (
 	go.uber.org/multierr v1.11.0
 	golang.design/x/clipboard v0.7.1
 	golang.org/x/crypto v0.47.0
-	golang.org/x/oauth2 v0.35.0
+	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sys v0.43.0
 	golang.org/x/term v0.42.0
 	gopkg.in/ini.v1 v1.67.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
+require charm.land/bubbles/v2 v2.1.0 // indirect
+
 require (
 	al.essio.dev/pkg/shellescape v1.5.1 // indirect
+	charm.land/bubbletea/v2 v2.0.6 // indirect
+	charm.land/huh/v2 v2.0.3 // indirect
+	charm.land/lipgloss/v2 v2.0.3 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/catppuccin/go v0.3.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
-	github.com/charmbracelet/colorprofile v0.4.1 // indirect
-	github.com/charmbracelet/x/ansi v0.11.6 // indirect
-	github.com/charmbracelet/x/cellbuf v0.0.15 // indirect
+	github.com/charmbracelet/colorprofile v0.4.3 // indirect
+	github.com/charmbracelet/ultraviolet v0.0.0-20260416155717-489999b90468 // indirect
+	github.com/charmbracelet/x/ansi v0.11.7 // indirect
+	github.com/charmbracelet/x/exp/ordered v0.1.0 // indirect
 	github.com/charmbracelet/x/exp/strings v0.0.0-20240722160745-212f7b056ed0 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
-	github.com/clipperhouse/displaywidth v0.9.0 // indirect
+	github.com/charmbracelet/x/termios v0.1.1 // indirect
+	github.com/charmbracelet/x/windows v0.2.2 // indirect
+	github.com/clipperhouse/displaywidth v0.11.0 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
-	github.com/clipperhouse/uax29/v2 v2.5.0 // indirect
+	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.6 // indirect
 	github.com/danieljoos/wincred v1.2.2 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
@@ -79,12 +82,12 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
-	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
+	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
-	github.com/mattn/go-runewidth v0.0.19 // indirect
+	github.com/mattn/go-runewidth v0.0.23 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
@@ -114,6 +117,7 @@ require (
 	golang.org/x/image v0.38.0 // indirect
 	golang.org/x/mobile v0.0.0-20250606033058-a2a15c67f36f // indirect
 	golang.org/x/net v0.49.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/text v0.35.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	rsc.io/qr v0.2.0 // indirect
