@@ -83,7 +83,7 @@ var vaultPkiIssueCmd = &cobra.Command{
 
 func issuePkiCert(client *vault.VaultClient, storageImpl pkiStorage, opts vaultPkiIssueOpts, issueArgs vault.PkiIssueArgs) {
 	existingCert, err := storageImpl.ReadCert()
-	if err != nil && !errors.Is(err, pki.ErrNoCertFound) {
+	if err != nil && !errors.Is(err, pki.ErrNotFound) {
 		log.Fatal().Err(err).Msg("could not read certificate")
 	}
 
