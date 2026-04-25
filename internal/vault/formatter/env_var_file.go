@@ -15,13 +15,13 @@ func NewEnvVarFormatter(uppercaseKeys bool) *EnvVarFormatter {
 }
 
 func (y *EnvVarFormatter) Format(data map[string]any) ([]byte, error) {
-	var buffer bytes.Buffer
+	var buffer *bytes.Buffer
 
 	for key, value := range data {
 		if y.uppercaseKeys {
 			key = strings.ToUpper(key)
 		}
-		_, _ = buffer.WriteString(fmt.Sprintf("%s=%s\n", key, value))
+		_, _ = fmt.Fprintf(buffer, "%s=%s\n", key, value)
 	}
 
 	return buffer.Bytes(), nil
