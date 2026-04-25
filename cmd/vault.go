@@ -48,7 +48,7 @@ const (
 	vaultDefaultTimeout = 7 * time.Second
 
 	vaultSecretSyncName   = "name"
-	vaultSecretSyncConfig = "sync-config"
+	vaultSecretSyncConfig = "sync-config" //#nosec:G101
 	vaultSecretSyncAll    = "all"
 )
 
