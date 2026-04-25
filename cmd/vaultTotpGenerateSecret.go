@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/charmbracelet/huh/spinner"
+	"charm.land/huh/v2/spinner"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal"
 	"github.com/soerenschneider/sc/internal/tui"
@@ -51,7 +51,6 @@ to inspect or manage tokens.`,
 					return nil
 				}).
 				Title("Loading available methods...").
-				Accessible(false).
 				Context(ctx).
 				Type(spinner.Dots).
 				Run(); err != nil {
@@ -82,7 +81,6 @@ to inspect or manage tokens.`,
 					return nil
 				}).
 				Title("Loading available entities...").
-				Accessible(false).
 				Context(ctx).
 				Type(spinner.Dots).
 				Run(); err != nil {
@@ -107,7 +105,6 @@ to inspect or manage tokens.`,
 				return err
 			}).
 			Title(fmt.Sprintf("Fetching entity_id for entity_name %q", entityName)).
-			Accessible(false).
 			Context(ctx).
 			Type(spinner.Dots).
 			Run(); err != nil {

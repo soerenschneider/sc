@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/charmbracelet/huh/spinner"
+	"charm.land/huh/v2/spinner"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/linkding"
 	"github.com/soerenschneider/sc/pkg"
@@ -44,7 +44,6 @@ Examples:
 				return err
 			}).
 			Title("Receiving tags...").
-			Accessible(false).
 			Context(ctx).
 			Type(spinner.Dots).
 			Run(); err != nil {

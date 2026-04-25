@@ -6,8 +6,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/huh/spinner"
+	"charm.land/huh/v2"
+	"charm.land/huh/v2/spinner"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/healthcheck"
 	"github.com/soerenschneider/sc/internal/tui"
@@ -70,7 +70,6 @@ for integration with scripts or for human-readable views.`,
 				return err
 			}).
 			Title("Receiving logs data...").
-			Accessible(false).
 			Context(ctx).
 			Type(spinner.Dots).
 			Run(); err != nil {

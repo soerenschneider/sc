@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/charmbracelet/huh/spinner"
+	"charm.land/huh/v2/spinner"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/soerenschneider/sc/pkg"
@@ -39,7 +39,6 @@ var vaultPkiReadCaCmd = &cobra.Command{
 				return err
 			}).
 			Title("Fetching ca data from Vault").
-			Accessible(false).
 			Context(ctx).
 			Type(spinner.Dots).
 			Run(); err != nil {

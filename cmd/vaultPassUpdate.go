@@ -5,7 +5,7 @@ import (
 	"errors"
 	"os/user"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"

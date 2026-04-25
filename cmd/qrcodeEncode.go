@@ -3,7 +3,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 	"github.com/mdp/qrterminal/v3"
 	"github.com/rs/zerolog/log"
 	qrcode "github.com/skip2/go-qrcode"
