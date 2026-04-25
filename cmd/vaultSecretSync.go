@@ -35,6 +35,7 @@ const (
 	vaultSecretSyncFormatterEnvOptionUppercaseKeys     = "uppercase_keys"
 	vaultSecretSyncFormatterTemplateKey                = "template"
 	vaultSecretSyncFormatterTemplateOptionTemplateFile = "file"
+	vaultSecretSyncFormatterTemplateOptionTemplate     = "template"
 )
 
 var vaultSecretSyncCmd = &cobra.Command{
@@ -167,7 +168,7 @@ func buildSecretFormatter(name string, arguments map[string]any) (secretFormatte
 		if arguments == nil {
 			return nil, errors.New("no formatter arguments found")
 		}
-		var templateFile string
+		var templateFile, template string
 		val, found := arguments[vaultSecretSyncFormatterTemplateOptionTemplateFile]
 		if found {
 			convertedVal, success := val.(string)
@@ -175,7 +176,24 @@ func buildSecretFormatter(name string, arguments map[string]any) (secretFormatte
 				templateFile = convertedVal
 			}
 		}
-		return formatter.NewTemplateFormatter(pkg.GetExpandedFile(templateFile))
+
+		val, found = arguments[vaultSecretSyncFormatterTemplateOptionTemplate]
+		if found {
+			convertedVal, success := val.(string)
+			if success {
+				template = convertedVal
+			}
+		}
+
+		if template != "" && templateFile != "" {
+			return nil, errors.New("both template and templateFile specified")
+		}
+
+		if templateFile != "" {
+			return formatter.NewTemplateFormatterFromFile(pkg.GetExpandedFile(templateFile))
+		}
+
+		return formatter.NewTemplateFormatterFromTemplate(template)
 	default:
 		return nil, errors.New("no implementation found")
 	}

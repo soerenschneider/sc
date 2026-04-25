@@ -9,7 +9,18 @@ type TemplateFormatter struct {
 	tmpl *template.Template
 }
 
-func NewTemplateFormatter(file string) (*TemplateFormatter, error) {
+func NewTemplateFormatterFromTemplate(tmpl string) (*TemplateFormatter, error) {
+	t, err := template.New("tmpl").Parse(tmpl)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TemplateFormatter{
+		tmpl: t,
+	}, nil
+}
+
+func NewTemplateFormatterFromFile(file string) (*TemplateFormatter, error) {
 	t, err := template.ParseFiles(file)
 	if err != nil {
 		return nil, err
