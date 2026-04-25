@@ -557,6 +557,10 @@ func (c *VaultClient) SshGetCa(ctx context.Context, mount string) ([]byte, error
 	return data, nil
 }
 
+func (c *VaultClient) ReadSecret(ctx context.Context, mount, path string) (*vault.KVSecret, error) {
+	return c.client.KVv2(mount).Get(ctx, path)
+}
+
 func buildIssueRequestArgs(args PkiIssueArgs) map[string]any {
 	data := map[string]any{
 		"common_name": args.CommonName,

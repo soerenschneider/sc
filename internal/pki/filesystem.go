@@ -134,7 +134,7 @@ func (fs *FilesystemStorage) Read() ([]byte, error) {
 	data, err := os.ReadFile(fs.FilePath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return nil, ErrNoCertFound
+			return nil, ErrNotFound
 		}
 		return nil, err
 	}
