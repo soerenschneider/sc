@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.8.0](https://github.com/soerenschneider/sc/compare/v1.7.0...v1.8.0) (2026-04-25)
+
+
+### Features
+
+* kv2 secret sync ([#198](https://github.com/soerenschneider/sc/issues/198)) ([ea18808](https://github.com/soerenschneider/sc/commit/ea18808f7990374576d55d6509534e687179b2ff))
+
+
+### Bug Fixes
+
+* **deps:** Update dependency go to v1.26.2 ([#182](https://github.com/soerenschneider/sc/issues/182)) ([e5a7ce4](https://github.com/soerenschneider/sc/commit/e5a7ce48ce47b499f3926c7855b4e68516c30897))
+* **deps:** Update module github.com/charmbracelet/huh to v2 ([#187](https://github.com/soerenschneider/sc/issues/187)) ([b38d4cc](https://github.com/soerenschneider/sc/commit/b38d4cc1e045820f81142fdd5318fab9b6737c03))
+* **deps:** Update module github.com/charmbracelet/lipgloss to v2 ([#179](https://github.com/soerenschneider/sc/issues/179)) ([c58c166](https://github.com/soerenschneider/sc/commit/c58c166ec0fef01556987b17df4aeb6ede5bec5b))
+* **deps:** Update module github.com/coreos/go-oidc/v3 to v3.18.0 ([#195](https://github.com/soerenschneider/sc/issues/195)) ([394c7d1](https://github.com/soerenschneider/sc/commit/394c7d19638f9bbc9b9501547a60ef6055a708de))
+* **deps:** Update module github.com/hashicorp/vault/api to v1.23.0 ([#190](https://github.com/soerenschneider/sc/issues/190)) ([4fd565e](https://github.com/soerenschneider/sc/commit/4fd565ed49b107c1835a7fa1b87234911ce208a2))
+* **deps:** Update module github.com/jedib0t/go-pretty/v6 to v6.7.10 ([3f86219](https://github.com/soerenschneider/sc/commit/3f8621937cc756c6926c2dbb5abe707c2815df46))
+* **deps:** Update module github.com/jedib0t/go-pretty/v6 to v6.7.10 ([531d564](https://github.com/soerenschneider/sc/commit/531d56476bfb41d1fbb6bccd91338754a21a64e7))
+* **deps:** Update module github.com/rs/zerolog to v1.35.1 ([#191](https://github.com/soerenschneider/sc/issues/191)) ([2114654](https://github.com/soerenschneider/sc/commit/21146545457a179f0c209b50c42b923f9623c5f8))
+* **deps:** Update module github.com/zalando/go-keyring to v0.2.8 ([#189](https://github.com/soerenschneider/sc/issues/189)) ([064f9d7](https://github.com/soerenschneider/sc/commit/064f9d7fd4ed241e3876e2a6f1442b8199cc2448))
+* **deps:** Update module golang.org/x/crypto to v0.50.0 ([#175](https://github.com/soerenschneider/sc/issues/175)) ([bbcb476](https://github.com/soerenschneider/sc/commit/bbcb4760deaba10ac1eb0b3cc1b7837a7b4ae4f4))
+* **deps:** Update module golang.org/x/oauth2 to v0.36.0 ([#185](https://github.com/soerenschneider/sc/issues/185)) ([2ea031a](https://github.com/soerenschneider/sc/commit/2ea031a1b9ea079a67d0be7160b3bb080873b0fe))
+* **deps:** Update module golang.org/x/sys to v0.43.0 ([#186](https://github.com/soerenschneider/sc/issues/186)) ([98ff804](https://github.com/soerenschneider/sc/commit/98ff8041d8d1d9fcbc161182e4ce981696611737))
+* **deps:** Update module golang.org/x/term to v0.42.0 ([#188](https://github.com/soerenschneider/sc/issues/188)) ([0e87ffb](https://github.com/soerenschneider/sc/commit/0e87ffb873fad8c0d91cf682cc8ff2d299f75c39))
+
 ## [1.7.0](https://github.com/soerenschneider/sc/compare/v1.6.0...v1.7.0) (2026-02-20)
 
 
