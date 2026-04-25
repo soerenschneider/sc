@@ -14,12 +14,12 @@ import (
 
 var (
 	ErrValidationFailed = errors.New("cert validation failed")
-	ErrNoCertFound      = errors.New("no existing cert found")
+	ErrNotFound         = errors.New("no existing item found")
 )
 
 func ParseCertPem(data []byte) (*x509.Certificate, error) {
 	if data == nil {
-		return nil, errors.New("emtpy data provided")
+		return nil, errors.New("empty data provided")
 	}
 
 	var der *pem.Block
