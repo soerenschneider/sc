@@ -19,7 +19,7 @@ require (
 	github.com/keybase/go-keychain v0.0.1
 	github.com/liyue201/goqr v0.0.0-20200803022322-df443203d4ea
 	github.com/mdp/qrterminal/v3 v3.2.1
-	github.com/rs/zerolog v1.34.0
+	github.com/rs/zerolog v1.35.1
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/soerenschneider/sc-agent v1.13.1
 	github.com/spf13/afero v1.15.0
