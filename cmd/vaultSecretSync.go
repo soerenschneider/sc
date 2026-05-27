@@ -21,7 +21,7 @@ import (
 )
 
 type secretFormatter interface {
-	Format(data map[string]any) ([]byte, error)
+	Format(data map[string]string) ([]byte, error)
 }
 
 type config struct {
@@ -97,7 +97,7 @@ func syncItem(ctx context.Context, client *vault.VaultClient, mount string, item
 		return fmt.Errorf("could not create storage from uri %s: %w", item.DestUri, err)
 	}
 
-	read, err := client.ReadSecret(ctx, mount, item.SecretPath)
+	read, err := client.Get(ctx, mount, item.SecretPath)
 	if err != nil {
 		return fmt.Errorf("could not read secret from vault: %w", err)
 	}

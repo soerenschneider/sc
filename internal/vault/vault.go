@@ -9,14 +9,20 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
+	"sync"
+	"time"
 
 	vault "github.com/hashicorp/vault/api"
+	approle "github.com/hashicorp/vault/api/auth/approle"
 	"github.com/rs/zerolog/log"
 	backend "github.com/soerenschneider/sc/internal/pki"
 	"github.com/spf13/cobra"
+	"go.uber.org/multierr"
 )
 
 const (
@@ -33,6 +39,12 @@ type MfaCreateMethodRequest struct {
 	MethodName string `json:"method_name"`
 	Issuer     string `json:"issuer"`
 	Algorithm  string `json:"algorithm"`
+}
+
+type VaultApproleConfig struct {
+	RoleID   string
+	RoleName string
+	SecretID *approle.SecretID
 }
 
 type VaultClient struct {
@@ -195,6 +207,288 @@ func (c *VaultClient) UserpassAuth(ctx context.Context, mount, username, passwor
 	return c.client.Logical().WriteWithContext(ctx, path, data)
 }
 
+func (c *VaultClient) ApproleAuth(ctx context.Context, mount string, conf *VaultApproleConfig) (*vault.Secret, error) {
+	opts := []approle.LoginOption{
+		approle.WithMountPath(mount),
+	}
+	data, err := approle.NewAppRoleAuth(conf.RoleID, conf.SecretID, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return c.client.Auth().Login(ctx, data)
+}
+
+func (c *VaultClient) GetApproleID(ctx context.Context, mount, roleName string) (string, error) {
+	if roleName == "" {
+		return "", fmt.Errorf("roleName must not be empty")
+	}
+
+	path := fmt.Sprintf("auth/%s/role/%s/role-id", mount, roleName)
+
+	secret, err := c.client.Logical().ReadWithContext(ctx, path)
+	if err != nil {
+		return "", fmt.Errorf("failed to read role-id for role %q: %w", roleName, err)
+	}
+	if secret == nil || secret.Data == nil {
+		return "", fmt.Errorf("no data returned for role %q", roleName)
+	}
+
+	roleIDRaw, ok := secret.Data["role_id"]
+	if !ok {
+		return "", fmt.Errorf("role_id not found in response for role %q", roleName)
+	}
+
+	roleID, ok := roleIDRaw.(string)
+	if !ok || roleID == "" {
+		return "", fmt.Errorf("invalid role_id format for role %q", roleName)
+	}
+
+	return roleID, nil
+}
+
+// ListAppRoles returns all AppRole names
+func (c *VaultClient) ListAppRoles(ctx context.Context, mount string) ([]string, error) {
+	secret, err := c.client.Logical().ListWithContext(ctx, fmt.Sprintf("auth/%s/role", mount))
+	if err != nil {
+		return nil, fmt.Errorf("failed to list approles: %w", err)
+	}
+
+	if secret == nil || secret.Data == nil {
+		return []string{}, nil
+	}
+
+	rawKeys, ok := secret.Data["keys"]
+	if !ok {
+		return []string{}, nil
+	}
+
+	keysInterface, ok := rawKeys.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unexpected keys format")
+	}
+
+	roles := make([]string, 0, len(keysInterface))
+	for _, k := range keysInterface {
+		if roleName, ok := k.(string); ok {
+			roles = append(roles, roleName)
+		}
+	}
+
+	return roles, nil
+}
+
+// GetAppRoleAccessors returns all secret_id_accessors for a given AppRole
+func (c *VaultClient) GetAppRoleAccessors(ctx context.Context, mount, roleName string) ([]string, error) {
+	// Path to list secret IDs (accessors)
+	path := fmt.Sprintf("auth/%s/role/%s/secret-id", mount, roleName)
+
+	// Perform LIST operation
+	secret, err := c.client.Logical().ListWithContext(ctx, path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list secret IDs: %w", err)
+	}
+
+	if secret == nil || secret.Data == nil {
+		return nil, fmt.Errorf("no data returned for role %s", roleName)
+	}
+
+	// Extract keys (accessors)
+	keysRaw, ok := secret.Data["keys"]
+	if !ok {
+		return nil, fmt.Errorf("no keys field in response")
+	}
+
+	keysInterface, ok := keysRaw.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unexpected keys format")
+	}
+
+	accessors := make([]string, 0, len(keysInterface))
+	for _, k := range keysInterface {
+		if s, ok := k.(string); ok {
+			accessors = append(accessors, s)
+		}
+	}
+
+	return accessors, nil
+}
+
+func (c *VaultClient) GetAppRoleAccessorMetadata(ctx context.Context, mount, roleName, accessor string) error {
+	lookupPath := fmt.Sprintf("auth/approle/role/%s/secret-id-accessor/lookup", roleName)
+
+	resp, err := c.client.Logical().WriteWithContext(ctx, lookupPath, map[string]interface{}{
+		"secret_id_accessor": accessor,
+	})
+	if err != nil {
+		log.Printf("failed to lookup accessor %s: %v", accessor, err)
+		return err
+	}
+
+	if resp == nil || resp.Data == nil {
+		log.Printf("no data for accessor %s", accessor)
+		return err
+	}
+
+	// Step 3: Extract expiration info
+	expirationStr, ok := resp.Data["expiration_time"].(string)
+	if !ok || expirationStr == "" {
+		log.Printf("accessor %s has no expiration_time (might be non-expiring)", accessor)
+		return err
+	}
+
+	expirationTime, err := time.Parse(time.RFC3339, expirationStr)
+	if err != nil {
+		log.Printf("failed to parse expiration_time for accessor %s: %v", accessor, err)
+		return err
+	}
+
+	now := time.Now().UTC()
+
+	if now.After(expirationTime) {
+		fmt.Printf("EXPIRED: accessor=%s expired at %s\n", accessor, expirationTime)
+	} else {
+		fmt.Printf("VALID: accessor=%s expires at %s\n", accessor, expirationTime)
+	}
+
+	return nil
+}
+
+// DeleteAppRoleAccessor deletes a secret_id_accessor for a given AppRole
+func (c *VaultClient) DeleteAppRoleAccessor(ctx context.Context, mount, roleName, accessor string) error {
+	path := fmt.Sprintf("auth/%s/role/%s/secret-id-accessor/destroy", mount, roleName)
+
+	data := map[string]interface{}{
+		"secret_id_accessor": accessor,
+	}
+
+	_, err := c.client.Logical().WriteWithContext(ctx, path, data)
+	if err != nil {
+		return fmt.Errorf("failed to delete accessor %s for role %s: %w", accessor, roleName, err)
+	}
+
+	return nil
+}
+
+func (c *VaultClient) DeleteAllAppRoleAccessors(ctx context.Context, mount, roleName string) error {
+	accessors, err := c.GetAppRoleAccessors(ctx, mount, roleName)
+	if err != nil {
+		return fmt.Errorf("failed to list accessors: %w", err)
+	}
+
+	if len(accessors) == 0 {
+		return nil
+	}
+
+	sem := make(chan struct{}, 4)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var errs error
+
+	for _, accessor := range accessors {
+		wg.Add(1)
+		sem <- struct{}{}
+
+		go func(acc string) {
+			defer wg.Done()
+			defer func() { <-sem }()
+
+			if err := c.DeleteAppRoleAccessor(ctx, mount, roleName, acc); err != nil {
+				mu.Lock()
+				errs = multierr.Append(errs, err)
+				mu.Unlock()
+			}
+		}(accessor)
+	}
+
+	wg.Wait()
+
+	return errs
+}
+
+// CreateAppRoleSecretID creates a new SecretID for the given AppRole.
+// Optionally accepts metadata, CIDR restrictions, and TTL.
+func (c *VaultClient) CreateAppRoleSecretID(ctx context.Context, mount string, roleName string, metadata map[string]string, cidrList []string, tokenBoundCIDRs []string, ttl string) (secretID string, accessor string, err error) {
+	path := fmt.Sprintf("auth/%s/role/%s/secret-id", mount, roleName)
+
+	data := map[string]any{}
+	if metadata != nil {
+		data["metadata"] = metadata
+	}
+	if len(cidrList) > 0 {
+		data["cidr_list"] = cidrList
+	}
+	if len(tokenBoundCIDRs) > 0 {
+		data["token_bound_cidrs"] = tokenBoundCIDRs
+	}
+	if ttl != "" {
+		data["ttl"] = ttl
+	}
+
+	secret, err := c.client.Logical().WriteWithContext(ctx, path, data)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to create secret ID: %w", err)
+	}
+
+	if secret == nil || secret.Data == nil {
+		return "", "", fmt.Errorf("no data returned from Vault")
+	}
+
+	secretIDRaw, ok := secret.Data["secret_id"]
+	if !ok {
+		return "", "", fmt.Errorf("missing secret_id in response")
+	}
+
+	accessorRaw, ok := secret.Data["secret_id_accessor"]
+	if !ok {
+		return "", "", fmt.Errorf("missing secret_id_accessor in response")
+	}
+
+	secretID, ok = secretIDRaw.(string)
+	if !ok {
+		return "", "", fmt.Errorf("invalid secret_id type")
+	}
+
+	accessor, ok = accessorRaw.(string)
+	if !ok {
+		return "", "", fmt.Errorf("invalid secret_id_accessor type")
+	}
+
+	return secretID, accessor, nil
+}
+
+// ResetAppRoleSecretIDs deletes ALL secret_id_accessors for a role
+// and then generates a fresh SecretID.
+func (c *VaultClient) ResetAppRoleSecretIDs(ctx context.Context, mount, roleName string, metadata map[string]string, ttl string) (newSecretID string, newAccessor string, err error) {
+	// Step 1: list all accessors
+	accessors, err := c.GetAppRoleAccessors(ctx, mount, roleName)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to list accessors: %w", err)
+	}
+
+	// Step 2: delete each accessor
+	for _, accessor := range accessors {
+		if err := c.DeleteAppRoleAccessor(ctx, mount, roleName, accessor); err != nil {
+			return "", "", fmt.Errorf("failed deleting accessor %s: %w", accessor, err)
+		}
+	}
+
+	// Step 3: create a new SecretID
+	secretID, accessor, err := c.CreateAppRoleSecretID(
+		ctx,
+		mount,
+		roleName,
+		metadata,
+		nil,
+		nil,
+		ttl,
+	)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to create new secret ID: %w", err)
+	}
+
+	return secretID, accessor, nil
+}
+
 func (c *VaultClient) UpdatePassword(ctx context.Context, mount, username, password string) error {
 	userPath := fmt.Sprintf("auth/%s/users/%s", mount, username)
 	data := map[string]interface{}{
@@ -295,6 +589,28 @@ func (c *VaultClient) TotpListMethods(ctx context.Context) ([]string, error) {
 	}
 
 	return keys, nil
+}
+
+func (c *VaultClient) WrapValue(data map[string]interface{}, ttl string) (string, error) {
+	if ttl == "" {
+		return "", fmt.Errorf("ttl must not be empty")
+	}
+
+	// Enable wrapping
+	c.client.SetWrappingLookupFunc(func(operation, path string) string {
+		return ttl
+	})
+
+	secret, err := c.client.Logical().Write("sys/wrapping/wrap", data)
+	if err != nil {
+		return "", fmt.Errorf("failed to wrap value: %w", err)
+	}
+
+	if secret == nil || secret.WrapInfo == nil {
+		return "", fmt.Errorf("no wrap info returned")
+	}
+
+	return secret.WrapInfo.Token, nil
 }
 
 func structToMap(v any) (map[string]any, error) {
@@ -557,8 +873,183 @@ func (c *VaultClient) SshGetCa(ctx context.Context, mount string) ([]byte, error
 	return data, nil
 }
 
-func (c *VaultClient) ReadSecret(ctx context.Context, mount, path string) (*vault.KVSecret, error) {
-	return c.client.KVv2(mount).Get(ctx, path)
+// notReadable returns a synthetic ErrKindNotFound when the KVSecret describes
+// a version Vault won't actually serve data for. Vault's data endpoint
+// returns a successful response (no HTTP error) for a soft-deleted or
+// destroyed version, with `data: null` and `metadata.deletion_time`/`destroyed`
+// set. Without this check, we hand the caller an empty *KVSecret that
+// looks superficially like a valid secret with no key/value pairs.
+func notReadable(sec *vault.KVSecret, op string) error {
+	if sec == nil || sec.VersionMetadata == nil {
+		return nil
+	}
+	vm := sec.VersionMetadata
+	switch {
+	case vm.Destroyed:
+		return &StoreError{
+			Kind:    ErrKindNotFound,
+			Op:      op,
+			Message: fmt.Sprintf("v%d is destroyed", vm.Version),
+		}
+	case !vm.DeletionTime.IsZero():
+		return &StoreError{
+			Kind:    ErrKindNotFound,
+			Op:      op,
+			Message: fmt.Sprintf("v%d is soft-deleted", vm.Version),
+		}
+	}
+	return nil
+}
+
+func (c *VaultClient) Get(ctx context.Context, mount, path string) (*Secret, error) {
+	sec, err := c.client.KVv2(mount).Get(ctx, path)
+	if err != nil {
+		return nil, classify(err, "get")
+	}
+	if err := notReadable(sec, "get"); err != nil {
+		return nil, err
+	}
+	return fromKVSecret(sec), nil
+}
+
+func (c *VaultClient) GetVersion(ctx context.Context, mount, path string, version int) (*Secret, error) {
+	sec, err := c.client.KVv2(mount).GetVersion(ctx, path, version)
+	if err != nil {
+		return nil, classify(err, "get-version")
+	}
+	if err := notReadable(sec, "get-version"); err != nil {
+		return nil, err
+	}
+	return fromKVSecret(sec), nil
+}
+
+func (c *VaultClient) GetMetadata(ctx context.Context, mount, path string) (*SecretMetadata, error) {
+	md, err := c.client.KVv2(mount).GetMetadata(ctx, path)
+	if err != nil {
+		return nil, classify(err, "get-metadata")
+	}
+	if md == nil {
+		return nil, &StoreError{Kind: ErrKindNotFound, Op: "get-metadata"}
+	}
+	out := &SecretMetadata{
+		CurrentVersion: md.CurrentVersion,
+		OldestVersion:  md.OldestVersion,
+		Versions:       make([]VersionInfo, 0, len(md.Versions)),
+	}
+	for _, vm := range md.Versions {
+		out.Versions = append(out.Versions, VersionInfo{
+			Version:   vm.Version,
+			CreatedAt: vm.CreatedTime,
+			DeletedAt: vm.DeletionTime,
+			Destroyed: vm.Destroyed,
+		})
+	}
+	sort.Slice(out.Versions, func(i, j int) bool {
+		return out.Versions[i].Version > out.Versions[j].Version
+	})
+	return out, nil
+}
+
+func (c *VaultClient) Put(ctx context.Context, mount, path string, data map[string]string, cas int) (*Secret, error) {
+	payload := make(map[string]any, len(data))
+	for k, val := range data {
+		payload[k] = val
+	}
+	sec, err := c.client.KVv2(mount).Put(ctx, path, payload, vault.WithCheckAndSet(cas))
+	if err != nil {
+		return nil, classify(err, "put")
+	}
+	return fromKVSecret(sec), nil
+}
+
+func (c *VaultClient) SoftDelete(ctx context.Context, mount, path string) error {
+	if err := c.client.KVv2(mount).Delete(ctx, path); err != nil {
+		return classify(err, "delete")
+	}
+	return nil
+}
+
+func (c *VaultClient) List(ctx context.Context, mount, prefix string) ([]Entry, error) {
+	p := strings.TrimRight(mount, "/") + "/metadata/" + prefix
+	sec, err := c.client.Logical().ListWithContext(ctx, p)
+	if err != nil {
+		return nil, classify(err, "list")
+	}
+	if sec == nil || sec.Data == nil {
+		return nil, nil
+	}
+	keys, _ := sec.Data["keys"].([]any)
+	out := make([]Entry, 0, len(keys))
+	for _, k := range keys {
+		s, ok := k.(string)
+		if !ok {
+			continue
+		}
+		if strings.HasSuffix(s, "/") {
+			out = append(out, Entry{Name: strings.TrimSuffix(s, "/"), IsDir: true})
+		} else {
+			out = append(out, Entry{Name: s, IsDir: false})
+		}
+	}
+	return out, nil
+}
+
+// fromKVSecret converts a Vault KVSecret into the neutral Secret type.
+func fromKVSecret(sec *vault.KVSecret) *Secret {
+	if sec == nil {
+		return nil
+	}
+	out := &Secret{Data: make(map[string]string, len(sec.Data))}
+	for k, v := range sec.Data {
+		out.Data[k] = fmt.Sprintf("%v", v)
+	}
+	if sec.VersionMetadata != nil {
+		out.Version = sec.VersionMetadata.Version
+		out.UpdatedAt = sec.VersionMetadata.CreatedTime
+	}
+	return out
+}
+
+// classify converts a Vault-flavoured error into a *StoreError so the
+// rest of the package (and the UI) doesn't need to know about Vault types.
+func classify(err error, op string) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, vault.ErrSecretNotFound) {
+		return &StoreError{Kind: ErrKindNotFound, Op: op, Cause: err}
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return &StoreError{Kind: ErrKindTimeout, Op: op, Message: "request timed out", Cause: err}
+	}
+	if nerr, ok := errors.AsType[net.Error](err); ok {
+		return &StoreError{Kind: ErrKindNetwork, Op: op, Message: nerr.Error(), Cause: err}
+	}
+	if rerr, ok := errors.AsType[*vault.ResponseError](err); ok {
+		if rerr.StatusCode == 400 {
+			for _, e := range rerr.Errors {
+				le := strings.ToLower(e)
+				if strings.Contains(le, "check-and-set") || strings.Contains(le, "did not match the current version") {
+					return &StoreError{Kind: ErrKindCASConflict, Op: op, Message: e, Cause: err}
+				}
+			}
+		}
+		kind := ErrKindUnknown
+		switch rerr.StatusCode {
+		case 400:
+			kind = ErrKindBadRequest
+		case 403:
+			kind = ErrKindPermissionDenied
+		case 404:
+			kind = ErrKindNotFound
+		case 429:
+			kind = ErrKindRateLimited
+		case 500, 502, 503, 504:
+			kind = ErrKindServerError
+		}
+		return &StoreError{Kind: kind, Op: op, Message: strings.Join(rerr.Errors, "; "), Cause: err}
+	}
+	return &StoreError{Kind: ErrKindUnknown, Op: op, Message: err.Error(), Cause: err}
 }
 
 func buildIssueRequestArgs(args PkiIssueArgs) map[string]any {

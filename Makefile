@@ -21,7 +21,7 @@ clean:
 	rm -rf ./$(BUILD_DIR)
 
 build: version-info generate
-	CGO_ENABLED=0 go build -ldflags="-w -X '$(MODULE)/internal.BuildVersion=${VERSION}' -X '$(MODULE)/internal.CommitHash=${COMMIT_HASH}'" -o $(BINARY_NAME) .
+	CGO_ENABLED=1 go build -ldflags="-w -X '$(MODULE)/internal.BuildVersion=${VERSION}' -X '$(MODULE)/internal.CommitHash=${COMMIT_HASH}'" -o $(BINARY_NAME) .
 
 release: clean version-info cross-build
 	sha256sum $(BUILD_DIR)/sc-* > $(CHECKSUM_FILE)

@@ -14,6 +14,14 @@ const (
 	vaultTtl       = "ttl"
 	vaultRoleName  = "role"
 
+	vaultApproleRoleId       = "role-id"
+	vaultApproleRoleIdFile   = "role-id–file"
+	vaultApproleRoleName     = "role"
+	vaultApproleRoleNameFile = "role-file"
+	vaultApproleSecretId     = "secret-id"
+	vaultApproleSecretIdFile = "secret-id-file"
+	vaultApproleSecretIdEnv  = "secret-id-env" //nolint G101
+
 	vaultAwsDefaultMount               = "aws"
 	vaultAwsProfile                    = "aws-profile"
 	vaultAwsDefaultTtl                 = 3600
@@ -48,7 +56,7 @@ const (
 	vaultDefaultTimeout = 7 * time.Second
 
 	vaultSecretSyncName   = "name"
-	vaultSecretSyncConfig = "sync-config" //#nosec:G101
+	vaultSecretSyncConfig = "sync-config" //nolint G101
 	vaultSecretSyncAll    = "all"
 )
 

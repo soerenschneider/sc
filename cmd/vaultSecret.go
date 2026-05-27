@@ -3,8 +3,9 @@ package cmd
 import "github.com/spf13/cobra"
 
 var vaultSecretCmd = &cobra.Command{
-	Use:   "secret",
-	Short: "Manages the Vault KV2 secret engine",
+	Use:     "secret",
+	Aliases: []string{"secrets", "kv2"},
+	Short:   "Manages the Vault KV2 secret engine",
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Help()
 	},
