@@ -39,6 +39,7 @@ Examples:
 		}
 
 		magnet := pkg.GetString(cmd, torrentMagnet)
+		noConfirm, _ := pkg.GetBool(cmd, torrentNoConfirmation)
 		if magnet == "" {
 			clipboardContent, err := clipboard.PasteClipboard()
 			if err == nil && strings.HasPrefix(strings.ToLower(clipboardContent), "magnet:") {
@@ -47,7 +48,11 @@ Examples:
 				log.Warn().Err(err).Msg("could not paste clipboard content")
 			}
 
-			tui.ReadInputSuggestionWithValidation(&magnet, "Please enter magnet link", nil, validation)
+			if noConfirm {
+				log.Info().Str("magnet", magnet).Msg("Adding torrent from clipboard")
+			} else {
+				tui.ReadInputSuggestionWithValidation(&magnet, "Please enter magnet link", nil, validation)
+			}
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)
@@ -63,4 +68,6 @@ func init() {
 	torrentCmd.AddCommand(torrentAddCmd)
 
 	torrentAddCmd.Flags().StringP(torrentMagnet, "m", "", "Magnet to add")
+	torrentAddCmd.Flags().BoolP(torrentNoConfirmation, "n", false, "Try to parse magnet from the clipboard and do not ask for confirmation")
+	torrentAddCmd.MarkFlagsMutuallyExclusive(torrentMagnet, torrentNoConfirmation)
 }

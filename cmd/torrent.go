@@ -5,10 +5,11 @@ import (
 )
 
 const (
-	torrentAddr       = "address"
-	torrentIds        = "id"
-	torrentDeleteData = "delete-data"
-	torrentMagnet     = "magnet"
+	torrentAddr           = "address"
+	torrentIds            = "id"
+	torrentDeleteData     = "delete-data"
+	torrentMagnet         = "magnet"
+	torrentNoConfirmation = "no-confirm"
 )
 
 var torrentCmd = &cobra.Command{
