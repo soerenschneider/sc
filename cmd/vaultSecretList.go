@@ -1,6 +1,3 @@
-// Browser TUI. Walks a SecretStore as a prefix tree and hands off to the
-// editor when the user selects a secret.
-
 package cmd
 
 import (
@@ -16,15 +13,17 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/cobra"
 )
 
 var vaultKv2ListCmd = &cobra.Command{
-	Use:   "ls [prefix]",
-	Short: "Browse Vault KV v2 secrets in a TUI",
-	Args:  cobra.MaximumNArgs(1),
+	Use:     "ls [prefix]",
+	Aliases: []string{"list"},
+	Short:   "Browse Vault KV v2 secrets in a TUI",
+	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		prefix := ""
 		if len(args) == 1 {
@@ -55,9 +54,9 @@ type BrowseOptions struct {
 
 // BrowseWithStore loops the browser and editor against a single store
 // instance, so auth happens once and state survives between picks.
-func BrowseWithStore(store vault.SecretStore, opts BrowseOptions) error {
+func BrowseWithStore(store vaultKv2Provider, opts BrowseOptions) error {
 	if store == nil {
-		return errors.New("nil SecretStore")
+		return errors.New("nil vaultKv2Provider")
 	}
 	if opts.Mount == "" {
 		return errors.New("mount is required")
@@ -121,7 +120,7 @@ func parentPrefix(p string) string {
 // ---------------------------------------------------------------------------
 
 type browseModel struct {
-	store   vault.SecretStore
+	store   vaultKv2Provider
 	mount   string
 	prefix  string
 	timeout time.Duration
@@ -147,7 +146,7 @@ type browseModel struct {
 	width, height int
 }
 
-func newBrowseModel(store vault.SecretStore, mount, prefix string, timeout time.Duration) *browseModel {
+func newBrowseModel(store vaultKv2Provider, mount, prefix string, timeout time.Duration) *browseModel {
 	ti := textinput.New()
 	ti.Placeholder = "filter"
 	ti.Prompt = "/ "
@@ -219,7 +218,7 @@ func (m *browseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case listedMsg:
 		m.loading = false
 		if msg.err != nil {
-			m.err = humanizeError(msg.err, "list")
+			m.err = vault.HumanizeError(msg.err, "list")
 			return m, nil
 		}
 		m.err = ""
@@ -318,7 +317,7 @@ func (m *browseModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "g", "home":
 		m.cursor, m.offset = 0, 0
 	case "G", "end":
-		m.cursor = max0(len(items) - 1)
+		m.cursor = tui.Max0(len(items) - 1)
 	case "/":
 		m.filterOn = true
 		return m, m.filter.Focus()
@@ -394,12 +393,12 @@ func (m *browseModel) View() string {
 
 	var b strings.Builder
 
-	b.WriteString(titleStyle.Render(" vault ls "))
+	b.WriteString(tui.TitleStyle.Render(" vault ls "))
 	b.WriteString(" ")
-	b.WriteString(pathStyle.Render(m.mount + "/" + m.prefix))
+	b.WriteString(tui.PathStyle.Render(m.mount + "/" + m.prefix))
 	if m.loading {
 		b.WriteString(" ")
-		b.WriteString(metaStyle.Render("· loading"))
+		b.WriteString(tui.MetaStyle.Render("· loading"))
 	}
 	b.WriteString("\n")
 
@@ -420,9 +419,9 @@ func (m *browseModel) View() string {
 
 	if len(items) == 0 {
 		if m.filter.Value() != "" {
-			b.WriteString(helpStyle.Render("  (no matches)\n"))
+			b.WriteString(tui.HelpStyle.Render("  (no matches)\n"))
 		} else {
-			b.WriteString(helpStyle.Render("  (empty)\n"))
+			b.WriteString(tui.HelpStyle.Render("  (empty)\n"))
 		}
 	}
 
@@ -431,7 +430,7 @@ func (m *browseModel) View() string {
 		end = len(items)
 	}
 	if m.offset > 0 {
-		b.WriteString(helpStyle.Render(fmt.Sprintf("  ↑ %d more\n", m.offset)))
+		b.WriteString(tui.HelpStyle.Render(fmt.Sprintf("  ↑ %d more\n", m.offset)))
 	}
 	for i := m.offset; i < end; i++ {
 		it := items[i]
@@ -443,11 +442,11 @@ func (m *browseModel) View() string {
 			name = secretStyle.Render(it.Name)
 		}
 		if i == m.cursor {
-			marker = selectedStyle.Render("▸ ")
+			marker = tui.SelectedStyle.Render("▸ ")
 			if it.IsDir {
-				name = selectedStyle.Render(it.Name + "/")
+				name = tui.SelectedStyle.Render(it.Name + "/")
 			} else {
-				name = selectedStyle.Render(it.Name)
+				name = tui.SelectedStyle.Render(it.Name)
 			}
 		}
 		b.WriteString(marker)
@@ -455,27 +454,27 @@ func (m *browseModel) View() string {
 		b.WriteString("\n")
 	}
 	if end < len(items) {
-		b.WriteString(helpStyle.Render(fmt.Sprintf("  ↓ %d more\n", len(items)-end)))
+		b.WriteString(tui.HelpStyle.Render(fmt.Sprintf("  ↓ %d more\n", len(items)-end)))
 	}
 
 	b.WriteString("\n")
 	dirs, secrets := countEntries(items)
-	b.WriteString(helpStyle.Render(fmt.Sprintf("  %d folder(s) · %d secret(s)", dirs, secrets)))
+	b.WriteString(tui.HelpStyle.Render(fmt.Sprintf("  %d folder(s) · %d secret(s)", dirs, secrets)))
 	if m.filter.Value() != "" {
 		td, ts := countEntries(m.items)
-		b.WriteString(helpStyle.Render(fmt.Sprintf(" of %d/%d", td, ts)))
+		b.WriteString(tui.HelpStyle.Render(fmt.Sprintf(" of %d/%d", td, ts)))
 	}
 	b.WriteString("\n")
 
 	if m.err != "" {
-		b.WriteString(errorStyle.Render("✗ " + m.err))
+		b.WriteString(tui.ErrorStyle.Render("✗ " + m.err))
 		b.WriteString("\n")
 	} else if m.status != "" {
-		b.WriteString(statusStyle.Render("· " + m.status))
+		b.WriteString(tui.StatusStyle.Render("· " + m.status))
 		b.WriteString("\n")
 	}
 
-	b.WriteString(helpStyle.Render(
+	b.WriteString(tui.HelpStyle.Render(
 		"\n  ↑/↓ move  ·  enter open  ·  h/← up  ·  / filter  ·  n new  ·  r reload  ·  q quit",
 	))
 	return b.String()
@@ -491,8 +490,8 @@ func (m *browseModel) adjustOffset(view, n int) {
 	if m.offset < 0 {
 		m.offset = 0
 	}
-	if m.offset > max0(n-view) {
-		m.offset = max0(n - view)
+	if m.offset > tui.Max0(n-view) {
+		m.offset = tui.Max0(n - view)
 	}
 }
 
