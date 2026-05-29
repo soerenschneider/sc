@@ -913,6 +913,7 @@ func (m *model) View() string {
 			marker = tui.SelectedStyle.Render("▸ ")
 			k = tui.SelectedStyle.Render(p.key)
 		}
+		//nolint QF1012
 		b.WriteString(fmt.Sprintf("%s%s %s %s\n",
 			marker, k, tui.HelpStyle.Render("="), m.renderValue(p)))
 	}

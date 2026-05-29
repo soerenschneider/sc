@@ -14,6 +14,12 @@ func Max0(n int) int {
 // ---------------------------------------------------------------------------
 
 var (
+	DirStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("75")).
+			Bold(true)
+	LeafStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("252"))
+
 	TitleStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("212")).

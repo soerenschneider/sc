@@ -11,7 +11,6 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"
 )
@@ -383,12 +382,12 @@ func (m *TreeModel) View() string {
 	}
 
 	var b strings.Builder
-	b.WriteString(titleStyle.Render(" " + m.cfg.Title + " "))
+	b.WriteString(tui.TitleStyle.Render(" " + m.cfg.Title + " "))
 	b.WriteString(" ")
-	b.WriteString(pathStyle.Render(displayPrefix(m.prefix)))
+	b.WriteString(tui.PathStyle.Render(displayPrefix(m.prefix)))
 	if m.loading {
 		b.WriteString(" ")
-		b.WriteString(metaStyle.Render("· loading"))
+		b.WriteString(tui.MetaStyle.Render("· loading"))
 	}
 	b.WriteString("\n")
 
@@ -408,9 +407,9 @@ func (m *TreeModel) View() string {
 
 	if len(items) == 0 {
 		if m.filter.Value() != "" {
-			b.WriteString(helpStyle.Render("  (no matches)\n"))
+			b.WriteString(tui.HelpStyle.Render("  (no matches)\n"))
 		} else {
-			b.WriteString(helpStyle.Render("  (empty)\n"))
+			b.WriteString(tui.HelpStyle.Render("  (empty)\n"))
 		}
 	}
 
@@ -419,23 +418,23 @@ func (m *TreeModel) View() string {
 		end = len(items)
 	}
 	if m.offset > 0 {
-		b.WriteString(helpStyle.Render(fmt.Sprintf("  ↑ %d more\n", m.offset)))
+		b.WriteString(tui.HelpStyle.Render(fmt.Sprintf("  ↑ %d more\n", m.offset)))
 	}
 	for i := m.offset; i < end; i++ {
 		it := items[i]
 		marker := "  "
 		var name string
 		if it.IsDir {
-			name = dirStyle.Render(it.Name + "/")
+			name = tui.DirStyle.Render(it.Name + "/")
 		} else {
-			name = leafStyle.Render(it.Name)
+			name = tui.LeafStyle.Render(it.Name)
 		}
 		if i == m.cursor {
-			marker = selectedStyle.Render("▸ ")
+			marker = tui.SelectedStyle.Render("▸ ")
 			if it.IsDir {
-				name = selectedStyle.Render(it.Name + "/")
+				name = tui.SelectedStyle.Render(it.Name + "/")
 			} else {
-				name = selectedStyle.Render(it.Name)
+				name = tui.SelectedStyle.Render(it.Name)
 			}
 		}
 		b.WriteString(marker)
@@ -443,25 +442,25 @@ func (m *TreeModel) View() string {
 		b.WriteString("\n")
 	}
 	if end < len(items) {
-		b.WriteString(helpStyle.Render(fmt.Sprintf("  ↓ %d more\n", len(items)-end)))
+		b.WriteString(tui.HelpStyle.Render(fmt.Sprintf("  ↓ %d more\n", len(items)-end)))
 	}
 
 	b.WriteString("\n")
 	dirs, leaves := countTreeNodes(items)
-	b.WriteString(helpStyle.Render(fmt.Sprintf("  %d %s · %d %s",
+	b.WriteString(tui.HelpStyle.Render(fmt.Sprintf("  %d %s · %d %s",
 		dirs, plural(dirs, m.cfg.DirLabel),
 		leaves, plural(leaves, m.cfg.LeafLabel))))
 	if m.filter.Value() != "" {
 		td, tl := countTreeNodes(m.items)
-		b.WriteString(helpStyle.Render(fmt.Sprintf(" of %d/%d", td, tl)))
+		b.WriteString(tui.HelpStyle.Render(fmt.Sprintf(" of %d/%d", td, tl)))
 	}
 	b.WriteString("\n")
 
 	if m.err != "" {
-		b.WriteString(errorStyle.Render("✗ " + m.err))
+		b.WriteString(tui.ErrorStyle.Render("✗ " + m.err))
 		b.WriteString("\n")
 	} else if m.status != "" {
-		b.WriteString(statusStyle.Render("· " + m.status))
+		b.WriteString(tui.StatusStyle.Render("· " + m.status))
 		b.WriteString("\n")
 	}
 
@@ -473,7 +472,7 @@ func (m *TreeModel) View() string {
 		foot += "  ·  s save as"
 	}
 	foot += "  ·  esc cancel"
-	b.WriteString(helpStyle.Render("\n" + foot))
+	b.WriteString(tui.HelpStyle.Render("\n" + foot))
 	return b.String()
 }
 
@@ -550,8 +549,8 @@ func parentPrefix(p string) string {
 	return p[:strings.LastIndex(p, "/")+1]
 }
 
-// normalizePrefix ensures a non-empty prefix ends with "/".
-func normalizePrefix(p string) string {
+// NormalizePrefix ensures a non-empty prefix ends with "/".
+func NormalizePrefix(p string) string {
 	p = strings.TrimPrefix(p, "/")
 	if p == "" {
 		return ""
@@ -570,67 +569,3 @@ func displayPrefix(p string) string {
 	}
 	return p
 }
-
-// ---------------------------------------------------------------------------
-// styles (shared with the editor view)
-// ---------------------------------------------------------------------------
-
-var (
-	dirStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("75")).
-			Bold(true)
-	leafStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("252"))
-)
-
-var (
-	titleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("212")).
-			Background(lipgloss.Color("237")).
-			Padding(0, 1)
-
-	pathStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("245")).
-			Italic(true)
-
-	metaStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("244"))
-
-	historicalStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("214"))
-
-	historicalTagStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("0")).
-				Background(lipgloss.Color("214")).
-				Bold(true).
-				Padding(0, 1)
-
-	keyStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("110")).
-			Bold(true)
-
-	valueStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("252"))
-
-	maskedStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("240"))
-
-	selectedStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("212")).
-			Bold(true)
-
-	helpStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("241"))
-
-	errorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("196")).
-			Bold(true)
-
-	statusStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("76"))
-
-	dirtyStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("214")).
-			Bold(true)
-)
