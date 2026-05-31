@@ -5,9 +5,17 @@ import (
 )
 
 const (
-	logsAddr  = "address"
-	logsQuery = "query"
-	logsLimit = "limit"
+	logsAddr            = "address"
+	logsQuery           = "query"
+	logsFormat          = "format"
+	logsIdFields        = "id-fields"
+	logsSince           = "since"
+	logsUntil           = "until"
+	logsRefreshInterval = "refresh-interval"
+	logsFollow          = "follow"
+	logsNoColor         = "no-color"
+	logsLimit           = "limit"
+	logsTimeout         = "timeout"
 )
 
 var logsCmd = &cobra.Command{
