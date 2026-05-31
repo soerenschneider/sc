@@ -13,7 +13,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/pki"
 	"github.com/soerenschneider/sc/internal/vault"
-	"github.com/soerenschneider/sc/internal/vault/formatter"
+	vaultSecretFormatter "github.com/soerenschneider/sc/internal/vault/formatter"
 	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/cobra"
 	"go.uber.org/multierr"
@@ -89,7 +89,7 @@ var vaultSecretSyncCmd = &cobra.Command{
 func syncItem(ctx context.Context, client *vault.VaultClient, mount string, item vault.Kv2SyncConfig) error {
 	formatImpl, err := buildSecretFormatter(item.Formatter, item.FormatterArgs)
 	if err != nil {
-		return fmt.Errorf("could not build secret formatter: %w", err)
+		return fmt.Errorf("could not build secret logsFormatter: %w", err)
 	}
 
 	storage, err := pki.NewFilesystemStorageFromUri(pkg.GetExpandedFile(item.DestUri))
@@ -163,14 +163,14 @@ func buildSecretFormatter(name string, arguments map[string]any) (secretFormatte
 			}
 		}
 
-		return formatter.NewEnvVarFormatter(uppercaseKeys), nil
+		return vaultSecretFormatter.NewEnvVarFormatter(uppercaseKeys), nil
 	case vaultSecretSyncFormatterYamlKey:
-		return &formatter.YamlFormatter{}, nil
+		return &vaultSecretFormatter.YamlFormatter{}, nil
 	case vaultSecretSyncFormatterJsonKey:
-		return &formatter.JsonFormatter{}, nil
+		return &vaultSecretFormatter.JsonFormatter{}, nil
 	case vaultSecretSyncFormatterTemplateKey:
 		if arguments == nil {
-			return nil, errors.New("no formatter arguments found")
+			return nil, errors.New("no logsFormatter arguments found")
 		}
 		var templateFile, template string
 		val, found := arguments[vaultSecretSyncFormatterTemplateOptionTemplateFile]
@@ -194,10 +194,10 @@ func buildSecretFormatter(name string, arguments map[string]any) (secretFormatte
 		}
 
 		if templateFile != "" {
-			return formatter.NewTemplateFormatterFromFile(pkg.GetExpandedFile(templateFile))
+			return vaultSecretFormatter.NewTemplateFormatterFromFile(pkg.GetExpandedFile(templateFile))
 		}
 
-		return formatter.NewTemplateFormatterFromTemplate(template)
+		return vaultSecretFormatter.NewTemplateFormatterFromTemplate(template)
 	default:
 		return nil, errors.New("no implementation found")
 	}
