@@ -118,7 +118,7 @@ func runLogs(opts *logsOpts) error {
 	}
 
 	useColor := !opts.noColor && os.Getenv("NO_COLOR") == "" && isTerminal(os.Stdout)
-	fmtr := &formatter{
+	fmtr := &logsFormatter{
 		out:      os.Stdout,
 		format:   opts.format,
 		fields:   opts.fields,
@@ -157,7 +157,7 @@ func runLogs(opts *logsOpts) error {
 //
 //   - Results may arrive in arbitrary order even with the URL limit applied,
 //     so we buffer (bounded by limit) and sort by _time client-side.
-func doQuery(ctx context.Context, c *victorialogs.Client, opts *logsOpts, out *formatter) error {
+func doQuery(ctx context.Context, c *victorialogs.Client, opts *logsOpts, out *logsFormatter) error {
 	ctx, cancel := context.WithTimeout(ctx, opts.timeout)
 	defer cancel()
 
@@ -209,7 +209,7 @@ func doQuery(ctx context.Context, c *victorialogs.Client, opts *logsOpts, out *f
 // window is replayed first via a bounded query, then the tail takes over.
 // The replay phase uses --limit as a safety cap (defaulting to 1000 when
 // unset) so very chatty streams don't blast 20 minutes of logs first.
-func doTail(ctx context.Context, c *victorialogs.Client, opts *logsOpts, out *formatter) error {
+func doTail(ctx context.Context, c *victorialogs.Client, opts *logsOpts, out *logsFormatter) error {
 	if opts.since != "" {
 		replay := *opts
 		replay.follow = false
@@ -231,7 +231,7 @@ func doTail(ctx context.Context, c *victorialogs.Client, opts *logsOpts, out *fo
 // output formatting
 // ---------------------------------------------------------------------------
 
-type formatter struct {
+type logsFormatter struct {
 	out      io.Writer
 	format   string
 	fields   []string
@@ -239,7 +239,7 @@ type formatter struct {
 	color    bool
 }
 
-func (f *formatter) write(e victorialogs.LogEntry) {
+func (f *logsFormatter) write(e victorialogs.LogEntry) {
 	switch f.format {
 	case "json":
 		f.writeJSON(e)
@@ -250,7 +250,7 @@ func (f *formatter) write(e victorialogs.LogEntry) {
 	}
 }
 
-func (f *formatter) writeJSON(e victorialogs.LogEntry) {
+func (f *logsFormatter) writeJSON(e victorialogs.LogEntry) {
 	obj := make(map[string]string, len(e.Fields)+3)
 	for k, v := range e.Fields {
 		obj[k] = v
@@ -269,7 +269,7 @@ func (f *formatter) writeJSON(e victorialogs.LogEntry) {
 	_ = enc.Encode(obj)
 }
 
-func (f *formatter) writeText(e victorialogs.LogEntry) {
+func (f *logsFormatter) writeText(e victorialogs.LogEntry) {
 	var b strings.Builder
 
 	if !e.Time.IsZero() {
@@ -306,7 +306,7 @@ func (f *formatter) writeText(e victorialogs.LogEntry) {
 // The special name "_stream" reads the LogEntry.Stream typed field rather
 // than the Fields map, since VictoriaLogs extracts that field at decode
 // time and it isn't visible in Fields.
-func (f *formatter) renderIdentity(e victorialogs.LogEntry) string {
+func (f *logsFormatter) renderIdentity(e victorialogs.LogEntry) string {
 	if len(f.idFields) == 0 {
 		return ""
 	}
