@@ -16,7 +16,7 @@ type FsTreeProvider struct {
 	ShowHidden bool
 }
 
-func (f *FsTreeProvider) Children(_ context.Context, prefix string) ([]TreeNode, error) {
+func (f *FsTreeProvider) Children(ctx context.Context, prefix string) ([]TreeNode, error) {
 	p := "/" + prefix // empty prefix → "/"; "etc/" → "/etc/"
 
 	entries, err := os.ReadDir(p)
@@ -32,6 +32,15 @@ func (f *FsTreeProvider) Children(_ context.Context, prefix string) ([]TreeNode,
 		out = append(out, TreeNode{Name: name, IsDir: e.IsDir()})
 	}
 	return out, nil
+}
+
+// MakePath implements TreeMaker — mkdir -p with mode 0700. We pick 0700
+// rather than 0755 because this picker is used for export destinations,
+// which often hold sensitive material; the user can chmod afterwards if
+// they want broader access.
+func (f *FsTreeProvider) MakePath(ctx context.Context, fullPath string) error {
+	p := "/" + strings.TrimSuffix(fullPath, "/")
+	return os.MkdirAll(p, 0o700)
 }
 
 // FsPrefixFromAbsPath converts an absolute path like "/home/alice/work" into

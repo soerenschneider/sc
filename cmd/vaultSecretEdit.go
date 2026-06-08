@@ -1014,7 +1014,8 @@ func (m *model) startExport() tea.Cmd {
 		Title:       "export to",
 		LeafLabel:   "file",
 		DirLabel:    "directory",
-		AllowSaveAs: true, // 's' opens the name prompt
+		AllowCreate: true, // 'n' opens a name prompt; fs provider's TreeMaker mkdirs in-place
+		AllowSaveAs: true, // 's' opens a name prompt for the export filename
 		Timeout:     m.opts.Timeout,
 	}
 
@@ -1031,7 +1032,7 @@ func (m *model) startExport() tea.Cmd {
 	}
 	m.fsBrowser = picker
 	m.errMsg = ""
-	m.status = "pick a destination — 's' to type a filename in the current dir"
+	m.status = "pick a destination — 'n' mkdir, 's' type filename"
 	return picker.Init()
 }
 

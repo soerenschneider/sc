@@ -512,8 +512,8 @@ func countEntries(items []vault.Entry) (dirs, secrets int) {
 
 var (
 	dirStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("75")).
-		Bold(true)
+			Foreground(lipgloss.Color("75")).
+			Bold(true)
 	secretStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("252"))
+			Foreground(lipgloss.Color("252"))
 )
