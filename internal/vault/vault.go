@@ -886,13 +886,13 @@ func notReadable(sec *vault.KVSecret, op string) error {
 	vm := sec.VersionMetadata
 	switch {
 	case vm.Destroyed:
-		return &StoreError{
+		return &VaultError{
 			Kind:    ErrKindNotFound,
 			Op:      op,
 			Message: fmt.Sprintf("v%d is destroyed", vm.Version),
 		}
 	case !vm.DeletionTime.IsZero():
-		return &StoreError{
+		return &VaultError{
 			Kind:    ErrKindNotFound,
 			Op:      op,
 			Message: fmt.Sprintf("v%d is soft-deleted", vm.Version),
@@ -929,7 +929,7 @@ func (c *VaultClient) GetMetadata(ctx context.Context, mount, path string) (*Sec
 		return nil, classify(err, "get-metadata")
 	}
 	if md == nil {
-		return nil, &StoreError{Kind: ErrKindNotFound, Op: "get-metadata"}
+		return nil, &VaultError{Kind: ErrKindNotFound, Op: "get-metadata"}
 	}
 	out := &SecretMetadata{
 		CurrentVersion: md.CurrentVersion,
@@ -1010,27 +1010,27 @@ func fromKVSecret(sec *vault.KVSecret) *Secret {
 	return out
 }
 
-// classify converts a Vault-flavoured error into a *StoreError so the
+// classify converts a Vault-flavoured error into a *VaultError so the
 // rest of the package (and the UI) doesn't need to know about Vault types.
 func classify(err error, op string) error {
 	if err == nil {
 		return nil
 	}
 	if errors.Is(err, vault.ErrSecretNotFound) {
-		return &StoreError{Kind: ErrKindNotFound, Op: op, Cause: err}
+		return &VaultError{Kind: ErrKindNotFound, Op: op, Cause: err}
 	}
 	if errors.Is(err, context.DeadlineExceeded) {
-		return &StoreError{Kind: ErrKindTimeout, Op: op, Message: "request timed out", Cause: err}
+		return &VaultError{Kind: ErrKindTimeout, Op: op, Message: "request timed out", Cause: err}
 	}
 	if nerr, ok := errors.AsType[net.Error](err); ok {
-		return &StoreError{Kind: ErrKindNetwork, Op: op, Message: nerr.Error(), Cause: err}
+		return &VaultError{Kind: ErrKindNetwork, Op: op, Message: nerr.Error(), Cause: err}
 	}
 	if rerr, ok := errors.AsType[*vault.ResponseError](err); ok {
 		if rerr.StatusCode == 400 {
 			for _, e := range rerr.Errors {
 				le := strings.ToLower(e)
 				if strings.Contains(le, "check-and-set") || strings.Contains(le, "did not match the current version") {
-					return &StoreError{Kind: ErrKindCASConflict, Op: op, Message: e, Cause: err}
+					return &VaultError{Kind: ErrKindCASConflict, Op: op, Message: e, Cause: err}
 				}
 			}
 		}
@@ -1047,9 +1047,9 @@ func classify(err error, op string) error {
 		case 500, 502, 503, 504:
 			kind = ErrKindServerError
 		}
-		return &StoreError{Kind: kind, Op: op, Message: strings.Join(rerr.Errors, "; "), Cause: err}
+		return &VaultError{Kind: kind, Op: op, Message: strings.Join(rerr.Errors, "; "), Cause: err}
 	}
-	return &StoreError{Kind: ErrKindUnknown, Op: op, Message: err.Error(), Cause: err}
+	return &VaultError{Kind: ErrKindUnknown, Op: op, Message: err.Error(), Cause: err}
 }
 
 func buildIssueRequestArgs(args PkiIssueArgs) map[string]any {
@@ -1097,4 +1097,43 @@ func shouldRetry(statusCode int) bool {
 	default:
 		return true
 	}
+}
+
+// ---------------------------------------------------------------------------
+// error humanization
+// ---------------------------------------------------------------------------
+
+func HumanizeError(err error, op string) string {
+	if err == nil {
+		return ""
+	}
+	var se *VaultError
+	if errors.As(err, &se) {
+		switch se.Kind {
+		case ErrKindCASConflict:
+			return "version conflict — the secret changed on the server since you loaded it. " +
+				"Press 'r' to reload (your local edits will be lost)."
+		case ErrKindNotFound:
+			return fmt.Sprintf("%s: not found on server", op)
+		case ErrKindPermissionDenied:
+			msg := se.Message
+			if msg == "" {
+				msg = "your token lacks permission for this operation"
+			}
+			return fmt.Sprintf("%s denied: %s", op, msg)
+		case ErrKindRateLimited:
+			return fmt.Sprintf("%s rate-limited — retry in a moment", op)
+		case ErrKindServerError:
+			return fmt.Sprintf("%s failed: backend error. %s", op, se.Message)
+		case ErrKindTimeout:
+			return fmt.Sprintf("%s timed out", op)
+		case ErrKindNetwork:
+			return fmt.Sprintf("%s network error: %s", op, se.Message)
+		case ErrKindBadRequest:
+			return fmt.Sprintf("%s rejected: %s", op, se.Message)
+		case ErrKindUnknown:
+			return fmt.Sprintf("%s failed: %s", op, se.Message)
+		}
+	}
+	return fmt.Sprintf("%s failed: %v", op, err)
 }

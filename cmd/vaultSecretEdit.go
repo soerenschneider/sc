@@ -2,15 +2,19 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
+	"github.com/soerenschneider/sc/internal/tui"
+	"github.com/soerenschneider/sc/internal/tui/picker"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/cobra"
@@ -31,6 +35,36 @@ var vaultSecretEditCmd = &cobra.Command{
 	},
 }
 
+type vaultKv2Provider interface {
+	// Get reads the current version of a secret. Returns a VaultError with
+	// Kind == ErrKindNotFound when no readable version exists.
+	Get(ctx context.Context, mount, path string) (*vault.Secret, error)
+
+	// GetVersion reads a specific historical version. Returns
+	// ErrKindNotFound when the version is missing, soft-deleted, or
+	// destroyed.
+	GetVersion(ctx context.Context, mount, path string, version int) (*vault.Secret, error)
+
+	// GetMetadata returns the version history (without secret values).
+	GetMetadata(ctx context.Context, mount, path string) (*vault.SecretMetadata, error)
+
+	// Put writes a new version with a compare-and-set check.
+	// cas is the version the caller expects to be current: pass 0 to
+	// assert the secret does not exist yet, otherwise pass the version
+	// returned by the most recent Get/Put. Returns a VaultError with
+	// Kind == ErrKindCASConflict when the server's version has advanced.
+	Put(ctx context.Context, mount, path string, data map[string]string, cas int) (*vault.Secret, error)
+
+	// SoftDelete marks the latest version as deleted while preserving
+	// history (so it can be undeleted out-of-band).
+	SoftDelete(ctx context.Context, mount, path string) error
+
+	// List returns the immediate children of prefix. Prefix is "" for the
+	// mount root; otherwise it ends with "/". Children that end in "/" are
+	// represented with IsDir == true.
+	List(ctx context.Context, mount, prefix string) ([]vault.Entry, error)
+}
+
 func init() {
 	vaultSecretCmd.AddCommand(vaultSecretEditCmd)
 }
@@ -41,9 +75,10 @@ type vaultKv2EditOptions struct {
 	Timeout time.Duration
 }
 
-func RunWithStore(store vault.SecretStore, opts vaultKv2EditOptions) error {
+// RunWithStore launches the editor TUI against the given vaultKv2Browser.
+func RunWithStore(store vaultKv2Provider, opts vaultKv2EditOptions) error {
 	if store == nil {
-		return errors.New("nil SecretStore")
+		return errors.New("nil vaultKv2Browser")
 	}
 	if opts.Mount == "" || opts.Path == "" {
 		return errors.New("mount and path are required")
@@ -75,6 +110,7 @@ const (
 	modeConfirmReload
 	modeVersionPicker
 	modeConfirmLoadVersion
+	modeConfirmExport
 )
 
 type pair struct {
@@ -83,7 +119,7 @@ type pair struct {
 }
 
 type model struct {
-	store vault.SecretStore
+	store vaultKv2Provider
 	opts  vaultKv2EditOptions
 
 	pairs     []pair
@@ -109,6 +145,12 @@ type model struct {
 	editingIndex int
 	confirm      bool
 
+	// Embedded fs picker for the 'E' export flow. When non-nil, Update and
+	// View route to it instead of the editor's normal list view. The
+	// editor's own state (including unsaved edits) is preserved underneath.
+	fsBrowser    *picker.TreeModel
+	exportTarget string // absolute path picked, used during the confirm step
+
 	dirty  bool
 	saving bool
 	status string
@@ -117,7 +159,7 @@ type model struct {
 	width, height int
 }
 
-func newModel(store vault.SecretStore, opts vaultKv2EditOptions) *model {
+func newModel(store vaultKv2Provider, opts vaultKv2EditOptions) *model {
 	return &model{
 		store:    store,
 		opts:     opts,
@@ -148,7 +190,7 @@ type loadResult struct {
 // This is what makes the editor useful for browsing back to a soft-deleted
 // secret: instead of showing "(new)" we show the last good version with a
 // clear note, and allow saving to roll it forward.
-func resolveSecret(ctx context.Context, store vault.SecretStore, mount, path string) (*loadResult, error) {
+func resolveSecret(ctx context.Context, store vaultKv2Provider, mount, path string) (*loadResult, error) {
 	sec, err := store.Get(ctx, mount, path)
 	if err == nil {
 		return &loadResult{sec: sec}, nil
@@ -353,7 +395,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case errMsg:
 		m.saving = false
-		m.errMsg = humanizeError(msg.err, msg.op)
+		m.errMsg = vault.HumanizeError(msg.err, msg.op)
 		m.status = ""
 		return m, nil
 
@@ -378,7 +420,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.revealed = map[string]bool{}
 		m.applyLoadResult(msg.res)
 		if m.cursor >= len(m.pairs) {
-			m.cursor = max0(len(m.pairs) - 1)
+			m.cursor = tui.Max0(len(m.pairs) - 1)
 		}
 		// applyLoadResult sets a useful status for the special cases
 		// (new / all-deleted / latest-deleted). For a vanilla reload of
@@ -407,7 +449,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.revealed = map[string]bool{}
 		if m.cursor >= len(m.pairs) {
-			m.cursor = max0(len(m.pairs) - 1)
+			m.cursor = tui.Max0(len(m.pairs) - 1)
 		}
 		if m.historical() {
 			m.status = fmt.Sprintf("viewing v%d (current is v%d) · saving creates v%d",
@@ -416,6 +458,28 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.status = fmt.Sprintf("loaded · v%d", m.version)
 		}
 		return m, nil
+
+	case exportedMsg:
+		m.saving = false
+		m.errMsg = ""
+		m.exportTarget = ""
+		m.status = formatExportStatus(msg)
+		return m, nil
+	}
+
+	// If the fs picker is embedded (E key was pressed), route input to it.
+	// When it signals Done, swap back to list mode and continue with the
+	// confirm/write flow.
+	if m.fsBrowser != nil {
+		newM, cmd := m.fsBrowser.Update(msg)
+		if tm, ok := newM.(*picker.TreeModel); ok {
+			m.fsBrowser = tm
+		}
+		if m.fsBrowser.Done() {
+			next := m.finishExportPicker()
+			return m, tea.Batch(cmd, next)
+		}
+		return m, cmd
 	}
 
 	if m.form != nil {
@@ -553,6 +617,9 @@ func (m *model) handleListKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.status = "loading history…"
 		m.errMsg = ""
 		return m, m.fetchMetadata()
+
+	case "E":
+		return m, m.startExport()
 
 	case "X":
 		if !m.exists {
@@ -791,47 +858,17 @@ func (m *model) handleFormDone(prev mode) tea.Cmd {
 			m.errMsg = ""
 			return m.loadVersion(m.pendingVersion)
 		}
+
+	case modeConfirmExport:
+		if m.confirm && m.exportTarget != "" {
+			m.saving = true
+			m.status = "exporting…"
+			m.errMsg = ""
+			return m.exportCmd()
+		}
+		m.exportTarget = ""
 	}
 	return nil
-}
-
-// ---------------------------------------------------------------------------
-// error humanization
-// ---------------------------------------------------------------------------
-
-func humanizeError(err error, op string) string {
-	if err == nil {
-		return ""
-	}
-	var se *vault.StoreError
-	if errors.As(err, &se) {
-		switch se.Kind {
-		case vault.ErrKindCASConflict:
-			return "version conflict — the secret changed on the server since you loaded it. " +
-				"Press 'r' to reload (your local edits will be lost)."
-		case vault.ErrKindNotFound:
-			return fmt.Sprintf("%s: not found on server", op)
-		case vault.ErrKindPermissionDenied:
-			msg := se.Message
-			if msg == "" {
-				msg = "your token lacks permission for this operation"
-			}
-			return fmt.Sprintf("%s denied: %s", op, msg)
-		case vault.ErrKindRateLimited:
-			return fmt.Sprintf("%s rate-limited — retry in a moment", op)
-		case vault.ErrKindServerError:
-			return fmt.Sprintf("%s failed: backend error. %s", op, se.Message)
-		case vault.ErrKindTimeout:
-			return fmt.Sprintf("%s timed out", op)
-		case vault.ErrKindNetwork:
-			return fmt.Sprintf("%s network error: %s", op, se.Message)
-		case vault.ErrKindBadRequest:
-			return fmt.Sprintf("%s rejected: %s", op, se.Message)
-		case vault.ErrKindUnknown:
-			return fmt.Sprintf("%s failed: %s", op, se.Message)
-		}
-	}
-	return fmt.Sprintf("%s failed: %v", op, err)
 }
 
 // ---------------------------------------------------------------------------
@@ -839,6 +876,9 @@ func humanizeError(err error, op string) string {
 // ---------------------------------------------------------------------------
 
 func (m *model) View() string {
+	if m.fsBrowser != nil {
+		return m.fsBrowser.View()
+	}
 	if m.form != nil {
 		return m.form.View()
 	}
@@ -846,16 +886,16 @@ func (m *model) View() string {
 	var b strings.Builder
 
 	// Title + path
-	b.WriteString(titleStyle.Render(" vault edit "))
+	b.WriteString(tui.TitleStyle.Render(" vault edit "))
 	b.WriteString(" ")
-	b.WriteString(pathStyle.Render(fmt.Sprintf("%s/%s", m.opts.Mount, m.opts.Path)))
+	b.WriteString(tui.PathStyle.Render(fmt.Sprintf("%s/%s", m.opts.Mount, m.opts.Path)))
 	if m.dirty {
 		b.WriteString(" ")
-		b.WriteString(dirtyStyle.Render("●"))
+		b.WriteString(tui.DirtyStyle.Render("●"))
 	}
 	if m.saving {
 		b.WriteString(" ")
-		b.WriteString(metaStyle.Render("· busy"))
+		b.WriteString(tui.MetaStyle.Render("· busy"))
 	}
 	b.WriteString("\n")
 
@@ -864,32 +904,34 @@ func (m *model) View() string {
 	b.WriteString("\n\n")
 
 	if len(m.pairs) == 0 {
-		b.WriteString(helpStyle.Render("  (empty — press 'a' to add a key/value pair)\n"))
+		b.WriteString(tui.HelpStyle.Render("  (empty — press 'a' to add a key/value pair)\n"))
 	}
 	for i, p := range m.pairs {
 		marker := "  "
-		k := keyStyle.Render(p.key)
+		k := tui.KeyStyle.Render(p.key)
 		if i == m.cursor {
-			marker = selectedStyle.Render("▸ ")
-			k = selectedStyle.Render(p.key)
+			marker = tui.SelectedStyle.Render("▸ ")
+			k = tui.SelectedStyle.Render(p.key)
 		}
+		//nolint QF1012
 		b.WriteString(fmt.Sprintf("%s%s %s %s\n",
-			marker, k, helpStyle.Render("="), m.renderValue(p)))
+			marker, k, tui.HelpStyle.Render("="), m.renderValue(p)))
 	}
 
 	b.WriteString("\n")
 	switch {
 	case m.errMsg != "":
-		b.WriteString(errorStyle.Render("✗ " + m.errMsg))
+		b.WriteString(tui.ErrorStyle.Render("✗ " + m.errMsg))
 		b.WriteString("\n")
 	case m.status != "":
-		b.WriteString(statusStyle.Render("· " + m.status))
+		b.WriteString(tui.StatusStyle.Render("· " + m.status))
 		b.WriteString("\n")
 	}
 
-	b.WriteString(helpStyle.Render(
+	b.WriteString(tui.HelpStyle.Render(
 		"\n  ↑/↓ move  ·  space reveal  ·  T reveal all  ·  enter edit  ·  a add" +
-			"  ·  d delete  ·  s save  ·  r reload  ·  v history  ·  X soft-delete  ·  q quit",
+			"  ·  d delete  ·  s save  ·  r reload  ·  v history  ·  E export" +
+			"  ·  X soft-delete  ·  q quit",
 	))
 	return b.String()
 }
@@ -899,36 +941,36 @@ func (m *model) View() string {
 // shows the current (latest) version for context.
 func (m *model) versionStatusLine() string {
 	if !m.exists {
-		return "  " + dirtyStyle.Render("(new — not yet saved)")
+		return "  " + tui.DirtyStyle.Render("(new — not yet saved)")
 	}
 	if m.version == 0 {
 		// Metadata exists but every version is unreadable.
 		body := fmt.Sprintf("v1–v%d all deleted or destroyed", m.currentVersion)
-		return "  " + historicalStyle.Render(body) + "  " + historicalTagStyle.Render("[no readable version]")
+		return "  " + tui.HistoricalStyle.Render(body) + "  " + tui.HistoricalTagStyle.Render("[no readable version]")
 	}
 	when := m.updatedAt.Local().Format("2006-01-02 15:04")
 	age := humanizeAge(m.updatedAt)
 	if m.historical() {
 		body := fmt.Sprintf("v%d of %d  ·  %s  (%s)",
 			m.version, m.currentVersion, when, age)
-		return "  " + historicalStyle.Render(body) + "  " + historicalTagStyle.Render("[historical]")
+		return "  " + tui.HistoricalStyle.Render(body) + "  " + tui.HistoricalTagStyle.Render("[historical]")
 	}
 	body := fmt.Sprintf("v%d  ·  %s  (%s)", m.version, when, age)
-	return "  " + metaStyle.Render(body)
+	return "  " + tui.MetaStyle.Render(body)
 }
 
 func (m *model) renderValue(p pair) string {
 	if m.revealAll || m.revealed[p.key] {
-		return valueStyle.Render(p.value)
+		return tui.ValueStyle.Render(p.value)
 	}
 	if p.value == "" {
-		return maskedStyle.Render("(empty)")
+		return tui.MaskedStyle.Render("(empty)")
 	}
 	n := len(p.value)
 	if n > 12 {
 		n = 12
 	}
-	return maskedStyle.Render(strings.Repeat("•", n))
+	return tui.MaskedStyle.Render(strings.Repeat("•", n))
 }
 
 func humanizeAge(t time.Time) string {
@@ -950,65 +992,172 @@ func humanizeAge(t time.Time) string {
 	}
 }
 
-func max0(n int) int {
-	if n < 0 {
-		return 0
+// Editor `E` (export) feature.
+//
+
+// ---------------------------------------------------------------------------
+// kicking off the flow
+// ---------------------------------------------------------------------------
+
+// startExport is called from the editor's 'E' key handler. It refuses if
+// nothing readable is available, otherwise it embeds the fs picker.
+//
+// Returns the Init() cmd of the embedded picker so it gets started properly.
+func (m *model) startExport() tea.Cmd {
+	if !m.exists || m.currentVersion == 0 {
+		m.status = "nothing to export — secret has never been saved"
+		return nil
 	}
-	return n
+
+	browser := &picker.TreeBrowser{
+		Provider:    &picker.FsTreeProvider{ShowHidden: false},
+		Title:       "export to",
+		LeafLabel:   "file",
+		DirLabel:    "directory",
+		AllowSaveAs: true, // 's' opens the name prompt
+		Timeout:     m.opts.Timeout,
+	}
+
+	// Start at cwd so the user lands somewhere sensible.
+	startAt := ""
+	if cwd, err := os.Getwd(); err == nil {
+		startAt = picker.FsPrefixFromAbsPath(cwd)
+	}
+
+	picker, err := browser.NewModel(startAt)
+	if err != nil {
+		m.errMsg = vault.HumanizeError(err, "fs list")
+		return nil
+	}
+	m.fsBrowser = picker
+	m.errMsg = ""
+	m.status = "pick a destination — 's' to type a filename in the current dir"
+	return picker.Init()
+}
+
+// finishExportPicker is called after the fs picker signals Done. It reads
+// the result, decides whether to confirm, and either opens a confirm form
+// or fires the export immediately.
+func (m *model) finishExportPicker() tea.Cmd {
+	res := m.fsBrowser.Result()
+	m.fsBrowser = nil
+
+	switch res.Action {
+	case picker.ActionQuit:
+		m.status = "export cancelled"
+		return nil
+	case picker.ActionOpen, picker.ActionSaveAs:
+		// fall through
+	default:
+		return nil
+	}
+
+	abs := picker.FsAbsPath(res.Prefix, res.Name)
+	m.exportTarget = abs
+
+	overwrite := false
+	if st, err := os.Stat(abs); err == nil {
+		if st.IsDir() {
+			m.errMsg = fmt.Sprintf("%s is a directory", abs)
+			m.exportTarget = ""
+			return nil
+		}
+		overwrite = true
+	}
+
+	title := "Export to " + abs + "?"
+	desc := fmt.Sprintf("Writes the latest readable version of %s/%s as JSON, mode 0600.",
+		m.opts.Mount, m.opts.Path)
+	if overwrite {
+		desc += "\n\nWARNING: this overwrites the existing file at that path."
+	}
+	return m.openConfirm(modeConfirmExport, title, desc, "Export", "Cancel")
 }
 
 // ---------------------------------------------------------------------------
-// shared styles
+// the write itself
 // ---------------------------------------------------------------------------
 
-var (
-	titleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("212")).
-			Background(lipgloss.Color("237")).
-			Padding(0, 1)
+// exportCmd resolves the latest readable version of the secret and writes
+// it to m.exportTarget as JSON with mode 0600. It's an async tea.Cmd so the
+// UI stays responsive during the network round-trip.
+func (m *model) exportCmd() tea.Cmd {
+	store, mount, path, timeout := m.store, m.opts.Mount, m.opts.Path, m.opts.Timeout
+	target := m.exportTarget
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
 
-	pathStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("245")).
-			Italic(true)
+		res, err := resolveSecret(ctx, store, mount, path)
+		if err != nil {
+			return errMsg{err: err, op: "export"}
+		}
+		if res.sec == nil {
+			return errMsg{
+				err: errors.New("no readable version available to export"),
+				op:  "export",
+			}
+		}
 
-	metaStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("244"))
+		body, err := marshalSecretJSON(res.sec.Data)
+		if err != nil {
+			return errMsg{err: err, op: "export"}
+		}
+		if err := writeSecureFile(target, body); err != nil {
+			return errMsg{err: err, op: "export"}
+		}
+		return exportedMsg{
+			path:       target,
+			version:    res.sec.Version,
+			historical: res.historical,
+		}
+	}
+}
 
-	historicalStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("214"))
+// exportedMsg is the success signal from exportCmd.
+type exportedMsg struct {
+	path       string
+	version    int
+	historical bool
+}
 
-	historicalTagStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("0")).
-				Background(lipgloss.Color("214")).
-				Bold(true).
-				Padding(0, 1)
+// marshalSecretJSON encodes a string map as deterministic, indented JSON.
+// json.MarshalIndent sorts map keys lexically, so the output is stable
+// across exports — friendly for diffs if the user re-exports over an
+// existing file.
+func marshalSecretJSON(data map[string]string) ([]byte, error) {
+	if data == nil {
+		data = map[string]string{}
+	}
+	return json.MarshalIndent(data, "", "  ")
+}
 
-	keyStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("110")).
-			Bold(true)
+// writeSecureFile writes data to path with mode 0600. When the file already
+// exists the create mode is ignored, so we re-chmod afterwards to guarantee
+// the bit pattern regardless of the prior state.
+func writeSecureFile(path string, data []byte) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return fmt.Errorf("ensuring parent directory: %w", err)
+	}
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	return os.Chmod(path, 0o600)
+}
 
-	valueStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("252"))
-
-	maskedStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("240"))
-
-	selectedStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("212")).
-			Bold(true)
-
-	helpStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("241"))
-
-	errorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("196")).
-			Bold(true)
-
-	statusStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("76"))
-
-	dirtyStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("214")).
-			Bold(true)
-)
+// formatExportStatus returns the user-facing success line.
+func formatExportStatus(msg exportedMsg) string {
+	if msg.historical {
+		return fmt.Sprintf("exported v%d (latest readable) to %s (mode 0600)",
+			msg.version, msg.path)
+	}
+	return fmt.Sprintf("exported v%d to %s (mode 0600)", msg.version, msg.path)
+}

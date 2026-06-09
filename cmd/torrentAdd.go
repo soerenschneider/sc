@@ -49,7 +49,12 @@ Examples:
 			}
 
 			if noConfirm {
-				log.Info().Str("magnet", magnet).Msg("Adding torrent from clipboard")
+				dn, err := pkg.ParseMagnetDisplayName(magnet)
+				if err != nil {
+					log.Info().Str("magnet", magnet).Msg("Adding torrent from clipboard")
+				} else {
+					log.Info().Str("dn", dn).Msg("Adding torrent from clipboard")
+				}
 			} else {
 				tui.ReadInputSuggestionWithValidation(&magnet, "Please enter magnet link", nil, validation)
 			}
