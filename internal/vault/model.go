@@ -1,6 +1,11 @@
 package vault
 
-import "strings"
+import (
+	"errors"
+	"fmt"
+	"strings"
+	"time"
+)
 
 type SshSignatureRequest struct {
 	PublicKey  string
@@ -85,3 +90,103 @@ type StorageImplementation interface {
 	CanRead() error
 	Write([]byte) error
 }
+
+// Secret is the storage-neutral view of a versioned KV secret.
+type Secret struct {
+	Data      map[string]string
+	Version   int
+	UpdatedAt time.Time
+}
+
+// SecretMetadata is the storage-neutral view of a secret's version history.
+type SecretMetadata struct {
+	CurrentVersion int
+	OldestVersion  int
+	Versions       []VersionInfo // newest first
+}
+
+// VersionInfo describes one historical version. DeletedAt is zero if the
+// version is still readable; Destroyed is true if the version's data has
+// been permanently removed.
+type VersionInfo struct {
+	Version   int
+	CreatedAt time.Time
+	DeletedAt time.Time
+	Destroyed bool
+}
+
+// Readable reports whether the version's data can still be fetched.
+func (v VersionInfo) Readable() bool {
+	return !v.Destroyed && v.DeletedAt.IsZero()
+}
+
+// Entry is one item returned by SecretStore.List.
+type Entry struct {
+	Name  string
+	IsDir bool
+}
+
+// ErrorKind classifies VaultError so the UI can decide how to react.
+type ErrorKind int
+
+const (
+	ErrKindUnknown ErrorKind = iota
+	ErrKindNotFound
+	ErrKindPermissionDenied
+	ErrKindCASConflict
+	ErrKindRateLimited
+	ErrKindServerError
+	ErrKindBadRequest
+	ErrKindTimeout
+	ErrKindNetwork
+)
+
+func (k ErrorKind) String() string {
+	switch k {
+	case ErrKindNotFound:
+		return "not-found"
+	case ErrKindPermissionDenied:
+		return "permission-denied"
+	case ErrKindCASConflict:
+		return "cas-conflict"
+	case ErrKindRateLimited:
+		return "rate-limited"
+	case ErrKindServerError:
+		return "server-error"
+	case ErrKindBadRequest:
+		return "bad-request"
+	case ErrKindTimeout:
+		return "timeout"
+	case ErrKindNetwork:
+		return "network"
+	default:
+		return "unknown"
+	}
+}
+
+// VaultError is the typed error every SecretStore implementation must return.
+type VaultError struct {
+	Kind    ErrorKind
+	Op      string // "get", "get-version", "get-metadata", "put", "delete", "list"
+	Message string // human-readable detail (safe to display; must not contain secret values)
+	Cause   error  // underlying error, if any
+}
+
+func (e *VaultError) Error() string {
+	if e.Message != "" {
+		return fmt.Sprintf("%s: %s: %s", e.Op, e.Kind, e.Message)
+	}
+	return fmt.Sprintf("%s: %s", e.Op, e.Kind)
+}
+
+func (e *VaultError) Unwrap() error { return e.Cause }
+
+// IsKind reports whether err is (or wraps) a *VaultError with the given Kind.
+func IsKind(err error, k ErrorKind) bool {
+	var se *VaultError
+	return errors.As(err, &se) && se.Kind == k
+}
+
+// Convenience predicates for the two kinds the UI cares about most.
+func IsNotFound(err error) bool    { return IsKind(err, ErrKindNotFound) }
+func IsCASConflict(err error) bool { return IsKind(err, ErrKindCASConflict) }
