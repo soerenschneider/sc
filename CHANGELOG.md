@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.9.0](https://github.com/soerenschneider/sc/compare/v1.8.0...v1.9.0) (2026-06-10)
+
+
+### Features
+
+* add --force flag to force signing a ssh key regardless of expiry date ([2eb27cb](https://github.com/soerenschneider/sc/commit/2eb27cb73e15067454d54c345b41a02ff73cb33a))
+* add flag to add torrent from clipboard without confirmation ([00c2355](https://github.com/soerenschneider/sc/commit/00c23550a2f55db144ea7d51c4c814ed33f0cf23))
+* add option to only print value instead of key ([dc38776](https://github.com/soerenschneider/sc/commit/dc3877674bbe9e6a218b8d6aebbe19c070f2ce81))
+* list and edit vault kv2 secrets ([b3a6b8c](https://github.com/soerenschneider/sc/commit/b3a6b8c21be20d2f21a7546e32bf485bf24d2eb2))
+* print dn instead of magnet link if possible ([02ee3f9](https://github.com/soerenschneider/sc/commit/02ee3f9da8f15586139e5553f125b0774027692e))
+* save vault kv2 secrets to local disk ([9ddeea7](https://github.com/soerenschneider/sc/commit/9ddeea7363608024829cc4501d5b9533e18f8ff9))
+
+
+### Bug Fixes
+
+* **deps:** Update dependency go to v1.26.4 ([#203](https://github.com/soerenschneider/sc/issues/203)) ([0f61184](https://github.com/soerenschneider/sc/commit/0f611842ae09667eafe8c08f73ee117658ce59cd))
+* **deps:** Update module charm.land/bubbletea/v2 to v2.0.7 ([#214](https://github.com/soerenschneider/sc/issues/214)) ([b16c91c](https://github.com/soerenschneider/sc/commit/b16c91c0b758d5cba41e779bf8f056feb851b07a))
+* **deps:** Update module github.com/jedib0t/go-pretty/v6 to v6.8.0 ([#216](https://github.com/soerenschneider/sc/issues/216)) ([2ca62f2](https://github.com/soerenschneider/sc/commit/2ca62f2df302410d34b83421b33ead5902f914ff))
+* **deps:** Update module golang.org/x/crypto to v0.52.0 ([#204](https://github.com/soerenschneider/sc/issues/204)) ([0c979e1](https://github.com/soerenschneider/sc/commit/0c979e19ae8803c13f153cc2207cce94f07ea6a1))
+* **deps:** Update module golang.org/x/term to v0.43.0 ([#206](https://github.com/soerenschneider/sc/issues/206)) ([d3090a6](https://github.com/soerenschneider/sc/commit/d3090a6a8cd2774f91add4def41d7d77b7f73cbe))
+* **deps:** Update module gopkg.in/ini.v1 to v1.67.2 ([#201](https://github.com/soerenschneider/sc/issues/201)) ([b8ff25f](https://github.com/soerenschneider/sc/commit/b8ff25ff5f43803c220c50b80dc44fc121ee11a6))
+* **deps:** Update module k8s.io/api to v0.36.1 ([#209](https://github.com/soerenschneider/sc/issues/209)) ([b54be35](https://github.com/soerenschneider/sc/commit/b54be3503a331a075eadd9b01eaf6458e7a9fbfb))
+* **deps:** Update module k8s.io/apimachinery to v0.36.1 ([#210](https://github.com/soerenschneider/sc/issues/210)) ([cd93dbb](https://github.com/soerenschneider/sc/commit/cd93dbb403f792b710f5945692cb13ac4e14d649))
+* **deps:** Update module k8s.io/client-go to v0.36.1 ([#211](https://github.com/soerenschneider/sc/issues/211)) ([d802840](https://github.com/soerenschneider/sc/commit/d80284068b03f007fd60cf0c86ceabd0e2de572c))
+
 ## [1.8.0](https://github.com/soerenschneider/sc/compare/v1.7.0...v1.8.0) (2026-04-25)
 
 
