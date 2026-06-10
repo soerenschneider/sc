@@ -390,37 +390,3 @@ func terminalWidth() (int, bool) {
 	}
 	return w, true
 }
-
-// ---------------------------------------------------------------------------
-// legacy API — kept so existing call sites compile. Prefer Table directly.
-// ---------------------------------------------------------------------------
-
-// TableOpts is the legacy options bag accepted by PrintTable.
-//
-// Deprecated: construct Table directly. The new struct adds Caption,
-// Aligns, Zebra, EmptyMessage, adaptive colours, and a saner StyleFunc
-// type (a value, not a pointer-to-function).
-type TableOpts struct {
-	Wrap      bool
-	FullWidth bool
-	Style     *func(row, col int) lipgloss.Style
-}
-
-// PrintTable prints a styled table to stdout.
-//
-// Deprecated: use Table{...}.Print(). This wrapper exists only to keep
-// existing call sites compiling — new code should construct Table
-// directly to benefit from alignment, caption, and zebra support.
-func PrintTable(title string, headers []string, rows [][]string, opts TableOpts) {
-	t := Table{
-		Title:     title,
-		Headers:   headers,
-		Rows:      rows,
-		Wrap:      opts.Wrap,
-		FullWidth: opts.FullWidth,
-	}
-	if opts.Style != nil {
-		t.StyleFunc = *opts.Style
-	}
-	t.Print()
-}

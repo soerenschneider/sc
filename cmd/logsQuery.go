@@ -3,6 +3,7 @@ package cmd
 import (
 	"cmp"
 	"context"
+	"fmt"
 	"slices"
 	"time"
 
@@ -77,11 +78,15 @@ for integration with scripts or for human-readable views.`,
 		}
 
 		tableHeaders, tableData := healthcheck.TransformLogs(logs)
-		tableOpts := tui.TableOpts{
-			Wrap:      true,
-			FullWidth: true,
-		}
-		tui.PrintTable("Logs", tableHeaders, tableData, tableOpts)
+
+		tui.Table{
+			Title:   "Logs",
+			Headers: tableHeaders,
+			Rows:    tableData,
+			Aligns:  []tui.Align{0, 0, tui.AlignRight},
+			Caption: fmt.Sprintf("%d rows", len(tableData)),
+			Zebra:   len(tableData) > 10,
+		}.Print()
 
 		if err := userdata.Upsert[logsQueryUserdata](cmp.Or(profile, defaultProfileName), commandName, userData); err != nil {
 			log.Warn().Err(err).Msg("could not save userdata")
