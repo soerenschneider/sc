@@ -1,3 +1,19 @@
+// Generic prefix-tree TUI. Knows nothing about Vault or filesystems; data
+// comes through a TreeProvider, and the UI behavior is configured per call.
+//
+// Two use modes:
+//
+//   - Standalone — TreeBrowser.Browse(ctx, startPrefix) runs the TUI in its
+//     own tea.Program and returns when the user acts. Used by the Vault `ls`
+//     command.
+//
+//   - Embedded — TreeBrowser.NewModel(startPrefix) returns a *TreeModel that
+//     a parent bubbletea model can host as a sub-screen. The model never
+//     calls tea.Quit itself; the parent polls TreeModel.Done() each tick and
+//     swaps it out when the user is finished. Used by the editor's `E` key,
+//     which keeps the editor running underneath while the user picks an fs
+//     destination.
+
 package picker
 
 import (
@@ -8,24 +24,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/huh"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/huh/v2"
 	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"
 )
 
-// Generic prefix-tree TUI
-// Two use modes:
-//   - Standalone: TreeBrowser.Browse(ctx, startPrefix) runs the TUI in its
-//     own tea.Program and returns when the user acts. Used by the Vault `ls`
-//     command.
-//   - Embedded: TreeBrowser.NewModel(startPrefix) returns a *TreeModel that
-//     a parent bubbletea model can host as a sub-screen. The model never
-//     calls tea.Quit itself; the parent polls TreeModel.Done() each tick and
-//     swaps it out when the user is finished. Used by the editor's `E` key,
-//     which keeps the editor running underneath while the user picks an fs
-//     destination.
+// ---------------------------------------------------------------------------
+// public surface
+// ---------------------------------------------------------------------------
 
 // TreeNode is one item in a tree.
 type TreeNode struct {
@@ -33,22 +41,38 @@ type TreeNode struct {
 	IsDir bool
 }
 
-// TreeProvider is the data source the browser walks.
+// TreeProvider is the data source the browser walks. Prefix is empty at the
+// root; otherwise it ends with "/". Implementations should canonicalize empty
+// prefix to whatever their "root" means (e.g. "/" for a filesystem).
 type TreeProvider interface {
 	Children(ctx context.Context, prefix string) ([]TreeNode, error)
+}
+
+// TreeMaker is an optional capability on a TreeProvider. When a provider
+// implements it, the 'n' key creates the path in-place (mkdir-style) and
+// the browser stays open, navigating into the new location. Providers that
+// don't implement it still allow 'n' if AllowCreate is set, but the browser
+// exits with ActionCreate and the consumer decides what "create" means in
+// its context — e.g. for Vault, opening the editor at the new path (the
+// secret only materializes once the user saves).
+//
+// The full path passed to MakePath is the same string the browser would
+// report in TreeResult: m.prefix + the user-typed name, slashes included.
+type TreeMaker interface {
+	MakePath(ctx context.Context, fullPath string) error
 }
 
 // TreeAction is what the user did when they exited the browser.
 type TreeAction int
 
 const (
-	// ActionQuit is used when user pressed q/esc/ctrl+c. Prefix/Name are not meaningful.
+	// ActionQuit: user pressed q/esc/ctrl+c. Prefix/Name are not meaningful.
 	ActionQuit TreeAction = iota
-	// ActionOpen is used when user selected an existing leaf with enter.
+	// ActionOpen: user selected an existing leaf with enter.
 	ActionOpen
-	// ActionSaveAs is used when user picked a new name via 's' in a directory.
+	// ActionSaveAs: user picked a new name via 's' in a directory.
 	ActionSaveAs
-	// ActionCreate is used when user picked a new name via 'n' in a directory.
+	// ActionCreate: user picked a new name via 'n' in a directory.
 	ActionCreate
 )
 
@@ -59,6 +83,7 @@ type TreeResult struct {
 	Name   string // leaf they selected or typed (empty for ActionQuit)
 }
 
+// TreeBrowser configures the TUI.
 type TreeBrowser struct {
 	Provider    TreeProvider
 	Title       string // shown in title bar, e.g. "vault ls", "export"
@@ -78,7 +103,7 @@ func (b *TreeBrowser) Browse(ctx context.Context, startPrefix string) (*TreeResu
 		return nil, err
 	}
 	shim := &standaloneShim{m: m}
-	out, err := tea.NewProgram(shim, tea.WithAltScreen()).Run()
+	out, err := tea.NewProgram(shim).Run()
 	if err != nil {
 		return nil, err
 	}
@@ -181,6 +206,49 @@ func (m *TreeModel) loadCmd(prefix string) tea.Cmd {
 	}
 }
 
+// treeCreatedMsg delivers the outcome of an in-place create. On success we
+// navigate into the new path (so the user lands inside the directory they
+// just made); on error we stay at the current prefix and surface the error.
+type treeCreatedMsg struct {
+	targetPrefix string     // prefix to land at after the create
+	items        []TreeNode // children of targetPrefix
+	fullPath     string     // for the success status line
+	err          error
+}
+
+func (m *TreeModel) makePathCmd(maker TreeMaker, name string) tea.Cmd {
+	prefix, provider, timeout := m.prefix, m.cfg.Provider, m.cfg.Timeout
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		full := prefix + name
+		if err := maker.MakePath(ctx, full); err != nil {
+			return treeCreatedMsg{err: err, fullPath: full}
+		}
+		// Navigate into the newly created path; fall back to the current
+		// prefix if it isn't navigable for some reason (e.g. the path was
+		// already a non-directory file).
+		target := full
+		if !strings.HasSuffix(target, "/") {
+			target += "/"
+		}
+		items, err := provider.Children(ctx, target)
+		if err != nil {
+			items, _ = provider.Children(ctx, prefix)
+			return treeCreatedMsg{
+				targetPrefix: prefix,
+				items:        sortTreeNodes(items),
+				fullPath:     full,
+			}
+		}
+		return treeCreatedMsg{
+			targetPrefix: target,
+			items:        sortTreeNodes(items),
+			fullPath:     full,
+		}
+	}
+}
+
 func (m *TreeModel) Init() tea.Cmd { return nil }
 
 func (m *TreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -205,11 +273,25 @@ func (m *TreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.cursor, m.offset = 0, 0
 		m.filter.SetValue("")
 		return m, nil
+	case treeCreatedMsg:
+		m.loading = false
+		if msg.err != nil {
+			m.err = vault.HumanizeError(msg.err, "create")
+			m.status = ""
+			return m, nil
+		}
+		m.err = ""
+		m.prefix = msg.targetPrefix
+		m.items = msg.items
+		m.cursor, m.offset = 0, 0
+		m.filter.SetValue("")
+		m.status = "created " + msg.fullPath
+		return m, nil
 	}
 
 	// Name-prompt form (create / save-as) owns input while open.
 	if m.form != nil {
-		if km, ok := msg.(tea.KeyMsg); ok && km.String() == "esc" {
+		if km, ok := msg.(tea.KeyPressMsg); ok && km.String() == "esc" {
 			m.form = nil
 			return m, nil
 		}
@@ -221,11 +303,22 @@ func (m *TreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case huh.StateCompleted:
 			name := strings.TrimSpace(m.newName)
 			m.form = nil
-			if name != "" {
-				m.action = m.formAction
-				m.name = name
-				m.done = true
+			if name == "" {
+				return m, cmd
 			}
+			// In-place create when the provider supports it (fs mkdir);
+			// otherwise emit ActionCreate and let the consumer handle it
+			// (the vault `ls` flow opens the editor at the new path).
+			if m.formAction == ActionCreate {
+				if maker, ok := m.cfg.Provider.(TreeMaker); ok {
+					m.loading = true
+					m.status = "creating " + m.prefix + name + "…"
+					return m, m.makePathCmd(maker, name)
+				}
+			}
+			m.action = m.formAction
+			m.name = name
+			m.done = true
 			return m, cmd
 		case huh.StateAborted:
 			m.form = nil
@@ -236,7 +329,7 @@ func (m *TreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// Filter input takes most keys when active.
 	if m.filterOn {
-		if km, ok := msg.(tea.KeyMsg); ok {
+		if km, ok := msg.(tea.KeyPressMsg); ok {
 			switch km.String() {
 			case "esc":
 				m.filterOn = false
@@ -256,7 +349,7 @@ func (m *TreeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 
-	if km, ok := msg.(tea.KeyMsg); ok {
+	if km, ok := msg.(tea.KeyPressMsg); ok {
 		return m.handleKey(km)
 	}
 	return m, nil
@@ -276,7 +369,7 @@ func (m *TreeModel) filteredItems() []TreeNode {
 	return out
 }
 
-func (m *TreeModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m *TreeModel) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	items := m.filteredItems()
 	switch msg.String() {
 	case "ctrl+c", "q", "esc":
@@ -357,18 +450,30 @@ func (m *TreeModel) openNamePrompt(action TreeAction, title string) tea.Cmd {
 					if s == "" {
 						return errors.New("name cannot be empty")
 					}
-					if strings.Contains(s, "/") {
-						return errors.New("name cannot contain '/'")
+					if strings.HasPrefix(s, "/") {
+						return errors.New("path is relative to the current location; don't start with '/'")
 					}
-					// ActionCreate forbids overwriting existing leaves;
-					// ActionSaveAs permits it (caller will confirm).
-					if action == ActionCreate && existing[s] {
+					// SaveAs picks a single filename in the current
+					// directory; nested paths don't fit. Create allows
+					// arbitrary subpaths — vault folders are implicit
+					// and a TreeMaker provider does mkdir -p.
+					if action == ActionSaveAs && strings.Contains(s, "/") {
+						return errors.New("name cannot contain '/' (use 'n' to create a nested path)")
+					}
+					for _, seg := range strings.Split(s, "/") {
+						if seg == ".." {
+							return errors.New("'..' segments not allowed")
+						}
+					}
+					// Duplicate check only meaningful for a simple
+					// leaf in the current directory.
+					if action == ActionCreate && !strings.Contains(s, "/") && existing[s] {
 						return fmt.Errorf("a %s named %q already exists here", m.cfg.LeafLabel, s)
 					}
 					return nil
 				}),
 		),
-	).WithShowHelp(true).WithTheme(huh.ThemeCharm())
+	).WithShowHelp(true).WithTheme(huh.ThemeFunc(huh.ThemeCharm))
 	return m.form.Init()
 }
 
@@ -376,9 +481,13 @@ func (m *TreeModel) openNamePrompt(action TreeAction, title string) tea.Cmd {
 // view
 // ---------------------------------------------------------------------------
 
-func (m *TreeModel) View() string {
+// View returns the rendered tree. Note: this method does NOT set AltScreen
+// or other terminal-state fields on the returned tea.View — those are the
+// parent's concern. For standalone use the standaloneShim wraps and adds
+// them; for embedded use the parent model does the same.
+func (m *TreeModel) View() tea.View {
 	if m.form != nil {
-		return m.form.View()
+		return tea.NewView(m.form.View())
 	}
 
 	var b strings.Builder
@@ -473,7 +582,7 @@ func (m *TreeModel) View() string {
 	}
 	foot += "  ·  esc cancel"
 	b.WriteString(tui.HelpStyle.Render("\n" + foot))
-	return b.String()
+	return tea.NewView(b.String())
 }
 
 func (m *TreeModel) adjustOffset(view, n int) {
@@ -510,7 +619,16 @@ func (s *standaloneShim) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	return s, cmd
 }
-func (s *standaloneShim) View() string { return s.m.View() }
+
+// View returns the underlying TreeModel's content with AltScreen turned on.
+// This is the standalone case — when the browser is run via Browse() — so
+// the program needs the alt-screen state set somewhere; the shim is the
+// natural home for it.
+func (s *standaloneShim) View() tea.View {
+	v := s.m.View()
+	v.AltScreen = true
+	return v
+}
 
 func sortTreeNodes(items []TreeNode) []TreeNode {
 	sort.SliceStable(items, func(i, j int) bool {
@@ -549,8 +667,8 @@ func parentPrefix(p string) string {
 	return p[:strings.LastIndex(p, "/")+1]
 }
 
-// NormalizePrefix ensures a non-empty prefix ends with "/".
-func NormalizePrefix(p string) string {
+// normalizePrefix ensures a non-empty prefix ends with "/".
+func normalizePrefix(p string) string {
 	p = strings.TrimPrefix(p, "/")
 	if p == "" {
 		return ""
