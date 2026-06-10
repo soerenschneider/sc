@@ -1,15 +1,21 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/cobra"
 )
 
 const (
-	linksAddr  = "address"
-	linksQuery = "query"
-	linksTags  = "tags"
-	linksUrl   = "url"
-	linksToken = "token"
+	linksAddr      = "address"
+	linksQuery     = "query"
+	linksTags      = "tags"
+	linksUrl       = "url"
+	linksToken     = "token"
+	linksTokenFile = "token-file"
 )
 
 var linksCmd = &cobra.Command{
@@ -33,5 +39,23 @@ func init() {
 	_ = linksCmd.MarkPersistentFlagRequired(linksAddr)
 
 	linksCmd.PersistentFlags().StringP(linksToken, "t", "", "Linkding token.")
-	_ = linksCmd.MarkPersistentFlagRequired(linksToken)
+	linksCmd.PersistentFlags().StringP(linksTokenFile, "T", "", "Path to a file containing the Linkding token.")
+
+	// Exactly one source is allowed, and at least one is required.
+	linksCmd.MarkFlagsMutuallyExclusive(linksToken, linksTokenFile)
+	linksCmd.MarkFlagsOneRequired(linksToken, linksTokenFile)
+}
+
+func getLinkdingToken(cmd *cobra.Command) (string, error) {
+	token, _ := cmd.Flags().GetString(linksToken)
+	if tokenFile, _ := cmd.Flags().GetString(linksTokenFile); tokenFile != "" {
+		tokenFile = pkg.GetExpandedFile(tokenFile)
+		data, err := os.ReadFile(tokenFile)
+		if err != nil {
+			return "", fmt.Errorf("reading token file: %w", err)
+		}
+		token = strings.TrimSpace(string(data))
+	}
+
+	return token, nil
 }
