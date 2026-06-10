@@ -667,18 +667,6 @@ func parentPrefix(p string) string {
 	return p[:strings.LastIndex(p, "/")+1]
 }
 
-// normalizePrefix ensures a non-empty prefix ends with "/".
-func normalizePrefix(p string) string {
-	p = strings.TrimPrefix(p, "/")
-	if p == "" {
-		return ""
-	}
-	if !strings.HasSuffix(p, "/") {
-		p += "/"
-	}
-	return p
-}
-
 // displayPrefix returns a user-facing rendering of a prefix. Empty becomes
 // "/" so the user always sees a slash.
 func displayPrefix(p string) string {
