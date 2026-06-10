@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 
 	"charm.land/huh/v2/spinner"
 	"github.com/rs/zerolog/log"
@@ -51,10 +52,15 @@ Examples:
 		}
 
 		headers, data := torrents.AsTable()
-		tableOpts := tui.TableOpts{
-			Wrap: true,
-		}
-		tui.PrintTable("Torrents", headers, data, tableOpts)
+
+		tui.Table{
+			Title:   "Torrents",
+			Headers: headers,
+			Rows:    data,
+			Aligns:  []tui.Align{0, 0, tui.AlignRight},
+			Caption: fmt.Sprintf("%d rows", len(data)),
+			Zebra:   len(data) > 10,
+		}.Print()
 	},
 }
 
