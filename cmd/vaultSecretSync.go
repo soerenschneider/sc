@@ -33,6 +33,7 @@ const (
 	vaultSecretSyncFormatterJsonKey                    = "json"
 	vaultSecretSyncFormatterEnvKey                     = "env"
 	vaultSecretSyncFormatterEnvOptionUppercaseKeys     = "uppercase_keys"
+	vaultSecretSyncFormatterEnvOptionValueOnly         = "value_only"
 	vaultSecretSyncFormatterTemplateKey                = "template"
 	vaultSecretSyncFormatterTemplateOptionTemplateFile = "file"
 	vaultSecretSyncFormatterTemplateOptionTemplate     = "template"
@@ -153,6 +154,7 @@ func buildSecretFormatter(name string, arguments map[string]any) (secretFormatte
 	switch name {
 	case vaultSecretSyncFormatterEnvKey:
 		uppercaseKeys := false
+		valueOnly := false
 		if arguments != nil {
 			val, found := arguments[vaultSecretSyncFormatterEnvOptionUppercaseKeys]
 			if found {
@@ -161,9 +163,17 @@ func buildSecretFormatter(name string, arguments map[string]any) (secretFormatte
 					uppercaseKeys = convertedVal
 				}
 			}
+
+			val, found = arguments[vaultSecretSyncFormatterEnvOptionValueOnly]
+			if found {
+				convertedVal, success := val.(bool)
+				if success {
+					valueOnly = convertedVal
+				}
+			}
 		}
 
-		return formatter.NewEnvVarFormatter(uppercaseKeys), nil
+		return formatter.NewEnvVarFormatter(uppercaseKeys, valueOnly), nil
 	case vaultSecretSyncFormatterYamlKey:
 		return &formatter.YamlFormatter{}, nil
 	case vaultSecretSyncFormatterJsonKey:
