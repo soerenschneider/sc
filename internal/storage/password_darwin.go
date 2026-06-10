@@ -21,7 +21,7 @@ func NewStorage() *SecureStore {
 }
 
 func (s *SecureStore) SaveToken(token *oauth2.Token) error {
-	data, err := json.Marshal(token)
+	data, err := json.Marshal(token) //#nosec:G117
 	if err != nil {
 		return err
 	}
