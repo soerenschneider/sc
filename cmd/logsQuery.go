@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-
 	"encoding/json"
 	"fmt"
 	"io"
@@ -46,7 +45,6 @@ for integration with scripts or for human-readable views.`,
 
 		if err := runLogs(logsOpts); err != nil {
 			log.Fatal().Err(err).Msg("could not run query")
-
 		}
 	},
 }
