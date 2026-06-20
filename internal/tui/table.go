@@ -200,9 +200,6 @@ func (t Table) makeStyleFunc() func(row, col int) lipgloss.Style {
 // ---------------------------------------------------------------------------
 
 var (
-	hasDarkBg = lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
-	lightDark = lipgloss.LightDark(hasDarkBg)
-
 	// Foundation colours — picked to read well on both light and dark
 	// backgrounds without screaming. Override these (or the *Style vars
 	// below) for project-specific theming.

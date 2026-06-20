@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/victorialogs"
 	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/cobra"
@@ -330,7 +331,7 @@ func (f *logsFormatter) renderIdentity(e victorialogs.LogEntry) string {
 	if !f.color {
 		return joined
 	}
-	return ansi("35", joined) // magenta — distinct from level (cyan/yellow/red) and dim grey
+	return tui.IdentityStyle.Render(joined)
 }
 
 // commonLevel checks the conventional level-field names in order:
@@ -345,6 +346,12 @@ func commonLevel(e victorialogs.LogEntry) string {
 	return ""
 }
 
+// colorLevel renders the LEVEL token of a log line, e.g. "[ERROR]".
+//
+// When color is false, returns the bracketed plain text — used when stdout
+// isn't a TTY or the user passed --no-color. lipgloss also auto-downsamples
+// when the destination isn't a TTY, but short-circuiting here saves the
+// styling work entirely and keeps grep-friendly output truly plain.
 func colorLevel(level string, color bool) string {
 	tag := "[" + strings.ToUpper(level) + "]"
 	if !color {
@@ -352,29 +359,28 @@ func colorLevel(level string, color bool) string {
 	}
 	switch strings.ToLower(level) {
 	case "error", "err", "fatal", "crit", "critical":
-		return ansi("31;1", tag) // bold red
+		return tui.ErrorStyle.Render(tag)
 	case "warn", "warning":
-		return ansi("33", tag) // yellow
+		return tui.WarnStyle.Render(tag)
 	case "info":
-		return ansi("36", tag) // cyan
+		return tui.InfoStyle.Render(tag)
 	case "debug", "trace":
-		return ansi("90", tag) // dim
+		return tui.DebugStyle.Render(tag)
 	default:
 		return tag
 	}
 }
 
+// dim returns text in a muted foreground colour, for secondary information
+// like timestamps and field-key prefixes. No-op when color is false.
 func dim(s string, color bool) string {
 	if !color {
 		return s
 	}
-	return ansi("90", s)
+	return tui.DimStyle.Render(s)
 }
 
-func ansi(code, s string) string {
-	return "\x1b[" + code + "m" + s + "\x1b[0m"
-}
-
+// isTerminal reports whether f is connected to a terminal.
 func isTerminal(f *os.File) bool {
 	return term.IsTerminal(int(f.Fd()))
 }
