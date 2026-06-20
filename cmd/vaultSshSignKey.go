@@ -32,6 +32,8 @@ var sshSignKeyCmd = &cobra.Command{
 			VaultRole:  pkg.GetString(cmd, vaultRoleName),
 		}
 
+		forceNewSignature, _ := pkg.GetBool(cmd, vaultForce)
+
 		if len(req.Principals) == 0 {
 			var suggestions []string
 			currentUser, err := user.Current()
@@ -69,13 +71,15 @@ var sshSignKeyCmd = &cobra.Command{
 		}
 		req.PublicKey = string(publicKeyData)
 
-		requestNewCertificate, err := needsRequestNewCertificate(fs, certificateFile)
-		if err != nil {
-			log.Fatal().Err(err).Msg("Can not proceed")
-		}
+		if !forceNewSignature {
+			requestNewCertificate, err := needsRequestNewCertificate(fs, certificateFile)
+			if err != nil {
+				log.Fatal().Err(err).Msg("Can not proceed")
+			}
 
-		if !requestNewCertificate {
-			return
+			if !requestNewCertificate {
+				return
+			}
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -153,6 +157,7 @@ func init() {
 
 	sshSignKeyCmd.Flags().StringP(vaultCertificateFile, "c", "", "Where to save the certificate to")
 	sshSignKeyCmd.Flags().StringP(vaultTtl, "t", "24h", "TTL of the certificate")
+	sshSignKeyCmd.Flags().BoolP(vaultForce, "f", false, "Request new certificate regardless of expiry date")
 
 	sshSignKeyCmd.Flags().StringArray(vaultPrincipals, nil, "Principals")
 }

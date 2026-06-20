@@ -26,7 +26,11 @@ Examples:
 	Run: func(cmd *cobra.Command, args []string) {
 		address := pkg.GetString(cmd, linksAddr)
 		query := pkg.GetString(cmd, linksQuery)
-		token := pkg.GetString(cmd, linksToken)
+		token, err := getLinkdingToken(cmd)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Error getting linkding token")
+		}
+
 		limit := 500
 
 		client, err := linkding.NewLinkdingClient(address, token)
@@ -84,10 +88,17 @@ Examples:
 		}
 
 		headers, tableData := linkding.BookmarksAsTable(bookmarks)
-		tableOpts := tui.TableOpts{
-			Wrap: true,
-		}
-		tui.PrintTable("Bookmarks", headers, tableData, tableOpts)
+
+		tui.Table{
+			Title:     "Bookmarks",
+			Headers:   headers,
+			Rows:      tableData,
+			Aligns:    []tui.Align{0, 0, tui.AlignRight}, // amount right-aligned
+			Caption:   fmt.Sprintf("%d rows", len(tableData)),
+			Zebra:     len(tableData) > 10,
+			MaxWidths: []int{50, 60, 20, 14, 14},
+			LinkFunc:  tui.LinkSelf(1),
+		}.Print()
 	},
 }
 

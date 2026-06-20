@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -33,6 +34,7 @@ const (
 	vaultSecretSyncFormatterJsonKey                    = "json"
 	vaultSecretSyncFormatterEnvKey                     = "env"
 	vaultSecretSyncFormatterEnvOptionUppercaseKeys     = "uppercase_keys"
+	vaultSecretSyncFormatterEnvOptionValueOnly         = "value_only"
 	vaultSecretSyncFormatterTemplateKey                = "template"
 	vaultSecretSyncFormatterTemplateOptionTemplateFile = "file"
 	vaultSecretSyncFormatterTemplateOptionTemplate     = "template"
@@ -48,13 +50,26 @@ var vaultSecretSyncCmd = &cobra.Command{
 		secretName := pkg.GetString(cmd, vaultSecretSyncName)
 		syncAllSecrets, _ := pkg.GetBool(cmd, vaultSecretSyncAll)
 
-		if secretName == "" && !syncAllSecrets {
-			log.Fatal().Msg("No secret name given")
-		}
-
 		config, err := readSecretsConfiguration(syncConfig)
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not read secrets configuration")
+		}
+
+		if len(config.Items) == 0 {
+			log.Fatal().Msg("no secrets configured")
+		}
+
+		if secretName == "" && !syncAllSecrets {
+			keys := make([]string, 0, len(config.Items))
+			for k := range config.Items {
+				keys = append(keys, k)
+			}
+
+			sort.Strings(keys)
+
+			log.Fatal().
+				Strs("available_secrets", keys).
+				Msg("No secret name given")
 		}
 
 		if err := validator.New().Struct(config); err != nil {
@@ -153,12 +168,21 @@ func buildSecretFormatter(name string, arguments map[string]any) (secretFormatte
 	switch name {
 	case vaultSecretSyncFormatterEnvKey:
 		uppercaseKeys := false
+		valueOnly := false
 		if arguments != nil {
 			val, found := arguments[vaultSecretSyncFormatterEnvOptionUppercaseKeys]
 			if found {
 				convertedVal, success := val.(bool)
 				if success {
 					uppercaseKeys = convertedVal
+				}
+			}
+
+			val, found = arguments[vaultSecretSyncFormatterEnvOptionValueOnly]
+			if found {
+				convertedVal, success := val.(bool)
+				if success {
+					valueOnly = convertedVal
 				}
 			}
 		}

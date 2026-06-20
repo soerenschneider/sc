@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
+	"text/tabwriter"
 	"time"
 
 	"charm.land/huh/v2/spinner"
@@ -24,7 +26,10 @@ Examples:
   sc links query -q='level="error"'   # Query links with specific filters`,
 	Run: func(cmd *cobra.Command, args []string) {
 		address := pkg.GetString(cmd, linksAddr)
-		token := pkg.GetString(cmd, linksToken)
+		token, err := getLinkdingToken(cmd)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Error getting linkding token")
+		}
 
 		client, err := linkding.NewLinkdingClient(address, token)
 		if err != nil {
@@ -50,7 +55,12 @@ Examples:
 			log.Fatal().Err(err).Msg("could not get tags")
 		}
 
-		fmt.Println(tags)
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+		_, _ = fmt.Fprintln(w, "ID\tNAME")
+		for _, t := range tags {
+			_, _ = fmt.Fprintf(w, "%d\t%s\n", t.ID, t.Name)
+		}
+		_ = w.Flush()
 	},
 }
 

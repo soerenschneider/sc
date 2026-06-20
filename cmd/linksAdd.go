@@ -31,7 +31,10 @@ Examples:
 			TagNames: pkg.GetStringArray(cmd, linksTags),
 		}
 
-		token := pkg.GetString(cmd, linksToken)
+		token, err := getLinkdingToken(cmd)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Error getting linkding token")
+		}
 
 		client, err := linkding.NewLinkdingClient(address, token)
 		if err != nil {

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/huh"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/huh/v2"
 	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/tui/picker"
 	"github.com/soerenschneider/sc/internal/vault"
@@ -91,7 +91,7 @@ func RunWithStore(store vaultKv2Provider, opts vaultKv2EditOptions) error {
 	if err := m.load(); err != nil {
 		return err
 	}
-	_, err := tea.NewProgram(m, tea.WithAltScreen()).Run()
+	_, err := tea.NewProgram(m).Run()
 	return err
 }
 
@@ -487,7 +487,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// picker — without running handleFormDone. In-progress edits
 		// are discarded. (huh handles ctrl+c via the StateAborted path
 		// below; this just adds esc as the natural cancel key.)
-		if km, ok := msg.(tea.KeyMsg); ok && km.String() == "esc" {
+		if km, ok := msg.(tea.KeyPressMsg); ok && km.String() == "esc" {
 			m.form = nil
 			m.mode = modeList
 			return m, nil
@@ -511,13 +511,13 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 
-	if km, ok := msg.(tea.KeyMsg); ok {
+	if km, ok := msg.(tea.KeyPressMsg); ok {
 		return m.handleListKey(km)
 	}
 	return m, nil
 }
 
-func (m *model) handleListKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m *model) handleListKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "up", "k":
 		if m.cursor > 0 {
@@ -537,7 +537,7 @@ func (m *model) handleListKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.cursor = len(m.pairs) - 1
 		}
 		return m, nil
-	case " ":
+	case "space":
 		if len(m.pairs) > 0 {
 			k := m.pairs[m.cursor].key
 			m.revealed[k] = !m.revealed[k]
@@ -683,7 +683,7 @@ func (m *model) openPairForm(index int) tea.Cmd {
 				Title("Value").
 				Value(&m.editVal),
 		),
-	).WithShowHelp(true).WithTheme(huh.ThemeCharm())
+	).WithShowHelp(true).WithTheme(huh.ThemeFunc(huh.ThemeCharm))
 
 	m.mode = modeFormPair
 	return m.form.Init()
@@ -700,7 +700,7 @@ func (m *model) openConfirm(target mode, title, desc, yes, no string) tea.Cmd {
 				Negative(no).
 				Value(&m.confirm),
 		),
-	).WithShowHelp(true).WithTheme(huh.ThemeCharm())
+	).WithShowHelp(true).WithTheme(huh.ThemeFunc(huh.ThemeCharm))
 	m.mode = target
 	return m.form.Init()
 }
@@ -740,7 +740,7 @@ func (m *model) openVersionPicker() tea.Cmd {
 				Height(min(15, len(options)+2)).
 				Value(&m.pendingVersion),
 		),
-	).WithShowHelp(true).WithTheme(huh.ThemeCharm())
+	).WithShowHelp(true).WithTheme(huh.ThemeFunc(huh.ThemeCharm))
 
 	m.mode = modeVersionPicker
 	return m.form.Init()
@@ -875,12 +875,19 @@ func (m *model) handleFormDone(prev mode) tea.Cmd {
 // view
 // ---------------------------------------------------------------------------
 
-func (m *model) View() string {
+func (m *model) View() tea.View {
+	// When a sub-view is active (fs picker or a form), return its view
+	// after forcing AltScreen so this top-level View remains the single
+	// owner of alt-screen state regardless of which sub-view is showing.
 	if m.fsBrowser != nil {
-		return m.fsBrowser.View()
+		v := m.fsBrowser.View()
+		v.AltScreen = true
+		return v
 	}
 	if m.form != nil {
-		return m.form.View()
+		v := tea.NewView(m.form.View())
+		v.AltScreen = true
+		return v
 	}
 
 	var b strings.Builder
@@ -933,7 +940,9 @@ func (m *model) View() string {
 			"  ·  d delete  ·  s save  ·  r reload  ·  v history  ·  E export" +
 			"  ·  X soft-delete  ·  q quit",
 	))
-	return b.String()
+	v := tea.NewView(b.String())
+	v.AltScreen = true
+	return v
 }
 
 // versionStatusLine renders the dedicated status bar that always shows the
@@ -1014,7 +1023,8 @@ func (m *model) startExport() tea.Cmd {
 		Title:       "export to",
 		LeafLabel:   "file",
 		DirLabel:    "directory",
-		AllowSaveAs: true, // 's' opens the name prompt
+		AllowCreate: true, // 'n' opens a name prompt; fs provider's TreeMaker mkdirs in-place
+		AllowSaveAs: true, // 's' opens the name prompt for the export filename
 		Timeout:     m.opts.Timeout,
 	}
 
@@ -1024,15 +1034,15 @@ func (m *model) startExport() tea.Cmd {
 		startAt = picker.FsPrefixFromAbsPath(cwd)
 	}
 
-	picker, err := browser.NewModel(startAt)
+	pickerModel, err := browser.NewModel(startAt)
 	if err != nil {
 		m.errMsg = vault.HumanizeError(err, "fs list")
 		return nil
 	}
-	m.fsBrowser = picker
+	m.fsBrowser = pickerModel
 	m.errMsg = ""
-	m.status = "pick a destination — 's' to type a filename in the current dir"
-	return picker.Init()
+	m.status = "pick a destination — 'n' mkdir, 's' type filename"
+	return pickerModel.Init()
 }
 
 // finishExportPicker is called after the fs picker signals Done. It reads

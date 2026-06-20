@@ -9,10 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/huh/v2"
 	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/soerenschneider/sc/pkg"
@@ -71,7 +70,7 @@ func BrowseWithStore(store vaultKv2Provider, opts BrowseOptions) error {
 		if err := m.loadInitial(); err != nil {
 			return err
 		}
-		out, err := tea.NewProgram(m, tea.WithAltScreen()).Run()
+		out, err := tea.NewProgram(m).Run()
 		if err != nil {
 			return err
 		}
@@ -254,7 +253,7 @@ func (m *browseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// Filter input takes most keys when active.
 	if m.filterOn {
-		if km, ok := msg.(tea.KeyMsg); ok {
+		if km, ok := msg.(tea.KeyPressMsg); ok {
 			switch km.String() {
 			case "esc":
 				m.filterOn = false
@@ -274,7 +273,7 @@ func (m *browseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 
-	if km, ok := msg.(tea.KeyMsg); ok {
+	if km, ok := msg.(tea.KeyPressMsg); ok {
 		return m.handleKey(km)
 	}
 	return m, nil
@@ -294,7 +293,7 @@ func (m *browseModel) filteredItems() []vault.Entry {
 	return out
 }
 
-func (m *browseModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m *browseModel) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	items := m.filteredItems()
 
 	switch msg.String() {
@@ -378,7 +377,7 @@ func (m *browseModel) openNewForm() tea.Cmd {
 					return nil
 				}),
 		),
-	).WithShowHelp(true).WithTheme(huh.ThemeCharm())
+	).WithShowHelp(true).WithTheme(huh.ThemeFunc(huh.ThemeCharm))
 	return m.form.Init()
 }
 
@@ -386,9 +385,14 @@ func (m *browseModel) openNewForm() tea.Cmd {
 // view
 // ---------------------------------------------------------------------------
 
-func (m *browseModel) View() string {
+func (m *browseModel) View() tea.View {
+	// Top-level program — this method owns AltScreen state. Either path
+	// (form or main list) wraps its content into a tea.View and sets
+	// AltScreen on the way out.
 	if m.form != nil {
-		return m.form.View()
+		v := tea.NewView(m.form.View())
+		v.AltScreen = true
+		return v
 	}
 
 	var b strings.Builder
@@ -437,9 +441,9 @@ func (m *browseModel) View() string {
 		marker := "  "
 		var name string
 		if it.IsDir {
-			name = dirStyle.Render(it.Name + "/")
+			name = tui.DirStyle.Render(it.Name + "/")
 		} else {
-			name = secretStyle.Render(it.Name)
+			name = tui.SecretStyle.Render(it.Name)
 		}
 		if i == m.cursor {
 			marker = tui.SelectedStyle.Render("▸ ")
@@ -477,7 +481,10 @@ func (m *browseModel) View() string {
 	b.WriteString(tui.HelpStyle.Render(
 		"\n  ↑/↓ move  ·  enter open  ·  h/← up  ·  / filter  ·  n new  ·  r reload  ·  q quit",
 	))
-	return b.String()
+
+	v := tea.NewView(b.String())
+	v.AltScreen = true
+	return v
 }
 
 func (m *browseModel) adjustOffset(view, n int) {
@@ -505,15 +512,3 @@ func countEntries(items []vault.Entry) (dirs, secrets int) {
 	}
 	return
 }
-
-// ---------------------------------------------------------------------------
-// browser-specific styles
-// ---------------------------------------------------------------------------
-
-var (
-	dirStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("75")).
-		Bold(true)
-	secretStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("252"))
-)

@@ -17,6 +17,8 @@ var (
 	DirStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("75")).
 			Bold(true)
+	SecretStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("252"))
 	LeafStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("252"))
 
