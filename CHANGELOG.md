@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.10.0](https://github.com/soerenschneider/sc/compare/v1.9.0...v1.10.0) (2026-06-20)
+
+
+### Features
+
+* improve log query ux ([#226](https://github.com/soerenschneider/sc/issues/226)) ([24014ff](https://github.com/soerenschneider/sc/commit/24014ff3cbefa00bf53e9cfec2e6e1b5362ede09))
+
+
+### Bug Fixes
+
+* **deps:** Update module charm.land/lipgloss/v2 to v2.0.4 ([#222](https://github.com/soerenschneider/sc/issues/222)) ([16df06f](https://github.com/soerenschneider/sc/commit/16df06f615c620cc829e3b5169d69ce4d1997acc))
+* **deps:** Update module github.com/jedib0t/go-pretty/v6 to v6.8.1 ([#221](https://github.com/soerenschneider/sc/issues/221)) ([6994acd](https://github.com/soerenschneider/sc/commit/6994acd58c2f5268557b99581c9ea10a2a3bbf45))
+* **deps:** Update module k8s.io/api to v0.36.2 ([#223](https://github.com/soerenschneider/sc/issues/223)) ([d92b3d4](https://github.com/soerenschneider/sc/commit/d92b3d4286c48572b56dfe3e3d2dd4660c6ead77))
+* **deps:** Update module k8s.io/apimachinery to v0.36.2 ([#224](https://github.com/soerenschneider/sc/issues/224)) ([a8da13f](https://github.com/soerenschneider/sc/commit/a8da13ff533e494843dab50a2c64f3bd9462f7c8))
+* **deps:** Update module k8s.io/client-go to v0.36.2 ([#225](https://github.com/soerenschneider/sc/issues/225)) ([b28cfa0](https://github.com/soerenschneider/sc/commit/b28cfa08d1a2530112431fe5a23c78c692010577))
+
 ## [1.9.0](https://github.com/soerenschneider/sc/compare/v1.8.0...v1.9.0) (2026-06-10)
 
 
