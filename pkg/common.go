@@ -4,6 +4,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -18,7 +19,10 @@ func MustGetString(cmd *cobra.Command, name string) string {
 }
 
 func GetStringArray(cmd *cobra.Command, name string) []string {
-	val, _ := cmd.Flags().GetStringArray(name)
+	val, err := cmd.Flags().GetStringArray(name)
+	if err != nil {
+		log.Fatal().Err(err).Msg("could not get flag")
+	}
 	return val
 }
 
@@ -33,8 +37,21 @@ func GetBool(cmd *cobra.Command, name string) (bool, bool) {
 	return val, isChanged
 }
 
+func MustGetBool(cmd *cobra.Command, name string) bool {
+	val, err := cmd.Flags().GetBool(name)
+	if err != nil {
+		log.Fatal().Err(err).Msg("could not get flag")
+	}
+	return val
+}
+
 func GetString(cmd *cobra.Command, name string) string {
 	val, _ := cmd.Flags().GetString(name)
+	return val
+}
+
+func GetDuration(cmd *cobra.Command, name string) time.Duration {
+	val, _ := cmd.Flags().GetDuration(name)
 	return val
 }
 
