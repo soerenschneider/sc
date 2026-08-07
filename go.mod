@@ -27,8 +27,8 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
-	github.com/yeqown/go-qrcode/v2 v2.2.5
-	github.com/yeqown/go-qrcode/writer/terminal v1.1.2
+	github.com/yeqown/go-qrcode/v2 v2.3.0
+	github.com/yeqown/go-qrcode/writer/terminal v1.1.3
 	github.com/zalando/go-keyring v0.2.8
 	go.uber.org/multierr v1.11.0
 	golang.design/x/clipboard v0.8.0
