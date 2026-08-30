@@ -26,23 +26,23 @@ func Max0(n int) int {
 // Override the exported *Style vars below to theme globally.
 
 var (
-	hasDarkBg = lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
-	lightDark = lipgloss.LightDark(hasDarkBg)
+	HasDarkBg = lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
+	LightDark = lipgloss.LightDark(HasDarkBg)
 
 	// Foundation colours. The light-mode shades skew darker so they
 	// remain legible on a white background (pure ANSI yellow is
 	// notoriously unreadable on white); the dark-mode shades are
 	// brighter so they pop against black.
-	errorFg = lightDark(lipgloss.Color("#c0392b"), lipgloss.Color("#fe5f86"))
-	warnFg  = lightDark(lipgloss.Color("#b7791f"), lipgloss.Color("#f1c40f"))
-	infoFg  = lightDark(lipgloss.Color("#0277bd"), lipgloss.Color("#5bc0eb"))
-	debugFg = lightDark(lipgloss.Color("#737373"), lipgloss.Color("#8a8a8a"))
-	dimFg   = lightDark(lipgloss.Color("#737373"), lipgloss.Color("#8a8a8a"))
+	errorFg = LightDark(lipgloss.Color("#c0392b"), lipgloss.Color("#fe5f86"))
+	warnFg  = LightDark(lipgloss.Color("#b7791f"), lipgloss.Color("#f1c40f"))
+	infoFg  = LightDark(lipgloss.Color("#0277bd"), lipgloss.Color("#5bc0eb"))
+	debugFg = LightDark(lipgloss.Color("#737373"), lipgloss.Color("#8a8a8a"))
+	dimFg   = LightDark(lipgloss.Color("#737373"), lipgloss.Color("#8a8a8a"))
 	// identityFg deliberately uses a magenta-purple that's distinct from
 	// every level colour above (red / amber / blue / grey). On light bg
 	// it's a medium purple readable on white; on dark bg it's lifted to
 	// a softer mauve that pops without competing with red errors.
-	identityFg = lightDark(lipgloss.Color("#9c27b0"), lipgloss.Color("#d4b3ff"))
+	identityFg = LightDark(lipgloss.Color("#9c27b0"), lipgloss.Color("#d4b3ff"))
 )
 
 // ---------------------------------------------------------------------------
