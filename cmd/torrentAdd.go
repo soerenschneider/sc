@@ -41,7 +41,7 @@ Examples:
 		magnet := pkg.GetString(cmd, torrentMagnet)
 		noConfirm, _ := pkg.GetBool(cmd, torrentNoConfirmation)
 		if magnet == "" {
-			clipboardContent, err := clipboard.PasteClipboard()
+			clipboardContent, err := clipboard.PasteClipboard(cmd.Context())
 			if err == nil && strings.HasPrefix(strings.ToLower(clipboardContent), "magnet:") {
 				magnet = clipboardContent
 			} else {
@@ -60,7 +60,7 @@ Examples:
 			}
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)
+		ctx, cancel := context.WithTimeout(cmd.Context(), vaultDefaultTimeout)
 		defer cancel()
 
 		if err := client.AddTorrent(ctx, magnet); err != nil {

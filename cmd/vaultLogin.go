@@ -85,7 +85,7 @@ to stdout as a fallback.`,
 			log.Fatal().Err(err).Msg("could not get info from user")
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)
+		ctx, cancel := context.WithTimeout(cmd.Context(), vaultDefaultTimeout)
 		defer cancel()
 
 		var vaultSecret *api.Secret
@@ -122,7 +122,7 @@ to stdout as a fallback.`,
 
 			if otp == "" {
 				// try to parse OTP from clipboard (for cases when pass otp or similar is used to generate otp)
-				clipboardContent, err := clipboard.PasteClipboard()
+				clipboardContent, err := clipboard.PasteClipboard(ctx)
 				if err == nil {
 					if (len(clipboardContent) == 6 || len(clipboardContent) == 8) && pkg.IsAsciiNumeric(clipboardContent) {
 						otp = clipboardContent
