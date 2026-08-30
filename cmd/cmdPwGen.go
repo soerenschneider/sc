@@ -31,7 +31,7 @@ var pwGenCmd = &cobra.Command{
 		if printPassword {
 			printPasswordTemporarily(cmd.Context(), generatedPw)
 		} else {
-			if err := clipboard.CopyClipboard(generatedPw); err != nil {
+			if err := clipboard.CopyClipboard(cmd.Context(), generatedPw); err != nil {
 				log.Fatal().Err(err).Msg("could not copy password to clipboard")
 			}
 			log.Info().Msgf("Generated password copied to clipboard")
@@ -58,9 +58,9 @@ func clearPassword(ctx context.Context, generatedPw string) {
 	case <-time.After(passwordClearTimeout):
 	}
 
-	current, err := clipboard.PasteClipboard()
+	current, err := clipboard.PasteClipboard(ctx)
 	if err == nil && current == generatedPw {
-		_ = clipboard.CopyClipboard("")
+		_ = clipboard.CopyClipboard(ctx, "")
 	}
 }
 

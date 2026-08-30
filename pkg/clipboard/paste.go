@@ -1,24 +1,27 @@
 package clipboard
 
 import (
+	"context"
+
 	"golang.design/x/clipboard"
 )
 
-func PasteClipboard() (string, error) {
+func PasteClipboard(ctx context.Context) (string, error) {
 	err := clipboard.Init()
 	if err != nil {
 		return "", err
 	}
 
-	return string(clipboard.Read(clipboard.FmtText)), nil
+	data, err := clipboard.Read(ctx, clipboard.FmtText)
+	return string(data), err
 }
 
-func CopyClipboard(text string) error {
+func CopyClipboard(ctx context.Context, text string) error {
 	err := clipboard.Init()
 	if err != nil {
 		return err
 	}
 
-	_ = clipboard.Write(clipboard.FmtText, []byte(text))
-	return nil
+	_, err = clipboard.Write(ctx, clipboard.FmtText, []byte(text))
+	return err
 }
