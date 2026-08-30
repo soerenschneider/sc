@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.11.0](https://github.com/soerenschneider/sc/compare/v1.10.0...v1.11.0) (2026-08-30)
+
+
+### Features
+
+* support for adding taskwarrior tasks ([#248](https://github.com/soerenschneider/sc/issues/248)) ([5957d7b](https://github.com/soerenschneider/sc/commit/5957d7b96e8c9b48f44742cf5f08f3125d47767d))
+
+
+### Bug Fixes
+
+* **deps:** Update dependency go to v1.27.0 ([#232](https://github.com/soerenschneider/sc/issues/232)) ([5fa0b32](https://github.com/soerenschneider/sc/commit/5fa0b328770e893811827850ff68877af4a510c5))
+* **deps:** Update module charm.land/bubbles/v2 to v2.2.1 ([#233](https://github.com/soerenschneider/sc/issues/233)) ([46bd142](https://github.com/soerenschneider/sc/commit/46bd14298e879e5ff07c022df35acb87f86a17f6))
+* **deps:** Update module charm.land/bubbletea/v2 to v2.0.9 ([#234](https://github.com/soerenschneider/sc/issues/234)) ([17d8790](https://github.com/soerenschneider/sc/commit/17d8790d480119bd611e61a33fd74fd32ca1ed90))
+* **deps:** Update module charm.land/lipgloss/v2 to v2.0.6 ([#235](https://github.com/soerenschneider/sc/issues/235)) ([e63b3c4](https://github.com/soerenschneider/sc/commit/e63b3c47e27271f23bb22229f5f955ce47e010d6))
+* **deps:** Update module github.com/coreos/go-oidc/v3 to v3.20.0 ([#228](https://github.com/soerenschneider/sc/issues/228)) ([31e6b3c](https://github.com/soerenschneider/sc/commit/31e6b3c5488369aba6f2a29f4ac46752bfd2c7ac))
+* **deps:** Update module github.com/jedib0t/go-pretty/v6 to v6.8.3 ([#236](https://github.com/soerenschneider/sc/issues/236)) ([4de1520](https://github.com/soerenschneider/sc/commit/4de152056f05a2d3174b9b392650a8ed0f7c751d))
+* **deps:** Update module github.com/yeqown/go-qrcode/v2 to v2.3.0 ([#247](https://github.com/soerenschneider/sc/issues/247)) ([4cd8ba6](https://github.com/soerenschneider/sc/commit/4cd8ba624b866bc5a1316dd3ca17e4159c14cf15))
+* **deps:** Update module github.com/yeqown/go-qrcode/writer/terminal to v1.1.3 ([#246](https://github.com/soerenschneider/sc/issues/246)) ([74dfa42](https://github.com/soerenschneider/sc/commit/74dfa420c7faa91bc0ca3ed00431a59916122e17))
+* **deps:** Update module golang.design/x/clipboard to v0.9.0 ([#250](https://github.com/soerenschneider/sc/issues/250)) ([519438e](https://github.com/soerenschneider/sc/commit/519438ea22155f88a9ab18170fcc36dadb2c458c))
+* **deps:** Update module golang.org/x/crypto to v0.55.0 ([#238](https://github.com/soerenschneider/sc/issues/238)) ([54fe511](https://github.com/soerenschneider/sc/commit/54fe511ff6018cc00bdb121f7b845681467d62da))
+* **deps:** Update module golang.org/x/sys to v0.47.0 ([#239](https://github.com/soerenschneider/sc/issues/239)) ([3bf9eff](https://github.com/soerenschneider/sc/commit/3bf9effa4cbbaac1361ef0f04d3644a245b37464))
+* **deps:** Update module golang.org/x/term to v0.45.0 ([#240](https://github.com/soerenschneider/sc/issues/240)) ([f58c744](https://github.com/soerenschneider/sc/commit/f58c74450e7a81c2e4f4e5f1618e1b6cee6ac79e))
+
 ## [1.10.0](https://github.com/soerenschneider/sc/compare/v1.9.0...v1.10.0) (2026-06-20)
 
 
