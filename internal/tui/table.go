@@ -203,36 +203,36 @@ var (
 	// Foundation colours — picked to read well on both light and dark
 	// backgrounds without screaming. Override these (or the *Style vars
 	// below) for project-specific theming.
-	accentFg = lightDark(lipgloss.Color("#5f4dc2"), lipgloss.Color("#c0a3ff"))
-	mutedFg  = lightDark(lipgloss.Color("#737373"), lipgloss.Color("#8a8a8a"))
-	borderFg = lightDark(lipgloss.Color("#bfbfbf"), lipgloss.Color("#4a4a4a"))
-	zebraBg  = lightDark(lipgloss.Color("#f5f5f5"), lipgloss.Color("#1c1c1c"))
+	accentFg = LightDark(lipgloss.Color("#5f4dc2"), lipgloss.Color("#c0a3ff"))
+	mutedFg  = LightDark(lipgloss.Color("#737373"), lipgloss.Color("#8a8a8a"))
+	borderFg = LightDark(lipgloss.Color("#bfbfbf"), lipgloss.Color("#4a4a4a"))
+	zebraBg  = LightDark(lipgloss.Color("#f5f5f5"), lipgloss.Color("#1c1c1c"))
 
 	// TableTitleStyle is the heading above the table.
 	TableTitleStyle = lipgloss.NewStyle().
-		Foreground(accentFg).
-		Bold(true).
-		Underline(true)
+			Foreground(accentFg).
+			Bold(true).
+			Underline(true)
 
 	// TableHeaderStyle is each cell in the header row.
 	TableHeaderStyle = lipgloss.NewStyle().
-		Foreground(accentFg).
-		Bold(true).
-		Padding(0, 2)
+				Foreground(accentFg).
+				Bold(true).
+				Padding(0, 2)
 
 	// TableBodyStyle is each cell in the body rows.
 	TableBodyStyle = lipgloss.NewStyle().
-		Padding(0, 2)
+			Padding(0, 2)
 
 	// TableCaptionStyle is the dim italic line beneath the table and
 	// the "(no data)" empty-state message.
 	TableCaptionStyle = lipgloss.NewStyle().
-		Foreground(mutedFg).
-		Italic(true)
+				Foreground(mutedFg).
+				Italic(true)
 
 	// TableBorderStyle paints the table's rounded border.
 	TableBorderStyle = lipgloss.NewStyle().
-		Foreground(borderFg)
+				Foreground(borderFg)
 )
 
 // ---------------------------------------------------------------------------
