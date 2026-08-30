@@ -1,25 +1,35 @@
 package cmd
 
+// task_add.go is the interactive UI layer for `sc task add`. It owns the
+// cobra command, the huh form (project/depends pickers, context & sizing,
+// tags), the option builders that shape those pickers, the lipgloss theme,
+// and the confirmation preview.
+//
+// Everything that talks to taskwarrior — loading the YAML taxonomy,
+// fetching projects/tags/tasks, validating a due date, building and running
+// the final `task add` — lives in the internal/taskwarrior package, which
+// this file calls into.
+
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"slices"
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"charm.land/huh/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
+
+	"github.com/soerenschneider/sc/internal/taskwarrior"
+	"github.com/soerenschneider/sc/internal/tui"
 )
+
+// ---------------------------------------------------------------------------
+// cobra wiring
+// ---------------------------------------------------------------------------
 
 var taskAddConfigPath string
 
@@ -53,9 +63,6 @@ func init() {
 	taskCmd.AddCommand(taskAddCmd)
 }
 
-// The label of the category whose members become the Location Select.
-const locationCategoryLabel = "loc"
-
 // sentinelNewProject is the Select value for the "＋ create new…" option
 // in the Project picker. NUL-wrapped so it can't collide with a real
 // project name. When selected, the follow-up Input group is revealed so
@@ -63,135 +70,26 @@ const locationCategoryLabel = "loc"
 const sentinelNewProject = "\x00__new__\x00"
 
 // ---------------------------------------------------------------------------
-// config
-// ---------------------------------------------------------------------------
-
-type taskConfig struct {
-	Projects          []string            `yaml:"projects"`
-	DefaultProject    string              `yaml:"default_project"`
-	AllowEmptyProject bool                `yaml:"allow_empty_project"`
-	TagCategories     []tagCategoryConfig `yaml:"tag_categories"`
-}
-
-type tagCategoryConfig struct {
-	Label       string   `yaml:"label"`
-	Members     []string `yaml:"members,omitempty"`
-	MatchPrefix string   `yaml:"match_prefix,omitempty"`
-}
-
-func (c *taskConfig) categorize(tag string) string {
-	for _, tc := range c.TagCategories {
-		for _, m := range tc.Members {
-			if tag == m {
-				return tc.Label
-			}
-		}
-		if tc.MatchPrefix != "" && strings.HasPrefix(tag, tc.MatchPrefix) {
-			return tc.Label
-		}
-	}
-	return "other"
-}
-
-func (c *taskConfig) seedTags() []string {
-	var out []string
-	for _, tc := range c.TagCategories {
-		out = append(out, tc.Members...)
-	}
-	return out
-}
-
-// defaultProject returns the project the Project field is pre-filled with.
-// Priority: explicit `default_project` from YAML → "inbox" if it's in the
-// projects list → empty (user starts with a blank field).
-func (c *taskConfig) defaultProject() string {
-	if c.DefaultProject != "" {
-		return c.DefaultProject
-	}
-	if slices.Contains(c.Projects, "inbox") {
-		return "inbox"
-	}
-	return ""
-}
-
-func loadTaskConfig(explicit string) (*taskConfig, error) {
-	path := explicit
-	usingDefault := explicit == ""
-	if usingDefault {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return nil, fmt.Errorf("resolving home directory: %w", err)
-		}
-		path = filepath.Join(home, ".sc", "taskwarrior.yaml")
-	}
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) && usingDefault {
-			return defaultTaskConfig(), nil
-		}
-		return nil, fmt.Errorf("reading %s: %w", path, err)
-	}
-
-	var cfg taskConfig
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("parsing %s: %w", path, err)
-	}
-	return &cfg, nil
-}
-
-func defaultTaskConfig() *taskConfig {
-	return &taskConfig{
-		Projects: []string{
-			"inbox", "personal", "work", "home", "errands",
-		},
-		DefaultProject:    "inbox",
-		AllowEmptyProject: true,
-		TagCategories: []tagCategoryConfig{
-			{Label: "state", Members: []string{"next", "waiting", "someday", "quick", "deep"}},
-			{
-				Label:       "context",
-				Members:     []string{"@computer", "@phone", "@home", "@online"},
-				MatchPrefix: "@",
-			},
-			{Label: "energy", Members: []string{"lowenergy", "highenergy"}},
-		},
-	}
-}
-
-// ---------------------------------------------------------------------------
 // entry point
 // ---------------------------------------------------------------------------
-
-type addOptions struct {
-	Description  string
-	Project      string
-	Location     string
-	Tags         []string
-	Priority     string
-	Size         string
-	Due          string
-	DependsID    string // task ID as string; "" means no dependency
-	DependsLabel string // human label like "[5] Fix login bug", for preview
-}
 
 func runTaskAdd(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 
-	cfg, err := loadTaskConfig(taskAddConfigPath)
+	cfg, err := taskwarrior.LoadConfig(taskAddConfigPath)
 	if err != nil {
 		return err
 	}
 
-	projects, err := taskProjects(ctx, cfg)
+	projects, err := taskwarrior.Projects(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("fetching taskwarrior projects: %w", err)
 	}
-	tags, err := taskTags(ctx, cfg)
+	tags, err := taskwarrior.Tags(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("fetching taskwarrior tags: %w", err)
 	}
-	tasks, err := taskList(ctx)
+	tasks, err := taskwarrior.PendingTasks(ctx)
 	if err != nil {
 		return fmt.Errorf("fetching taskwarrior tasks for depends-on picker: %w", err)
 	}
@@ -207,106 +105,12 @@ func runTaskAdd(cmd *cobra.Command, _ []string) error {
 }
 
 // ---------------------------------------------------------------------------
-// taskwarrior I/O
-// ---------------------------------------------------------------------------
-
-func taskProjects(ctx context.Context, cfg *taskConfig) ([]string, error) {
-	out, err := taskExec(ctx, "_projects")
-	if err != nil {
-		return nil, err
-	}
-	seed := append([]string{}, cfg.Projects...)
-	return dedupe(append(seed, splitLines(out)...)), nil
-}
-
-func taskTags(ctx context.Context, cfg *taskConfig) ([]string, error) {
-	out, err := taskExec(ctx, "_tags")
-	if err != nil {
-		return nil, err
-	}
-	fetched := splitLines(out)
-	userTags := make([]string, 0, len(fetched))
-	for _, t := range fetched {
-		if t != strings.ToLower(t) {
-			continue // virtual tag
-		}
-		userTags = append(userTags, t)
-	}
-	return dedupe(append(cfg.seedTags(), userTags...)), nil
-}
-
-// taskRef is a minimal projection of a taskwarrior task, enough to render
-// a picker entry and shell out with depends:ID.
-type taskRef struct {
-	ID          int
-	Description string
-	Project     string
-}
-
-// taskList returns the pending tasks by shelling out to `task export
-// status:pending`. Used to populate the Depends-on picker. Returned in
-// ID-descending order (newest first) since recent tasks are more likely
-// dependency candidates.
-func taskList(ctx context.Context) ([]taskRef, error) {
-	out, err := taskExec(ctx, "rc.verbose=nothing", "status:pending", "export")
-	if err != nil {
-		return nil, err
-	}
-	var raw []struct {
-		ID          int    `json:"id"`
-		Description string `json:"description"`
-		Project     string `json:"project"`
-	}
-	if err := json.Unmarshal(out, &raw); err != nil {
-		return nil, fmt.Errorf("parsing task export output: %w", err)
-	}
-	tasks := make([]taskRef, 0, len(raw))
-	for _, r := range raw {
-		if r.ID == 0 {
-			continue // skip completed/deleted with id=0
-		}
-		tasks = append(tasks, taskRef{ID: r.ID, Description: r.Description, Project: r.Project})
-	}
-	sort.Slice(tasks, func(i, j int) bool { return tasks[i].ID > tasks[j].ID })
-	return tasks, nil
-}
-
-func taskExec(ctx context.Context, args ...string) ([]byte, error) {
-	cmd := exec.CommandContext(ctx, "task", args...)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	out, err := cmd.Output()
-	if err == nil {
-		return out, nil
-	}
-	if execErr := new(exec.Error); errors.As(err, &execErr) && errors.Is(execErr.Err, exec.ErrNotFound) {
-		return nil, errors.New("'task' not found in PATH, install taskwarrior first")
-	}
-	msg := strings.TrimSpace(stderr.String())
-	if msg == "" {
-		msg = err.Error()
-	}
-	return nil, fmt.Errorf("task %s: %s", strings.Join(args, " "), msg)
-}
-
-func splitLines(b []byte) []string {
-	raw := strings.Split(string(b), "\n")
-	out := make([]string, 0, len(raw))
-	for _, line := range raw {
-		if line = strings.TrimSpace(line); line != "" {
-			out = append(out, line)
-		}
-	}
-	return out
-}
-
-// ---------------------------------------------------------------------------
 // form
 // ---------------------------------------------------------------------------
 
-func runAddForm(projects, tags []string, tasks []taskRef, cfg *taskConfig) (addOptions, bool, error) {
+func runAddForm(projects, tags []string, tasks []taskwarrior.Task, cfg *taskwarrior.Config) (taskwarrior.AddOptions, bool, error) {
 	var (
-		opts       addOptions
+		opts       taskwarrior.AddOptions
 		newProject string
 		newTagsRaw string
 	)
@@ -314,9 +118,9 @@ func runAddForm(projects, tags []string, tasks []taskRef, cfg *taskConfig) (addO
 	// Pre-fill the Project field with the configured default (or "inbox"
 	// if the projects list contains it, or empty otherwise). When the
 	// picker opens, the cursor lands on this pre-selection.
-	opts.Project = cfg.defaultProject()
+	opts.Project = cfg.ResolveDefaultProject()
 
-	locationTags, otherTags := splitLocationTags(tags, cfg)
+	locationTags, otherTags := taskwarrior.SplitLocationTags(tags, cfg)
 
 	// Sort projects for a stable suggestion order.
 	sort.Strings(projects)
@@ -324,46 +128,10 @@ func runAddForm(projects, tags []string, tasks []taskRef, cfg *taskConfig) (addO
 	locationOpts := buildLocationOptions(locationTags)
 	tagOpts := buildCategorizedTagOptions(otherTags, cfg)
 
-	// Picker order:
-	//   1. ＋ create new…                 — always first (escape hatch to
-	//                                        typing a new project name)
-	//   2. Default project                — from cfg.defaultProject().
-	//                                        If the default resolves to
-	//                                        empty AND allow_empty_project
-	//                                        is true, (none) takes this
-	//                                        slot as the default itself.
-	//   3. (none)                         — only if allow_empty_project
-	//                                        AND (none) isn't already at
-	//                                        position 2 (avoid duplicate).
-	//   4. Everything else alphabetically — the actual project list.
-	//
-	// opts.Project is pre-set to cfg.defaultProject() before the form
-	// runs, so huh's cursor lands on whatever option holds that value —
-	// either the real default at position 2, or the (none) at position 2
-	// when empty is the default.
-	def := cfg.defaultProject()
-	defInList := def != "" && slices.Contains(projects, def)
-
-	projectOpts := make([]huh.Option[string], 0, len(projects)+2)
-	projectOpts = append(projectOpts, huh.NewOption("＋ create new…", sentinelNewProject))
-
-	switch {
-	case defInList:
-		projectOpts = append(projectOpts, huh.NewOption(def, def))
-	case cfg.AllowEmptyProject && def == "":
-		// Empty is the default AND allowed — (none) is the default slot.
-		projectOpts = append(projectOpts, huh.NewOption("(none)", ""))
-	}
-
-	if cfg.AllowEmptyProject && def != "" {
-		projectOpts = append(projectOpts, huh.NewOption("(none)", ""))
-	}
-
-	for _, p := range projects {
-		if p != def {
-			projectOpts = append(projectOpts, huh.NewOption(p, p))
-		}
-	}
+	// Project picker options with the configured default pre-selected.
+	// opts.Project was set to the same default above, so huh's cursor lands
+	// on it. See projectPickerOptions for the ordering.
+	projectOpts := projectPickerOptions(projects, cfg, cfg.ResolveDefaultProject())
 
 	// Depends-on picker options: "(none)" sentinel first (value ""),
 	// then each pending task labelled "[ID] description (project)".
@@ -442,7 +210,7 @@ func runAddForm(projects, tags []string, tasks []taskRef, cfg *taskConfig) (addO
 				Description("Anything taskwarrior parses — leave empty for none").
 				Placeholder("e.g. tomorrow · friday · 2026-06-15 · +2d").
 				Value(&opts.Due).
-				Validate(validateDue),
+				Validate(taskwarrior.ValidateDue),
 		).Title("🎯  Context & sizing"),
 
 		// 3b. Depends on. Optional single-task picker over pending
@@ -521,15 +289,38 @@ func runAddForm(projects, tags []string, tasks []taskRef, cfg *taskConfig) (addO
 	return opts, true, nil
 }
 
-func splitLocationTags(all []string, cfg *taskConfig) (locs, rest []string) {
-	for _, t := range all {
-		if cfg.categorize(t) == locationCategoryLabel {
-			locs = append(locs, t)
-		} else {
-			rest = append(rest, t)
+// projectPickerOptions builds the Project Select options in a stable order:
+// "＋ create new…" first (the escape hatch to typing a new name), then the
+// preselected default, then "(none)" when empty projects are allowed, then
+// every other project. preselect is the value the caller has pre-set on the
+// bound field so huh's cursor lands on it; projects is expected pre-sorted.
+// Shared by `task add` (default = configured default) and `task groom`
+// (default = "", forcing a real choice out of the inbox).
+func projectPickerOptions(projects []string, cfg *taskwarrior.Config, preselect string) []huh.Option[string] {
+	def := preselect
+	defInList := def != "" && slices.Contains(projects, def)
+
+	opts := make([]huh.Option[string], 0, len(projects)+2)
+	opts = append(opts, huh.NewOption("＋ create new…", sentinelNewProject))
+
+	switch {
+	case defInList:
+		opts = append(opts, huh.NewOption(def, def))
+	case cfg.AllowEmptyProject && def == "":
+		// Empty is the default AND allowed — (none) is the default slot.
+		opts = append(opts, huh.NewOption("(none)", ""))
+	}
+
+	if cfg.AllowEmptyProject && def != "" {
+		opts = append(opts, huh.NewOption("(none)", ""))
+	}
+
+	for _, p := range projects {
+		if p != def {
+			opts = append(opts, huh.NewOption(p, p))
 		}
 	}
-	return locs, rest
+	return opts
 }
 
 func buildLocationOptions(locs []string) []huh.Option[string] {
@@ -542,10 +333,10 @@ func buildLocationOptions(locs []string) []huh.Option[string] {
 	return opts
 }
 
-func buildCategorizedTagOptions(tags []string, cfg *taskConfig) []huh.Option[string] {
+func buildCategorizedTagOptions(tags []string, cfg *taskwarrior.Config) []huh.Option[string] {
 	byCategory := map[string][]string{}
 	for _, t := range tags {
-		byCategory[cfg.categorize(t)] = append(byCategory[cfg.categorize(t)], t)
+		byCategory[cfg.Categorize(t)] = append(byCategory[cfg.Categorize(t)], t)
 	}
 	for _, ts := range byCategory {
 		sort.Strings(ts)
@@ -597,51 +388,13 @@ func nonEmpty(name string) func(string) error {
 	}
 }
 
-// validateDue checks whether taskwarrior can parse the input as a due
-// date by running "task count due:INPUT" and inspecting the exit status.
-// An empty string is allowed (no due date). Called by huh's Input.Validate
-// on every attempt to advance the field — on error, huh shows the message
-// inline and keeps focus so the user can fix it.
-func validateDue(input string) error {
-	input = strings.TrimSpace(input)
-	if input == "" {
-		return nil
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, "task", "rc.verbose=nothing",
-		"rc.confirmation=no", "due:"+input, "count")
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	if _, err := cmd.Output(); err == nil {
-		return nil
-	}
-
-	// task's stderr is the useful diagnostic. Strip whitespace and take
-	// the first line so it renders cleanly in a form validator inline.
-	msg := strings.TrimSpace(stderr.String())
-	if i := strings.IndexByte(msg, '\n'); i > 0 {
-		msg = msg[:i]
-	}
-	if msg == "" {
-		return fmt.Errorf("taskwarrior rejected %q as a due date", input)
-	}
-	return errors.New(msg)
-}
-
 func pickerHeight(items int) int {
-	h := items + 2
-	if h > 15 {
-		h = 15
-	}
-	if h < 5 {
-		h = 5
-	}
+	h := max(min(items+2, 15), 5)
 	return h
 }
 
+// dedupe returns xs with duplicates removed, order preserved. Local to the
+// cmd package so taskwarrior needn't export a generic slice helper.
 func dedupe(xs []string) []string {
 	seen := map[string]bool{}
 	out := make([]string, 0, len(xs))
@@ -659,18 +412,10 @@ func dedupe(xs []string) []string {
 // preview + confirm
 // ---------------------------------------------------------------------------
 
-var (
-	taskHasDarkBg = lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
-	taskLightDark = lipgloss.LightDark(taskHasDarkBg)
-
-	previewAccentFg = taskLightDark(lipgloss.Color("#5f4dc2"), lipgloss.Color("#c0a3ff"))
-	previewMutedFg  = taskLightDark(lipgloss.Color("#737373"), lipgloss.Color("#8a8a8a"))
-	previewTagFg    = taskLightDark(lipgloss.Color("#0277bd"), lipgloss.Color("#5bc0eb"))
-
-	previewIconStyle  = lipgloss.NewStyle().Foreground(previewAccentFg)
-	previewLabelStyle = lipgloss.NewStyle().Foreground(previewMutedFg)
-	previewTagStyle   = lipgloss.NewStyle().Foreground(previewTagFg)
-)
+// Preview colours come from the shared internal/tui palette rather than
+// being redefined here: icons/accent → tui.IdentityStyle, structural labels
+// → tui.DimStyle, tags → tui.InfoStyle. tui already does the adaptive
+// light/dark background detection once at its init.
 
 // taskAddTheme derives from huh.ThemeCharm and adds a colored thick left
 // border to the focused field. Blurred fields get a hidden border of the
@@ -681,11 +426,11 @@ var (
 func taskAddTheme(isDark bool) *huh.Styles {
 	s := huh.ThemeCharm(isDark)
 
-	// Charm's brand purple, adjusted for background contrast.
-	accent := lipgloss.Color("#7571F9")
-	if !isDark {
-		accent = lipgloss.Color("#5A56E0")
-	}
+	// Focus-border accent, sourced from the shared tui palette so it stays
+	// in sync with the log-line identity colour. GetForeground pulls the
+	// resolved color.Color back out of the exported Style, since tui
+	// exports IdentityStyle but not the raw identity colour.
+	accent := tui.IdentityStyle.GetForeground()
 
 	s.Focused.Base = s.Focused.Base.
 		BorderStyle(lipgloss.ThickBorder()).
@@ -701,12 +446,12 @@ func taskAddTheme(isDark bool) *huh.Styles {
 	return s
 }
 
-func renderPreview(opts addOptions) string {
+func renderPreview(opts taskwarrior.AddOptions) string {
 	const labelWidth = 9
 
 	row := func(icon, label, value string) string {
-		return previewIconStyle.Render(icon) + "  " +
-			previewLabelStyle.Render(fmt.Sprintf("%-*s", labelWidth, label)) + "  " +
+		return tui.IdentityStyle.Render(icon) + "  " +
+			tui.DimStyle.Render(fmt.Sprintf("%-*s", labelWidth, label)) + "  " +
 			value
 	}
 
@@ -718,7 +463,7 @@ func renderPreview(opts addOptions) string {
 	if len(opts.Tags) > 0 {
 		parts := make([]string, len(opts.Tags))
 		for i, t := range opts.Tags {
-			parts[i] = previewTagStyle.Render("+" + t)
+			parts[i] = tui.InfoStyle.Render("+" + t)
 		}
 		b.WriteString(row("🏷", "tags", strings.Join(parts, " ")) + "\n")
 	}
@@ -737,7 +482,7 @@ func renderPreview(opts addOptions) string {
 	return b.String()
 }
 
-func confirmAndCreate(ctx context.Context, opts addOptions) error {
+func confirmAndCreate(ctx context.Context, opts taskwarrior.AddOptions) error {
 	confirm := false
 	form := huh.NewForm(
 		huh.NewGroup(
@@ -759,36 +504,5 @@ func confirmAndCreate(ctx context.Context, opts addOptions) error {
 	if !confirm {
 		return nil
 	}
-	return runTaskAddExec(ctx, buildTaskArgs(opts))
-}
-
-func buildTaskArgs(opts addOptions) []string {
-	args := []string{"add", opts.Description}
-	if opts.Project != "" {
-		args = append(args, "project:"+opts.Project)
-	}
-	for _, t := range opts.Tags {
-		args = append(args, "+"+t)
-	}
-	if opts.Priority != "" {
-		args = append(args, "priority:"+opts.Priority)
-	}
-	if opts.Size != "" {
-		args = append(args, "size:"+opts.Size)
-	}
-	if opts.Due != "" {
-		args = append(args, "due:"+opts.Due)
-	}
-	if opts.DependsID != "" {
-		args = append(args, "depends:"+opts.DependsID)
-	}
-	return args
-}
-
-func runTaskAddExec(ctx context.Context, args []string) error {
-	cmd := exec.CommandContext(ctx, "task", args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-	return cmd.Run()
+	return taskwarrior.Run(ctx, taskwarrior.BuildArgs(opts))
 }
