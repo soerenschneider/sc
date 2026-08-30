@@ -306,6 +306,7 @@ func ValidateDue(input string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
+	//#nosec:G204
 	cmd := exec.CommandContext(ctx, "task", "rc.verbose=nothing",
 		"rc.confirmation=no", "due:"+input, "count")
 	var stderr bytes.Buffer
