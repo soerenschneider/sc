@@ -681,6 +681,28 @@ func (c *VaultClient) TotpGenerateSecretAdmin(ctx context.Context, methodId, ent
 	return fmt.Sprintf("%s", secret.Data["url"]), nil
 }
 
+// IdentityGetEntityMfaMethodIds returns the ids of all MFA methods the entity has a secret for.
+func (c *VaultClient) IdentityGetEntityMfaMethodIds(ctx context.Context, entityId string) ([]string, error) {
+	resp, err := c.client.Logical().ReadWithContext(ctx, fmt.Sprintf("identity/entity/id/%s", entityId))
+	if err != nil {
+		return nil, err
+	}
+	if resp == nil || resp.Data == nil {
+		return nil, nil
+	}
+
+	raw, ok := resp.Data["mfa_secrets"].(map[string]any)
+	if !ok {
+		return nil, nil
+	}
+
+	methodIds := make([]string, 0, len(raw))
+	for methodId := range raw {
+		methodIds = append(methodIds, methodId)
+	}
+	return methodIds, nil
+}
+
 func (c *VaultClient) IdentityListEntities(ctx context.Context) ([]string, error) {
 	path := "identity/entity/name"
 
