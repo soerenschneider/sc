@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/soerenschneider/sc/compare/v1.11.0...v1.12.0) (2026-09-04)
+
+
+### Features
+
+* **vault:** add subcommand to delete totp secrets ([a794a94](https://github.com/soerenschneider/sc/commit/a794a942e65ad395704ae56b70c19e06f567714b))
+
 ## [1.11.0](https://github.com/soerenschneider/sc/compare/v1.10.0...v1.11.0) (2026-08-30)
 
 
