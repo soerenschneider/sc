@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2/spinner"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/pw"
@@ -36,51 +38,84 @@ var pwGenCmd = &cobra.Command{
 			}
 			log.Info().Msgf("Generated password copied to clipboard")
 
-			if err := spinner.New().
+			title := fmt.Sprintf("Waiting %v to wipe password, press ctrl+c to wipe now", passwordClearTimeout)
+			err := spinner.New().
 				Context(cmd.Context()).
-				Action(func() {
-					clearPassword(cmd.Context(), generatedPw)
+				ActionWithErr(func(ctx context.Context) error {
+					waitForPasswordClearTimeout(ctx)
+					return nil
 				}).
-				Title(fmt.Sprintf("Waiting %0f to wipe password", passwordClearTimeout.Seconds())).
+				Title(title).
 				Type(spinner.Dots).
-				Run(); err != nil {
-				clearPassword(cmd.Context(), generatedPw)
+				Run()
+
+			// Ctrl+C does not raise SIGINT while the spinner holds the terminal in raw mode, it is
+			// handled by the spinner itself and reported as tea.ErrInterrupted instead.
+			if err != nil && !errors.Is(err, tea.ErrInterrupted) && cmd.Context().Err() == nil {
 				log.Warn().Err(err).Msg("could not display spinner")
+				waitForPasswordClearTimeout(cmd.Context())
 			}
+
+			clearPassword(cmd.Context(), generatedPw)
 		}
 	},
 }
 
-func clearPassword(ctx context.Context, generatedPw string) {
+// waitForPasswordClearTimeout blocks until passwordClearTimeout has passed or ctx is canceled.
+func waitForPasswordClearTimeout(ctx context.Context) {
 	select {
 	case <-ctx.Done():
-		log.Info().Msg("Context canceled, clearing clipboard early")
 	case <-time.After(passwordClearTimeout):
-	}
-
-	current, err := clipboard.PasteClipboard(ctx)
-	if err == nil && current == generatedPw {
-		_ = clipboard.CopyClipboard(ctx, "")
 	}
 }
 
+// clearPassword wipes the clipboard if it still contains generatedPw.
+func clearPassword(ctx context.Context, generatedPw string) {
+	// ctx may already be canceled, the clipboard needs to be wiped nevertheless.
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 3*time.Second)
+	defer cancel()
+
+	current, err := clipboard.PasteClipboard(ctx)
+	if err != nil {
+		log.Warn().Err(err).Msg("could not read clipboard, not wiping it")
+		return
+	}
+
+	if current == generatedPw {
+		if err := clipboard.CopyClipboard(ctx, ""); err != nil {
+			log.Warn().Err(err).Msg("could not wipe clipboard")
+			return
+		}
+		log.Info().Msg("Wiped password from clipboard")
+	}
+}
+
+// printPasswordTemporarily prints pw and removes it again after passwordClearTimeout, as soon as
+// ctx is canceled or any key is pressed.
 func printPasswordTemporarily(ctx context.Context, pw string) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	fd := int(os.Stdin.Fd()) //#nosec:G115
 
-	// put terminal in raw mode (no Enter key, no echo)
+	// put terminal in raw mode (no Enter key, no echo). As this also disables signals, Ctrl+C
+	// does not raise SIGINT anymore, so any key press cancels instead.
 	oldState, err := term.MakeRaw(fd)
 	if err == nil {
 		defer func() {
 			_ = term.Restore(fd, oldState)
 		}()
+
+		go func() {
+			buf := make([]byte, 1)
+			if _, err := os.Stdin.Read(buf); err == nil {
+				cancel()
+			}
+		}()
 	}
 
 	fmt.Print(pw)
-	select {
-	case <-ctx.Done():
-	case <-time.After(passwordClearTimeout):
-	}
-
+	waitForPasswordClearTimeout(ctx)
 	fmt.Print("\r\033[K")
 }
 
