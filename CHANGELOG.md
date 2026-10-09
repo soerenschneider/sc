@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.12.0](https://github.com/soerenschneider/sc/compare/v1.11.0...v1.12.0) (2026-10-09)
+
+
+### Features
+
+* **vault:** add subcommand to delete totp secrets ([a794a94](https://github.com/soerenschneider/sc/commit/a794a942e65ad395704ae56b70c19e06f567714b))
+* **vault:** add transit encrypt and decrypt subcommands ([d0da616](https://github.com/soerenschneider/sc/commit/d0da61615dcfed43ece058c1a792f8ad6a0523f3))
+
+
+### Bug Fixes
+
+* **pw:** allow cancelling password wipe timeout with ctrl+c ([9c5688b](https://github.com/soerenschneider/sc/commit/9c5688b3399ccf23e18cd5e807742ba4b7ebef85))
+
 ## [1.11.0](https://github.com/soerenschneider/sc/compare/v1.10.0...v1.11.0) (2026-08-30)
 
 
