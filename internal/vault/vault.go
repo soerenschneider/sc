@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -1158,4 +1159,111 @@ func HumanizeError(err error, op string) string {
 		}
 	}
 	return fmt.Sprintf("%s failed: %v", op, err)
+}
+
+// TransitListMounts returns the paths (without trailing slash) of all mounted transit secret engines.
+func (c *VaultClient) TransitListMounts(ctx context.Context) ([]string, error) {
+	mounts, err := c.client.Sys().ListMountsWithContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list mounts: %w", err)
+	}
+
+	var transitMounts []string
+	for path, mount := range mounts {
+		if mount != nil && mount.Type == "transit" {
+			transitMounts = append(transitMounts, strings.TrimSuffix(path, "/"))
+		}
+	}
+
+	sort.Strings(transitMounts)
+	return transitMounts, nil
+}
+
+// TransitListKeys returns the names of all keys of the transit secret engine mounted at mount.
+func (c *VaultClient) TransitListKeys(ctx context.Context, mount string) ([]string, error) {
+	path := fmt.Sprintf("%s/keys", mount)
+	secret, err := c.client.Logical().ListWithContext(ctx, path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list transit keys: %w", err)
+	}
+
+	if secret == nil || secret.Data == nil {
+		return nil, fmt.Errorf("no data returned from Vault")
+	}
+
+	rawKeys, ok := secret.Data["keys"].([]any)
+	if !ok {
+		return nil, fmt.Errorf("unexpected response structure: %#v", secret.Data)
+	}
+
+	var keys []string
+	for _, v := range rawKeys {
+		if s, ok := v.(string); ok {
+			keys = append(keys, s)
+		}
+	}
+
+	sort.Strings(keys)
+	return keys, nil
+}
+
+// TransitEncrypt encrypts plaintext using the transit key keyName of the transit secret engine mounted at mount
+// and returns the ciphertext, e.g. "vault:v1:...". If the key has derivation enabled, keyContext must be supplied.
+func (c *VaultClient) TransitEncrypt(ctx context.Context, mount, keyName string, plaintext []byte, keyContext []byte) (string, error) {
+	data := map[string]any{
+		"plaintext": base64.StdEncoding.EncodeToString(plaintext),
+	}
+	if len(keyContext) > 0 {
+		data["context"] = base64.StdEncoding.EncodeToString(keyContext)
+	}
+
+	path := fmt.Sprintf("%s/encrypt/%s", mount, keyName)
+	secret, err := c.client.Logical().WriteWithContext(ctx, path, data)
+	if err != nil {
+		return "", fmt.Errorf("failed to encrypt data: %w", err)
+	}
+
+	if secret == nil || secret.Data == nil {
+		return "", fmt.Errorf("no data returned from Vault")
+	}
+
+	ciphertext, ok := secret.Data["ciphertext"].(string)
+	if !ok || ciphertext == "" {
+		return "", fmt.Errorf("unexpected response structure: %#v", secret.Data)
+	}
+
+	return ciphertext, nil
+}
+
+// TransitDecrypt decrypts ciphertext using the transit key keyName of the transit secret engine mounted at mount
+// and returns the plaintext. If the key has derivation enabled, keyContext must be supplied.
+func (c *VaultClient) TransitDecrypt(ctx context.Context, mount, keyName, ciphertext string, keyContext []byte) ([]byte, error) {
+	data := map[string]any{
+		"ciphertext": ciphertext,
+	}
+	if len(keyContext) > 0 {
+		data["context"] = base64.StdEncoding.EncodeToString(keyContext)
+	}
+
+	path := fmt.Sprintf("%s/decrypt/%s", mount, keyName)
+	secret, err := c.client.Logical().WriteWithContext(ctx, path, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt data: %w", err)
+	}
+
+	if secret == nil || secret.Data == nil {
+		return nil, fmt.Errorf("no data returned from Vault")
+	}
+
+	encoded, ok := secret.Data["plaintext"].(string)
+	if !ok {
+		return nil, fmt.Errorf("unexpected response structure: %#v", secret.Data)
+	}
+
+	plaintext, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return nil, fmt.Errorf("could not decode plaintext: %w", err)
+	}
+
+	return plaintext, nil
 }
