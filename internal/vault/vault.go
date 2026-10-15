@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -192,14 +193,74 @@ func (c *VaultClient) SshListRoles(ctx context.Context, mount string) ([]string,
 		return nil, fmt.Errorf("no data returned from Vault")
 	}
 
+	rawKeys, ok := secret.Data["keys"].([]any)
+	if !ok {
+		return nil, fmt.Errorf("unexpected response structure: %#v", secret.Data)
+	}
+
 	var keys []string
-	for _, v := range secret.Data["keys"].([]any) {
+	for _, v := range rawKeys {
 		if s, ok := v.(string); ok {
 			keys = append(keys, s)
 		}
 	}
 
+	sort.Strings(keys)
 	return keys, nil
+}
+
+// SshReadRole reads the configuration of the given role of the SSH secret engine mounted at mount.
+func (c *VaultClient) SshReadRole(ctx context.Context, mount, role string) (*SshRole, error) {
+	path := fmt.Sprintf("%s/roles/%s", mount, role)
+	secret, err := c.client.Logical().ReadWithContext(ctx, path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read role: %w", err)
+	}
+
+	if secret == nil || secret.Data == nil {
+		return nil, fmt.Errorf("role %q not found", role)
+	}
+
+	ret := &SshRole{Name: role}
+	ret.KeyType, _ = secret.Data["key_type"].(string)
+	ret.AllowUserCertificates, _ = secret.Data["allow_user_certificates"].(bool)
+	ret.DefaultUser, _ = secret.Data["default_user"].(string)
+	if allowedUsers, ok := secret.Data["allowed_users"].(string); ok {
+		for _, user := range strings.Split(allowedUsers, ",") {
+			if user = strings.TrimSpace(user); user != "" {
+				ret.AllowedUsers = append(ret.AllowedUsers, user)
+			}
+		}
+	}
+	ret.Ttl = parseVaultDuration(secret.Data["ttl"])
+	ret.MaxTtl = parseVaultDuration(secret.Data["max_ttl"])
+
+	return ret, nil
+}
+
+// parseVaultDuration parses a duration as returned by Vault, either as number of seconds or as duration string.
+// Returns 0 if the value can not be parsed.
+func parseVaultDuration(val any) time.Duration {
+	switch v := val.(type) {
+	case json.Number:
+		if seconds, err := v.Int64(); err == nil {
+			return time.Duration(seconds) * time.Second
+		}
+	case float64:
+		return time.Duration(v) * time.Second
+	case int64:
+		return time.Duration(v) * time.Second
+	case int:
+		return time.Duration(v) * time.Second
+	case string:
+		if d, err := time.ParseDuration(v); err == nil {
+			return d
+		}
+		if seconds, err := strconv.ParseInt(v, 10, 64); err == nil {
+			return time.Duration(seconds) * time.Second
+		}
+	}
+	return 0
 }
 
 func (c *VaultClient) UserpassAuth(ctx context.Context, mount, username, password string) (*vault.Secret, error) {
@@ -815,6 +876,65 @@ func convertUserKeyRequest(req SshSignatureRequest) map[string]any {
 	}
 
 	return data
+}
+
+// PkiListRoles returns the names of all roles of the PKI secret engine mounted at mount.
+func (c *VaultClient) PkiListRoles(ctx context.Context, mount string) ([]string, error) {
+	path := fmt.Sprintf("%s/roles", mount)
+	secret, err := c.client.Logical().ListWithContext(ctx, path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list roles: %w", err)
+	}
+
+	if secret == nil || secret.Data == nil {
+		return nil, fmt.Errorf("no data returned from Vault")
+	}
+
+	rawKeys, ok := secret.Data["keys"].([]any)
+	if !ok {
+		return nil, fmt.Errorf("unexpected response structure: %#v", secret.Data)
+	}
+
+	var keys []string
+	for _, v := range rawKeys {
+		if s, ok := v.(string); ok {
+			keys = append(keys, s)
+		}
+	}
+
+	sort.Strings(keys)
+	return keys, nil
+}
+
+// PkiReadRole reads the configuration of the given role of the PKI secret engine mounted at mount.
+func (c *VaultClient) PkiReadRole(ctx context.Context, mount, role string) (*PkiRole, error) {
+	path := fmt.Sprintf("%s/roles/%s", mount, role)
+	secret, err := c.client.Logical().ReadWithContext(ctx, path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read role: %w", err)
+	}
+
+	if secret == nil || secret.Data == nil {
+		return nil, fmt.Errorf("role %q not found", role)
+	}
+
+	ret := &PkiRole{Name: role}
+	if allowedDomains, ok := secret.Data["allowed_domains"].([]any); ok {
+		for _, v := range allowedDomains {
+			if domain, ok := v.(string); ok && domain != "" {
+				ret.AllowedDomains = append(ret.AllowedDomains, domain)
+			}
+		}
+	}
+	ret.AllowBareDomains, _ = secret.Data["allow_bare_domains"].(bool)
+	ret.AllowSubdomains, _ = secret.Data["allow_subdomains"].(bool)
+	ret.AllowLocalhost, _ = secret.Data["allow_localhost"].(bool)
+	ret.AllowAnyName, _ = secret.Data["allow_any_name"].(bool)
+	ret.AllowGlobDomains, _ = secret.Data["allow_glob_domains"].(bool)
+	ret.Ttl = parseVaultDuration(secret.Data["ttl"])
+	ret.MaxTtl = parseVaultDuration(secret.Data["max_ttl"])
+
+	return ret, nil
 }
 
 func (c *VaultClient) PkiIssueCert(ctx context.Context, mount string, args PkiIssueArgs) (*vault.Secret, error) {

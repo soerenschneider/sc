@@ -25,6 +25,27 @@ func SelectInput(title string, choices []string) string {
 	return input
 }
 
+func MultiSelectInput(title string, choices []string) []string {
+	var input []string
+	err := huh.NewMultiSelect[string]().
+		Title(title).
+		Options(huh.NewOptions(choices...)...).
+		Value(&input).
+		Validate(func(selected []string) error {
+			if len(selected) == 0 {
+				return errors.New("select at least one option")
+			}
+			return nil
+		}).
+		Run()
+
+	if err != nil {
+		log.Fatal().Err(err).Msg("could not get choices")
+	}
+
+	return input
+}
+
 func ReadInput(title string, suggestions []string) string {
 	return ReadInputWithValidation(title, suggestions, huh.ValidateNotEmpty())
 }

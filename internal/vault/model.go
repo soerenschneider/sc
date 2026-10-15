@@ -15,6 +15,36 @@ type SshSignatureRequest struct {
 
 	VaultRole string
 }
+
+// SshRole holds the parts of a role of the SSH secret engine that are relevant for signing user keys.
+type SshRole struct {
+	Name                  string
+	KeyType               string
+	AllowUserCertificates bool
+	DefaultUser           string
+	AllowedUsers          []string
+	Ttl                   time.Duration
+	MaxTtl                time.Duration
+}
+
+// CanSignUserKeys returns whether the role can be used to sign user keys.
+func (r *SshRole) CanSignUserKeys() bool {
+	return r.KeyType == "ca" && r.AllowUserCertificates
+}
+
+// PkiRole holds the parts of a role of the PKI secret engine that are relevant for issuing certificates.
+type PkiRole struct {
+	Name             string
+	AllowedDomains   []string
+	AllowBareDomains bool
+	AllowSubdomains  bool
+	AllowLocalhost   bool
+	AllowAnyName     bool
+	AllowGlobDomains bool
+	Ttl              time.Duration
+	MaxTtl           time.Duration
+}
+
 type PkiSignatureArgs struct {
 	CommonName string
 	Ttl        string
