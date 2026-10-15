@@ -14,6 +14,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"
+	"github.com/soerenschneider/sc/internal/vault/prompt"
 	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
@@ -35,6 +36,10 @@ It requires appropriate configuration and permissions set in Vault to access the
 		profile := pkg.GetString(cmd, vaultAwsProfile)
 		role := pkg.GetString(cmd, vaultRoleName)
 		ttl := pkg.GetInt(cmd, vaultTtl)
+
+		if mount == "" {
+			mount = prompt.Mount(cmd.Context(), client, "aws")
+		}
 
 		if role == "" {
 			var availableRoles []string
@@ -152,7 +157,6 @@ func updateAwsCredentialsFile(profile string, creds vault.AwsCredentials) error 
 func init() {
 	vaultAwsCmd.AddCommand(vaultAwsGenerateCredentialsCmd)
 
-	vaultAwsGenerateCredentialsCmd.Flags().StringP(vaultMountPath, "m", vaultAwsDefaultMount, "Mount path for the AWS secret engine")
 	vaultAwsGenerateCredentialsCmd.Flags().IntP(vaultTtl, "t", vaultAwsDefaultTtl, "Specify how long the credentials should be valid for in seconds")
 	vaultAwsGenerateCredentialsCmd.Flags().StringP(vaultRoleName, "r", "", "Specifies the name of the role to generate credentials for")
 	vaultAwsGenerateCredentialsCmd.Flags().StringP(vaultAwsProfile, "p", vaultAwsDefaultProfile, "Specifies the name of the AWS credentials profile section")

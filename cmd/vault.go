@@ -1,8 +1,7 @@
 package cmd
 
 import (
-	"time"
-
+	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +13,6 @@ const (
 	vaultTtl       = "ttl"
 	vaultRoleName  = "role"
 
-	vaultAwsDefaultMount               = "aws"
 	vaultAwsProfile                    = "aws-profile"
 	vaultAwsDefaultTtl                 = 3600
 	vaultAwsDefaultCredentialsFilename = "~/.aws/credentials" //nolint G101
@@ -45,7 +43,7 @@ const (
 	vaultTotpMethodId     = "method-id"
 
 	vaultForce          = "force"
-	vaultDefaultTimeout = 7 * time.Second
+	vaultDefaultTimeout = vault.DefaultTimeout
 
 	vaultSecretSyncName   = "name"
 	vaultSecretSyncConfig = "sync-config" //nolint G101

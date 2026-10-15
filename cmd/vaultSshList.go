@@ -3,8 +3,8 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/soerenschneider/sc/internal/vault/prompt"
 	"strings"
-	"time"
 
 	"charm.land/lipgloss/v2"
 	"github.com/rs/zerolog/log"
@@ -21,8 +21,11 @@ var sshListCmd = &cobra.Command{
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 
 		mount := pkg.GetString(cmd, vaultMountPath)
+		if mount == "" {
+			mount = prompt.Mount(cmd.Context(), client, "ssh")
+		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(cmd.Context(), vaultDefaultTimeout)
 		defer cancel()
 
 		roles, err := client.SshListRoles(ctx, mount)

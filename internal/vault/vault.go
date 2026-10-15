@@ -1161,22 +1161,106 @@ func HumanizeError(err error, op string) string {
 	return fmt.Sprintf("%s failed: %v", op, err)
 }
 
-// TransitListMounts returns the paths (without trailing slash) of all mounted transit secret engines.
-func (c *VaultClient) TransitListMounts(ctx context.Context) ([]string, error) {
-	mounts, err := c.client.Sys().ListMountsWithContext(ctx)
+// ListMountsByType returns the paths (without trailing slash) of all mounted secret engines of the given type,
+// e.g. "transit" or "ssh". As reading sys/mounts requires privileges that are often not granted, it falls back
+// to sys/internal/ui/mounts, which lists the mounts the token has access to.
+func (c *VaultClient) ListMountsByType(ctx context.Context, engineType string) ([]string, error) {
+	mountTypes, err := c.listMountTypes(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list mounts: %w", err)
+		var uiErr error
+		mountTypes, uiErr = c.listUiMountTypes(ctx)
+		if uiErr != nil {
+			return nil, fmt.Errorf("failed to list mounts: %w", errors.Join(err, uiErr))
+		}
+		log.Debug().Err(err).Msg("could not read sys/mounts, used sys/internal/ui/mounts instead")
 	}
 
-	var transitMounts []string
-	for path, mount := range mounts {
-		if mount != nil && mount.Type == "transit" {
-			transitMounts = append(transitMounts, strings.TrimSuffix(path, "/"))
+	var matchingMounts []string
+	for path, mountType := range mountTypes {
+		if mountType == engineType {
+			matchingMounts = append(matchingMounts, strings.TrimSuffix(path, "/"))
 		}
 	}
 
-	sort.Strings(transitMounts)
-	return transitMounts, nil
+	sort.Strings(matchingMounts)
+	return matchingMounts, nil
+}
+
+// listMountTypes returns a map of mount path to secret engine type, read from sys/mounts.
+func (c *VaultClient) listMountTypes(ctx context.Context) (map[string]string, error) {
+	mounts, err := c.client.Sys().ListMountsWithContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := make(map[string]string, len(mounts))
+	for path, mount := range mounts {
+		if mount != nil {
+			ret[path] = mount.Type
+		}
+	}
+	return ret, nil
+}
+
+// listUiMountTypes returns a map of mount path to secret engine type, read from sys/internal/ui/mounts.
+func (c *VaultClient) listUiMountTypes(ctx context.Context) (map[string]string, error) {
+	secret, err := c.client.Logical().ReadWithContext(ctx, "sys/internal/ui/mounts")
+	if err != nil {
+		return nil, err
+	}
+
+	if secret == nil || secret.Data == nil {
+		return nil, fmt.Errorf("no data returned from Vault")
+	}
+
+	mounts, ok := secret.Data["secret"].(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("unexpected response structure: %#v", secret.Data)
+	}
+
+	ret := make(map[string]string, len(mounts))
+	for path, raw := range mounts {
+		if mount, ok := raw.(map[string]any); ok {
+			if mountType, ok := mount["type"].(string); ok {
+				ret[path] = mountType
+			}
+		}
+	}
+	return ret, nil
+}
+
+// Capabilities returns the capabilities of the current token for each of the given paths, e.g. "update" or "deny".
+func (c *VaultClient) Capabilities(ctx context.Context, paths []string) (map[string][]string, error) {
+	if len(paths) == 0 {
+		return map[string][]string{}, nil
+	}
+
+	secret, err := c.client.Logical().WriteWithContext(ctx, "sys/capabilities-self", map[string]any{
+		"paths": paths,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to lookup capabilities: %w", err)
+	}
+
+	if secret == nil || secret.Data == nil {
+		return nil, fmt.Errorf("no data returned from Vault")
+	}
+
+	ret := make(map[string][]string, len(paths))
+	for _, path := range paths {
+		rawCapabilities, ok := secret.Data[path].([]any)
+		if !ok {
+			return nil, fmt.Errorf("no capabilities returned for path %q", path)
+		}
+
+		for _, v := range rawCapabilities {
+			if capability, ok := v.(string); ok {
+				ret[path] = append(ret[path], capability)
+			}
+		}
+	}
+
+	return ret, nil
 }
 
 // TransitListKeys returns the names of all keys of the transit secret engine mounted at mount.

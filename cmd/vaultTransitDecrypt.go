@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/soerenschneider/sc/internal/vault/prompt"
 	"os"
 	"strings"
 
@@ -54,19 +55,20 @@ Examples:
 		}
 
 		if mount == "" {
-			mount = promptTransitMount(cmd.Context(), client)
+			mount = prompt.Mount(cmd.Context(), client, "transit")
 		}
 
 		if keyName == "" {
-			keyName = promptTransitKey(cmd.Context(), client, mount)
+			keyName = promptTransitKey(cmd.Context(), client, mount, "decrypt")
 		}
+		prompt.RequireCapability(cmd.Context(), client, vault.Path(mount, "decrypt", keyName), "update")
 
 		ctx, cancel := context.WithTimeout(cmd.Context(), vaultDefaultTimeout)
 		defer cancel()
 
 		var plaintext []byte
 		title := fmt.Sprintf("Decrypting data using key %q on mount %q...", keyName, mount)
-		if err := runWithSpinner(ctx, title, func(ctx context.Context) error {
+		if err := tui.RunWithSpinner(ctx, title, func(ctx context.Context) error {
 			var err error
 			plaintext, err = client.TransitDecrypt(ctx, mount, keyName, ciphertext, []byte(keyContext))
 			return err

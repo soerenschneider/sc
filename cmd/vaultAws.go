@@ -19,4 +19,5 @@ to inspect or manage tokens.`,
 
 func init() {
 	vaultCmd.AddCommand(vaultAwsCmd)
+	vaultAwsCmd.PersistentFlags().StringP(vaultMountPath, "m", "", "Path where the AWS secret engine is mounted. If not specified, available mounts are discovered.")
 }

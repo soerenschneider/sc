@@ -3,11 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/soerenschneider/sc/internal/vault/prompt"
 	"io"
 	"os"
-	"time"
 
-	"charm.land/huh/v2/spinner"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"
@@ -22,13 +21,9 @@ const (
 	vaultTransitOutput  = "output"
 )
 
-// transitMountLister is the subset of the vault client needed to discover transit mounts.
-type transitMountLister interface {
-	TransitListMounts(ctx context.Context) ([]string, error)
-}
-
 // transitKeyLister is the subset of the vault client needed to discover transit keys.
 type transitKeyLister interface {
+	prompt.CapabilityChecker
 	TransitListKeys(ctx context.Context, mount string) ([]string, error)
 }
 
@@ -66,19 +61,20 @@ Examples:
 		}
 
 		if mount == "" {
-			mount = promptTransitMount(cmd.Context(), client)
+			mount = prompt.Mount(cmd.Context(), client, "transit")
 		}
 
 		if keyName == "" {
-			keyName = promptTransitKey(cmd.Context(), client, mount)
+			keyName = promptTransitKey(cmd.Context(), client, mount, "encrypt")
 		}
+		prompt.RequireCapability(cmd.Context(), client, vault.Path(mount, "encrypt", keyName), "update")
 
 		ctx, cancel := context.WithTimeout(cmd.Context(), vaultDefaultTimeout)
 		defer cancel()
 
 		var ciphertext string
 		title := fmt.Sprintf("Encrypting data using key %q on mount %q...", keyName, mount)
-		if err := runWithSpinner(ctx, title, func(ctx context.Context) error {
+		if err := tui.RunWithSpinner(ctx, title, func(ctx context.Context) error {
 			var err error
 			ciphertext, err = client.TransitEncrypt(ctx, mount, keyName, plaintext, []byte(keyContext))
 			return err
@@ -113,105 +109,22 @@ func readTransitInput(inputFile string, prompt func() string) ([]byte, error) {
 	}
 }
 
-// promptTransitMount tries to offer a selection of the mounted transit secret engines and
-// falls back to free-form input if the mounts can not be listed.
-func promptTransitMount(ctx context.Context, client transitMountLister) string {
-	var availableMounts []string
-
-	ctx, cancel := context.WithTimeout(ctx, vaultDefaultTimeout)
-	defer cancel()
-
-	if err := runWithSpinner(ctx, "Discovering transit mounts...", func(ctx context.Context) error {
-		mounts, err := client.TransitListMounts(ctx)
-		if err != nil {
-			return err
-		}
-		availableMounts = mounts
-		return nil
-	}); err != nil {
-		log.Warn().Err(err).Msg("could not discover transit mounts, falling back to manual input")
-	}
-
-	switch len(availableMounts) {
-	case 0:
-		return tui.ReadInput("Enter transit mount", []string{"transit"})
-	case 1:
-		log.Info().Msgf("Using only available transit mount %q", availableMounts[0])
-		return availableMounts[0]
-	default:
-		return tui.SelectInput("Select transit mount", availableMounts)
-	}
-}
-
-// promptTransitKey tries to offer a selection of the keys of the given transit mount and
-// falls back to free-form input if the keys can not be listed.
-func promptTransitKey(ctx context.Context, client transitKeyLister, mount string) string {
-	var availableKeys []string
-
-	ctx, cancel := context.WithTimeout(ctx, vaultDefaultTimeout)
-	defer cancel()
-
+// promptTransitKey offers a selection of the keys of the given transit mount that the token may use for
+// operation, e.g. "encrypt", and falls back to free-form input if the keys can not be listed.
+func promptTransitKey(ctx context.Context, client transitKeyLister, mount, operation string) string {
 	title := fmt.Sprintf("Loading keys of transit mount %q...", mount)
-	if err := runWithSpinner(ctx, title, func(ctx context.Context) error {
-		keys, err := client.TransitListKeys(ctx, mount)
-		if err != nil {
-			return err
-		}
-		availableKeys = keys
-		return nil
-	}); err != nil {
+	keys, err := prompt.Load(ctx, title, func(ctx context.Context) ([]string, error) {
+		return client.TransitListKeys(ctx, mount)
+	})
+	if err != nil {
 		log.Warn().Err(err).Msg("could not list transit keys, falling back to manual input")
 	}
 
-	if len(availableKeys) > 0 {
-		return tui.SelectInput("Select transit key", availableKeys)
-	}
+	keys = prompt.FilterByCapability(ctx, client, "transit key", keys, func(key string) string {
+		return vault.Path(mount, operation, key)
+	}, "update")
 
-	return tui.ReadInput("Enter transit key", nil)
-}
-
-const (
-	// spinnerDelay is how long an action may take before a spinner is displayed.
-	spinnerDelay = 200 * time.Millisecond
-	// spinnerMinVisible is how long a spinner is displayed at least, once shown.
-	spinnerMinVisible = 300 * time.Millisecond
-)
-
-// runWithSpinner runs action while displaying a spinner. As the spinner requires a terminal,
-// action is run without a spinner if stderr is not a terminal, e.g. when used in scripts.
-//
-// The spinner is only displayed if action does not finish within spinnerDelay and is then
-// displayed for at least spinnerMinVisible. Besides avoiding flickering, this makes sure the
-// spinner lives long enough to consume the terminal's replies to the queries bubbletea sends
-// on startup, which would otherwise leak into the shell.
-func runWithSpinner(ctx context.Context, title string, action func(ctx context.Context) error) error {
-	if !isTerminal(os.Stderr) {
-		return action(ctx)
-	}
-
-	done := make(chan error, 1)
-	go func() {
-		done <- action(ctx)
-	}()
-
-	select {
-	case err := <-done:
-		return err
-	case <-time.After(spinnerDelay):
-	}
-
-	return spinner.New().
-		ActionWithErr(func(_ context.Context) error {
-			minVisible := time.After(spinnerMinVisible)
-			err := <-done
-			<-minVisible
-			return err
-		}).
-		Title(title).
-		Context(ctx).
-		Type(spinner.Dots).
-		WithOutput(os.Stderr).
-		Run()
+	return tui.SelectOrReadInput("transit key", keys, nil)
 }
 
 func init() {

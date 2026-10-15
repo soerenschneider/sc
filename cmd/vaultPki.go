@@ -14,5 +14,5 @@ var vaultPkiCmd = &cobra.Command{
 
 func init() {
 	vaultCmd.AddCommand(vaultPkiCmd)
-	vaultPkiCmd.PersistentFlags().StringP(vaultMountPath, "m", "pki", "Path where the PKI secret engine is mounted")
+	vaultPkiCmd.PersistentFlags().StringP(vaultMountPath, "m", "", "Path where the PKI secret engine is mounted. If not specified, available mounts are discovered.")
 }

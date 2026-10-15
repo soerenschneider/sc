@@ -14,5 +14,5 @@ var vaultSshCmd = &cobra.Command{
 
 func init() {
 	vaultCmd.AddCommand(vaultSshCmd)
-	vaultSshCmd.PersistentFlags().StringP(vaultMountPath, "m", "ssh", "Path where the SSH secret engine is mounted")
+	vaultSshCmd.PersistentFlags().StringP(vaultMountPath, "m", "", "Path where the SSH secret engine is mounted. If not specified, available mounts are discovered.")
 }

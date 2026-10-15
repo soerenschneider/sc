@@ -3,8 +3,8 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/soerenschneider/sc/internal/vault/prompt"
 
-	"charm.land/huh/v2/spinner"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/soerenschneider/sc/pkg"
@@ -20,23 +20,15 @@ var vaultSshReadCaCmd = &cobra.Command{
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 
 		mount := pkg.GetString(cmd, vaultMountPath)
+		if mount == "" {
+			mount = prompt.Mount(cmd.Context(), client, "ssh")
+		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)
-		defer cancel()
-
-		var caData []byte
-		if err := spinner.New().
-			Type(spinner.Line).
-			ActionWithErr(func(ctx context.Context) error {
-				var err error
-				caData, err = client.SshGetCa(ctx, mount)
-				return err
-			}).
-			Title("Fetching ca data from Vault").
-			Context(ctx).
-			Type(spinner.Dots).
-			Run(); err != nil {
-			log.Warn().Err(err).Msg("could not fetch ca data")
+		caData, err := prompt.Load(cmd.Context(), "Fetching ca data from Vault", func(ctx context.Context) ([]byte, error) {
+			return client.SshGetCa(ctx, mount)
+		})
+		if err != nil {
+			log.Fatal().Err(err).Msg("could not fetch ca data")
 		}
 
 		fmt.Println(string(caData))

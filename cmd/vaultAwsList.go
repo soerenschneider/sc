@@ -8,6 +8,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/vault"
+	"github.com/soerenschneider/sc/internal/vault/prompt"
 	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/cobra"
 )
@@ -27,6 +28,9 @@ The command expects that the AWS secrets engine has been enabled and configured.
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 
 		mount := pkg.GetString(cmd, vaultMountPath)
+		if mount == "" {
+			mount = prompt.Mount(cmd.Context(), client, "aws")
+		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)
 		defer cancel()
@@ -43,6 +47,4 @@ The command expects that the AWS secrets engine has been enabled and configured.
 
 func init() {
 	vaultAwsCmd.AddCommand(vaultAwsListCmd)
-
-	vaultAwsListCmd.Flags().StringP(vaultMountPath, "m", vaultAwsDefaultMount, "Mount path for the AWS secret engine")
 }
