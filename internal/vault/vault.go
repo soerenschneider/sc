@@ -552,7 +552,7 @@ func (c *VaultClient) ResetAppRoleSecretIDs(ctx context.Context, mount, roleName
 }
 
 func (c *VaultClient) UpdatePassword(ctx context.Context, mount, username, password string) error {
-	userPath := fmt.Sprintf("auth/%s/users/%s", mount, username)
+	userPath := fmt.Sprintf("auth/%s/users/%s/password", mount, username)
 	data := map[string]interface{}{
 		"password": password,
 	}
