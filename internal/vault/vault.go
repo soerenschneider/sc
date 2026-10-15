@@ -1480,3 +1480,39 @@ func (c *VaultClient) TransitDecrypt(ctx context.Context, mount, keyName, cipher
 
 	return plaintext, nil
 }
+
+// ErrPolicyNotFound is returned if the requested ACL policy does not exist.
+var ErrPolicyNotFound = errors.New("policy not found")
+
+// PolicyList returns the names of all ACL policies, sorted alphabetically.
+func (c *VaultClient) PolicyList(ctx context.Context) ([]string, error) {
+	policies, err := c.client.Sys().ListPoliciesWithContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list policies: %w", err)
+	}
+
+	sort.Strings(policies)
+	return policies, nil
+}
+
+// rootPolicyRules is displayed for the built-in root policy, which can not be read as it has no rules.
+const rootPolicyRules = "# The root policy is built into Vault and grants all capabilities on all paths.\n# It can not be read or modified."
+
+// PolicyRead returns the rules of the ACL policy with the given name.
+func (c *VaultClient) PolicyRead(ctx context.Context, name string) (string, error) {
+	if name == "root" {
+		return rootPolicyRules, nil
+	}
+
+	rules, err := c.client.Sys().GetPolicyWithContext(ctx, name)
+	if err != nil {
+		return "", fmt.Errorf("failed to read policy %q: %w", name, err)
+	}
+
+	// the client returns an empty policy without error if vault responds with 404
+	if rules == "" {
+		return "", fmt.Errorf("%w: %q", ErrPolicyNotFound, name)
+	}
+
+	return rules, nil
+}
