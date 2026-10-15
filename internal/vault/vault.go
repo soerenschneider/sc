@@ -154,6 +154,15 @@ func (c *VaultClient) LookupToken(ctx context.Context) (*vault.Secret, error) {
 	return c.client.Auth().Token().LookupSelfWithContext(ctx)
 }
 
+func (c *VaultClient) RevokeSelfToken(ctx context.Context) error {
+	return c.client.Auth().Token().RevokeSelfWithContext(ctx, "")
+}
+
+// RenewSelfToken renews the current token. An increment of 0 lets Vault apply the default TTL.
+func (c *VaultClient) RenewSelfToken(ctx context.Context, increment time.Duration) (*vault.Secret, error) {
+	return c.client.Auth().Token().RenewSelfWithContext(ctx, int(increment.Seconds()))
+}
+
 func (c *VaultClient) AwsGenCreds(ctx context.Context, mount string, role string, ttl string) (*AwsCredentials, error) {
 	path := fmt.Sprintf("%s/creds/%s", mount, role)
 

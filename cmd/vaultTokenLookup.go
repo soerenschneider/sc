@@ -37,28 +37,33 @@ It attempts to authenticate using the following sources (in order):
 			log.Fatal().Err(err).Msg("could not lookup")
 		}
 
-		// don't leak token
-		delete(secret.Data, "id")
-
-		// re-format times
-		var problematicColumns []string
-		expiry, ok := secret.Data["expire_time"]
-		if ok && expiry != nil {
-			updatedValue, parsedTime := reformatTimestamp(expiry.(string))
-			if parsedTime != nil && time.Now().After(*parsedTime) {
-				problematicColumns = append(problematicColumns, "expire_time")
-			}
-			secret.Data["expire_time"] = updatedValue
-		}
-
-		issue, ok := secret.Data["issue_time"]
-		if ok && issue != nil {
-			updatedValue, _ := reformatTimestamp(issue.(string))
-			secret.Data["issue_time"] = updatedValue
-		}
-
-		tui.PrintMapOutput(secret.Data, problematicColumns...)
+		printTokenInfo(secret.Data)
 	},
+}
+
+// printTokenInfo prints the data of a token lookup without leaking the token itself.
+func printTokenInfo(data map[string]any) {
+	// don't leak token
+	delete(data, "id")
+
+	// re-format times
+	var problematicColumns []string
+	expiry, ok := data["expire_time"]
+	if ok && expiry != nil {
+		updatedValue, parsedTime := reformatTimestamp(expiry.(string))
+		if parsedTime != nil && time.Now().After(*parsedTime) {
+			problematicColumns = append(problematicColumns, "expire_time")
+		}
+		data["expire_time"] = updatedValue
+	}
+
+	issue, ok := data["issue_time"]
+	if ok && issue != nil {
+		updatedValue, _ := reformatTimestamp(issue.(string))
+		data["issue_time"] = updatedValue
+	}
+
+	tui.PrintMapOutput(data, problematicColumns...)
 }
 
 func reformatTimestamp(timestamp string) (string, *time.Time) {
