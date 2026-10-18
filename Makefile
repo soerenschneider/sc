@@ -2,7 +2,6 @@ BUILD_DIR = builds
 MODULE = github.com/soerenschneider/sc
 BINARY_NAME = sc
 CHECKSUM_FILE = $(BUILD_DIR)/checksum.sha256
-SIGNATURE_KEYFILE = ~/.signify/github.sec
 DOCKER_PREFIX = ghcr.io/soerenschneider
 
 generate:
@@ -23,14 +22,26 @@ clean:
 build: version-info generate
 	CGO_ENABLED=1 go build -ldflags="-w -X '$(MODULE)/internal.BuildVersion=${VERSION}' -X '$(MODULE)/internal.CommitHash=${COMMIT_HASH}'" -o $(BINARY_NAME) .
 
-release: clean version-info cross-build
-	sha256sum $(BUILD_DIR)/sc-* > $(CHECKSUM_FILE)
+release: clean version-info cross-build checksums
 
-signed-release: release
-	pass keys/signify/github | signify -S -s $(SIGNATURE_KEYFILE) -m $(CHECKSUM_FILE)
-	gh-upload-assets -o soerenschneider -r sc -f ~/.gh-token builds
+checksums: version-info
+	{ echo "# version: $(VERSION)"; sha256sum $(BUILD_DIR)/sc-*; } > $(CHECKSUM_FILE)
 
-cross-build: version-info
+# Signs keyless and writes $(CHECKSUM_FILE).sigstore.json. sc only trusts these
+# signatures when made by the release workflow, so this only runs in CI.
+sign:
+	@if [ "$$CI" != "true" ]; then \
+		echo "keyless signatures are only trusted from the release workflow"; false; \
+	fi
+	cosign sign-blob --yes --bundle $(CHECKSUM_FILE).sigstore.json $(CHECKSUM_FILE)
+
+cross-build: build-linux build-darwin
+
+# The darwin binary needs cgo for the keychain, so it can only be built on macOS.
+build-darwin: version-info
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=1      go build -ldflags="-w -X '$(MODULE)/internal.BuildVersion=${VERSION}' -X '$(MODULE)/internal.CommitHash=${COMMIT_HASH}'" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64   .
+
+build-linux: version-info
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0       go build -ldflags="-w -X '$(MODULE)/internal.BuildVersion=${VERSION}' -X '$(MODULE)/internal.CommitHash=${COMMIT_HASH}'" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64    .
 	GOOS=linux GOARCH=arm GOARM=6 CGO_ENABLED=0 go build -ldflags="-w -X '$(MODULE)/internal.BuildVersion=${VERSION}' -X '$(MODULE)/internal.CommitHash=${COMMIT_HASH}'" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-armv6    .
 	GOOS=linux GOARCH=arm64 CGO_ENABLED=0       go build -ldflags="-w -X '$(MODULE)/internal.BuildVersion=${VERSION}' -X '$(MODULE)/internal.CommitHash=${COMMIT_HASH}'" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-aarch64  .

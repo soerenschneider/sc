@@ -143,7 +143,7 @@ func conditionallyLogLatestReleaseInfo(cmd *cobra.Command) {
 }
 
 func isDisableTelemetry(cmd *cobra.Command) bool {
-	if cmd.Use == "version" || cmd.Use == "help" || cmd.Use == "docs" {
+	if cmd.Use == "version" || cmd.Use == "help" || cmd.Use == "docs" || cmd == updateCmd {
 		return true
 	}
 
