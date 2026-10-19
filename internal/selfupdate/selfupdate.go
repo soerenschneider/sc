@@ -3,6 +3,7 @@ package selfupdate
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -27,6 +28,8 @@ const (
 
 	binaryName    = "sc"
 	checksumAsset = "checksum.sha256"
+	// Release binaries are published gzipped.
+	compressedSuffix = ".gz"
 
 	versionPrefix = "# version: "
 )
@@ -142,6 +145,7 @@ func Update(ctx context.Context, client Client, release *Release, exe string, ve
 	if err != nil {
 		return err
 	}
+	name += compressedSuffix
 	binAsset, ok := release.asset(name)
 	if !ok {
 		return fmt.Errorf("release %s has no asset %s", release.TagName, name)
@@ -171,6 +175,15 @@ func Update(ctx context.Context, client Client, release *Release, exe string, ve
 		return err
 	}
 
+	compressed, err := fetch(ctx, client, binAsset.BrowserDownloadURL, maxAssetSize)
+	if err != nil {
+		return err
+	}
+	sum := sha256.Sum256(compressed)
+	if gotSum := hex.EncodeToString(sum[:]); gotSum != wantSum {
+		return fmt.Errorf("checksum mismatch for %s: expected %s, got %s", name, wantSum, gotSum)
+	}
+
 	tmp, err := os.CreateTemp(filepath.Dir(exe), "."+filepath.Base(exe)+".update-*")
 	if err != nil {
 		return err
@@ -178,16 +191,13 @@ func Update(ctx context.Context, client Client, release *Release, exe string, ve
 	// No-op once the rename succeeded.
 	defer os.Remove(tmp.Name())
 
-	gotSum, err := download(ctx, client, binAsset.BrowserDownloadURL, tmp)
+	// The download is only decompressed once its checksum is verified.
+	err = decompress(tmp, compressed)
 	if closeErr := tmp.Close(); err == nil {
 		err = closeErr
 	}
 	if err != nil {
-		return err
-	}
-
-	if gotSum != wantSum {
-		return fmt.Errorf("checksum mismatch for %s: expected %s, got %s", name, wantSum, gotSum)
+		return fmt.Errorf("could not decompress %s: %w", name, err)
 	}
 
 	if err := os.Chmod(tmp.Name(), info.Mode().Perm()); err != nil {
@@ -212,36 +222,47 @@ func get(ctx context.Context, client Client, url string) (io.ReadCloser, error) 
 	return resp.Body, nil
 }
 
-func download(ctx context.Context, client Client, url string, w io.Writer) (string, error) {
-	body, err := get(ctx, client, url)
+// decompress writes the gzipped binary to w. The gzip reader verifies the
+// stream's CRC, so truncated downloads fail.
+func decompress(w io.Writer, compressed []byte) error {
+	zr, err := gzip.NewReader(bytes.NewReader(compressed))
 	if err != nil {
-		return "", err
+		return err
 	}
-	defer body.Close()
-
-	h := sha256.New()
-	if _, err := io.Copy(io.MultiWriter(w, h), body); err != nil {
-		return "", err
+	n, err := io.Copy(w, io.LimitReader(zr, maxBinarySize+1))
+	if err != nil {
+		return err
 	}
-	return hex.EncodeToString(h.Sum(nil)), nil
+	if n > maxBinarySize {
+		return fmt.Errorf("binary exceeds %d bytes", maxBinarySize)
+	}
+	return zr.Close()
 }
 
-// Large enough for checksum files and signatures, including sigstore bundles.
-const maxChecksumSize = 64 * 1024
+const (
+	// Large enough for checksum files and signatures, including sigstore
+	// bundles.
+	maxChecksumSize = 64 * 1024
+	// Limits for the compressed download and the binary, which are far above
+	// the ~15 and ~40 MB of today's releases.
+	maxAssetSize  = 256 << 20
+	maxBinarySize = 512 << 20
+)
 
-func fetchSmall(ctx context.Context, client Client, url string) ([]byte, error) {
+// fetch downloads url into memory, failing if it exceeds limit bytes.
+func fetch(ctx context.Context, client Client, url string, limit int64) ([]byte, error) {
 	body, err := get(ctx, client, url)
 	if err != nil {
 		return nil, err
 	}
 	defer body.Close()
 
-	data, err := io.ReadAll(io.LimitReader(body, maxChecksumSize+1))
+	data, err := io.ReadAll(io.LimitReader(body, limit+1))
 	if err != nil {
 		return nil, err
 	}
-	if len(data) > maxChecksumSize {
-		return nil, fmt.Errorf("%s exceeds %d bytes", url, maxChecksumSize)
+	if int64(len(data)) > limit {
+		return nil, fmt.Errorf("%s exceeds %d bytes", url, limit)
 	}
 	return data, nil
 }
@@ -257,7 +278,7 @@ func fetchVerified(ctx context.Context, client Client, release *Release, verifie
 	if !ok {
 		return nil, fmt.Errorf("release %s has no asset %s", release.TagName, checksumAsset)
 	}
-	sums, err := fetchSmall(ctx, client, sumAsset.BrowserDownloadURL)
+	sums, err := fetch(ctx, client, sumAsset.BrowserDownloadURL, maxChecksumSize)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +294,7 @@ func fetchVerified(ctx context.Context, client Client, release *Release, verifie
 		}
 		sig, fetched := sigs[sigAsset.Name]
 		if !fetched {
-			sig, err = fetchSmall(ctx, client, sigAsset.BrowserDownloadURL)
+			sig, err = fetch(ctx, client, sigAsset.BrowserDownloadURL, maxChecksumSize)
 			if err == nil {
 				sigs[sigAsset.Name] = sig
 			}

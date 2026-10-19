@@ -151,8 +151,8 @@ jobs:
           path: builds
           merge-multiple: true
 
-      - name: Create checksums
-        run: make checksums VERSION="$TAG"
+      - name: Compress binaries and create checksums
+        run: make compress checksums VERSION="$TAG"
         env:
           TAG: ${{ needs.release-please.outputs.tag }}
 
@@ -162,7 +162,7 @@ jobs:
         run: make sign
 
       - name: Upload release assets
-        run: gh release upload "$TAG" builds/sc-* builds/checksum.sha256 builds/checksum.sha256.sigstore.json --clobber
+        run: gh release upload "$TAG" builds/sc-*.gz builds/checksum.sha256 builds/checksum.sha256.sigstore.json --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.release-please.outputs.tag }}

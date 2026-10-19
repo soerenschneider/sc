@@ -7,7 +7,7 @@ RUN go mod download
 COPY ./ ./
 ENV CGO_ENABLED=0
 RUN go mod download
-RUN CGO_ENABLED=0 go build -o /sc .
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /sc .
 
 
 FROM gcr.io/distroless/static AS final

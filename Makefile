@@ -4,6 +4,10 @@ BINARY_NAME = sc
 CHECKSUM_FILE = $(BUILD_DIR)/checksum.sha256
 DOCKER_PREFIX = ghcr.io/soerenschneider
 
+# -s -w strip the symbol table and DWARF data, which stack traces do not need,
+# and -trimpath removes local paths from the binary.
+GO_BUILD = go build -trimpath -ldflags="-s -w -X '$(MODULE)/internal.BuildVersion=$(VERSION)' -X '$(MODULE)/internal.CommitHash=$(COMMIT_HASH)'"
+
 generate:
 	go generate  ./...
 
@@ -20,9 +24,16 @@ clean:
 	rm -rf ./$(BUILD_DIR)
 
 build: version-info generate
-	CGO_ENABLED=1 go build -ldflags="-w -X '$(MODULE)/internal.BuildVersion=${VERSION}' -X '$(MODULE)/internal.CommitHash=${COMMIT_HASH}'" -o $(BINARY_NAME) .
+	CGO_ENABLED=1 $(GO_BUILD) -o $(BINARY_NAME) .
 
-release: clean version-info cross-build checksums
+release: clean version-info cross-build compress checksums
+
+# Release binaries are published gzipped, which sc update decompresses with
+# the standard library. -n leaves out name and timestamp for reproducibility.
+compress:
+	for f in $(BUILD_DIR)/$(BINARY_NAME)-*; do \
+		case "$$f" in *.gz) ;; *) gzip -9 -n -f "$$f" ;; esac; \
+	done
 
 checksums: version-info
 	{ echo "# version: $(VERSION)"; sha256sum $(BUILD_DIR)/sc-*; } > $(CHECKSUM_FILE)
@@ -39,12 +50,12 @@ cross-build: build-linux build-darwin
 
 # The darwin binary needs cgo for the keychain, so it can only be built on macOS.
 build-darwin: version-info
-	GOOS=darwin GOARCH=arm64 CGO_ENABLED=1      go build -ldflags="-w -X '$(MODULE)/internal.BuildVersion=${VERSION}' -X '$(MODULE)/internal.CommitHash=${COMMIT_HASH}'" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64   .
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=1      $(GO_BUILD) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64   .
 
 build-linux: version-info
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0       go build -ldflags="-w -X '$(MODULE)/internal.BuildVersion=${VERSION}' -X '$(MODULE)/internal.CommitHash=${COMMIT_HASH}'" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64    .
-	GOOS=linux GOARCH=arm GOARM=6 CGO_ENABLED=0 go build -ldflags="-w -X '$(MODULE)/internal.BuildVersion=${VERSION}' -X '$(MODULE)/internal.CommitHash=${COMMIT_HASH}'" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-armv6    .
-	GOOS=linux GOARCH=arm64 CGO_ENABLED=0       go build -ldflags="-w -X '$(MODULE)/internal.BuildVersion=${VERSION}' -X '$(MODULE)/internal.CommitHash=${COMMIT_HASH}'" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-aarch64  .
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0       $(GO_BUILD) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64    .
+	GOOS=linux GOARCH=arm GOARM=6 CGO_ENABLED=0 $(GO_BUILD) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-armv6    .
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=0       $(GO_BUILD) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-aarch64  .
 
 docker-build:
 	docker build -t "$(DOCKER_PREFIX)/sc-server" .

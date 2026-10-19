@@ -2,6 +2,7 @@ package selfupdate
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -110,19 +111,34 @@ func TestUpdate(t *testing.T) {
 	verifiers := []Verifier{hashVerifier{}}
 
 	newBinary := []byte("new binary")
-	sum := sha256.Sum256(newBinary)
-	release := func(signedVersion, tag string) (*Release, fakeClient) {
-		sums := []byte(fmt.Sprintf("%s%s\n%s  builds/%s\n", versionPrefix, signedVersion, hex.EncodeToString(sum[:]), name))
+	// releaseWith publishes asset as the gzipped binary, with a valid
+	// signature over its checksum.
+	releaseWith := func(signedVersion, tag string, asset []byte) (*Release, fakeClient) {
+		sum := sha256.Sum256(asset)
+		sums := []byte(fmt.Sprintf("%s%s\n%s  builds/%s.gz\n", versionPrefix, signedVersion, hex.EncodeToString(sum[:]), name))
 		client := fakeClient{
-			"https://example.com/bin": newBinary,
+			"https://example.com/bin": asset,
 			"https://example.com/sum": sums,
 			"https://example.com/sig": hashVerifier{}.sign(sums),
 		}
 		return &Release{TagName: tag, Assets: []Asset{
-			{Name: name, BrowserDownloadURL: "https://example.com/bin"},
+			{Name: name + ".gz", BrowserDownloadURL: "https://example.com/bin"},
 			{Name: checksumAsset, BrowserDownloadURL: "https://example.com/sum"},
 			{Name: hashVerifier{}.SignatureAsset(), BrowserDownloadURL: "https://example.com/sig"},
 		}}, client
+	}
+	gzipped := gzipBytes(t, newBinary)
+	release := func(signedVersion, tag string) (*Release, fakeClient) {
+		return releaseWith(signedVersion, tag, gzipped)
+	}
+	assertUnchanged := func(t *testing.T, exe string) {
+		t.Helper()
+		if got, _ := os.ReadFile(exe); string(got) != "old binary" {
+			t.Errorf("binary was replaced, got %q", got)
+		}
+		if entries, _ := os.ReadDir(filepath.Dir(exe)); len(entries) != 1 {
+			t.Errorf("temporary files left behind: %v", entries)
+		}
 	}
 
 	setup := func(t *testing.T) string {
@@ -161,6 +177,43 @@ func TestUpdate(t *testing.T) {
 		}
 		if got, _ := os.ReadFile(exe); string(got) != "old binary" {
 			t.Errorf("binary was replaced despite failed verification")
+		}
+	})
+
+	t.Run("checksum mismatch", func(t *testing.T) {
+		exe := setup(t)
+		r, client := release("v1.12.0", "v1.12.0")
+		client["https://example.com/bin"] = gzipBytes(t, []byte("evil binary"))
+		if err := Update(context.Background(), client, r, exe, verifiers); err == nil || !strings.Contains(err.Error(), "checksum mismatch") {
+			t.Fatalf("expected checksum mismatch, got %v", err)
+		}
+		assertUnchanged(t, exe)
+	})
+
+	t.Run("truncated archive", func(t *testing.T) {
+		exe := setup(t)
+		r, client := releaseWith("v1.12.0", "v1.12.0", gzipped[:len(gzipped)-4])
+		if err := Update(context.Background(), client, r, exe, verifiers); err == nil || !strings.Contains(err.Error(), "could not decompress") {
+			t.Fatalf("expected decompression error, got %v", err)
+		}
+		assertUnchanged(t, exe)
+	})
+
+	t.Run("not gzipped", func(t *testing.T) {
+		exe := setup(t)
+		r, client := releaseWith("v1.12.0", "v1.12.0", newBinary)
+		if err := Update(context.Background(), client, r, exe, verifiers); err == nil || !strings.Contains(err.Error(), "could not decompress") {
+			t.Fatalf("expected decompression error, got %v", err)
+		}
+		assertUnchanged(t, exe)
+	})
+
+	t.Run("only uncompressed asset", func(t *testing.T) {
+		exe := setup(t)
+		r, client := release("v1.12.0", "v1.12.0")
+		r.Assets[0].Name = name
+		if err := Update(context.Background(), client, r, exe, verifiers); err == nil || !strings.Contains(err.Error(), "has no asset "+name+".gz") {
+			t.Fatalf("expected missing asset, got %v", err)
 		}
 	})
 
@@ -259,4 +312,17 @@ func TestDefaultVerifiers(t *testing.T) {
 			t.Errorf("match(%s) = %v, want %v", subject, got, want)
 		}
 	}
+}
+
+func gzipBytes(t *testing.T, data []byte) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	zw := gzip.NewWriter(&buf)
+	if _, err := zw.Write(data); err != nil {
+		t.Fatal(err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
 }
