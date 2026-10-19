@@ -35,6 +35,8 @@ const (
 type AwsCredentials struct {
 	AccessKeyID     string
 	SecretAccessKey string
+	// SessionToken is only set for assumed_role and federation_token credentials.
+	SessionToken string
 }
 
 type MfaCreateMethodRequest struct {
@@ -185,9 +187,12 @@ func (c *VaultClient) AwsGenCreds(ctx context.Context, mount string, role string
 		return nil, fmt.Errorf("unexpected response structure: %#v", secret.Data)
 	}
 
+	sessionToken, _ := secret.Data["security_token"].(string)
+
 	return &AwsCredentials{
 		AccessKeyID:     accessKey,
 		SecretAccessKey: secretKey,
+		SessionToken:    sessionToken,
 	}, nil
 }
 

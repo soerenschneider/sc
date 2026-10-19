@@ -36,6 +36,8 @@ It requires appropriate configuration and permissions set in Vault to access the
 		profile := pkg.GetString(cmd, vaultAwsProfile)
 		role := pkg.GetString(cmd, vaultRoleName)
 		ttl := pkg.GetInt(cmd, vaultTtl)
+		noWait := pkg.MustGetBool(cmd, vaultAwsNoWait)
+		waitTimeout := pkg.GetDuration(cmd, vaultAwsWaitTimeout)
 
 		if mount == "" {
 			mount = prompt.Mount(cmd.Context(), client, "aws")
@@ -97,24 +99,47 @@ It requires appropriate configuration and permissions set in Vault to access the
 				outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("secret_key")
 				fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), creds.SecretAccessKey))
 
+				if creds.SessionToken != "" {
+					outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("session_token")
+					fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), creds.SessionToken))
+				}
+
 				log.Fatal().Err(err).Msg("could not write credentials to file")
 			}
-		}
 
-		if err := spinner.New().
-			Type(spinner.Line).
-			Action(func() {
-				time.Sleep(5 * time.Second)
-			}).
-			Title("Waiting for credentials to become effective").
-			Type(spinner.Dots).
-			Run(); err != nil {
-			log.Warn().Err(err).Msg("could not display spinner")
+			if !noWait {
+				waitForAwsCredentials(*creds, waitTimeout)
+			}
 		}
 
 		var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("Wrote credentials")
 		fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), vaultAwsDefaultCredentialsFilename))
 	},
+}
+
+// waitForAwsCredentials blocks until AWS accepts the freshly generated
+// credentials. Not succeeding is not fatal, as the credentials have already
+// been written and will most likely work a bit later.
+func waitForAwsCredentials(creds vault.AwsCredentials, timeout time.Duration) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	var arn string
+	if err := spinner.New().
+		ActionWithErr(func(ctx context.Context) error {
+			var err error
+			arn, err = vault.WaitForAwsCredentials(ctx, creds, time.Second)
+			return err
+		}).
+		Title("Waiting for credentials to become effective").
+		Context(ctx).
+		Type(spinner.Dots).
+		Run(); err != nil {
+		log.Warn().Err(err).Msgf("credentials not accepted by AWS after %s, they may need a bit longer to become effective", timeout)
+		return
+	}
+
+	log.Info().Msgf("Credentials are effective, authenticated as %s", arn)
 }
 
 func updateAwsCredentialsFile(profile string, creds vault.AwsCredentials) error {
@@ -146,6 +171,12 @@ func updateAwsCredentialsFile(profile string, creds vault.AwsCredentials) error 
 	}
 	section.Key("aws_access_key_id").SetValue(creds.AccessKeyID)
 	section.Key("aws_secret_access_key").SetValue(creds.SecretAccessKey)
+	if creds.SessionToken != "" {
+		section.Key("aws_session_token").SetValue(creds.SessionToken)
+	} else {
+		// Don't leave a stale token from earlier credentials behind.
+		section.DeleteKey("aws_session_token")
+	}
 
 	if err := cfg.SaveTo(credsPath); err != nil {
 		return fmt.Errorf("failed to write credentials file: %w", err)
@@ -160,4 +191,6 @@ func init() {
 	vaultAwsGenerateCredentialsCmd.Flags().IntP(vaultTtl, "t", vaultAwsDefaultTtl, "Specify how long the credentials should be valid for in seconds")
 	vaultAwsGenerateCredentialsCmd.Flags().StringP(vaultRoleName, "r", "", "Specifies the name of the role to generate credentials for")
 	vaultAwsGenerateCredentialsCmd.Flags().StringP(vaultAwsProfile, "p", vaultAwsDefaultProfile, "Specifies the name of the AWS credentials profile section")
+	vaultAwsGenerateCredentialsCmd.Flags().Bool(vaultAwsNoWait, false, "Do not wait for the credentials to become effective")
+	vaultAwsGenerateCredentialsCmd.Flags().Duration(vaultAwsWaitTimeout, vaultAwsDefaultWaitTimeout, "How long to wait for the credentials to become effective")
 }

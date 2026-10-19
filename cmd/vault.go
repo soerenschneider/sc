@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"time"
+
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/spf13/cobra"
 )
@@ -17,6 +19,9 @@ const (
 	vaultAwsDefaultTtl                 = 3600
 	vaultAwsDefaultCredentialsFilename = "~/.aws/credentials" //nolint G101
 	vaultAwsDefaultProfile             = "default"
+	vaultAwsNoWait                     = "no-wait"
+	vaultAwsWaitTimeout                = "wait-timeout"
+	vaultAwsDefaultWaitTimeout         = 30 * time.Second
 
 	vaultPrivateKeyFile  = "key-file"
 	vaultCertificateFile = "cert-file"
