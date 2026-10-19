@@ -75,29 +75,6 @@ func readValueOrFile(value, file, field string) (string, error) {
 	return value, nil
 }
 
-func readValueOrFileOrEnv(value, file, env, field string) (string, error) {
-	if value != "" && file != "" && env != "" {
-		return "", fmt.Errorf("%s, %s-file and %s-env are mutually exclusive", field, field, field)
-	}
-
-	if file != "" {
-		data, err := os.ReadFile(file)
-		if err != nil {
-			return "", fmt.Errorf("failed reading %s-file: %w", field, err)
-		}
-		return strings.TrimSpace(string(data)), nil
-	}
-
-	if env != "" {
-		data := os.Getenv(env)
-		if data != "" {
-			return data, nil
-		}
-	}
-
-	return value, nil
-}
-
 func parseVaultApproleConfig(cmd *cobra.Command) (*vault.VaultApproleConfig, error) {
 	roleID, _ := cmd.Flags().GetString(vaultApproleRoleId)
 	roleIDFile, _ := cmd.Flags().GetString(vaultApproleRoleIdFile)
