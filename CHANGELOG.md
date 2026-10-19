@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.12.0](https://github.com/soerenschneider/sc/compare/v1.11.0...v1.12.0) (2026-10-18)
+
+
+### Features
+
+* **tf:** add terragrunt subcommands ([fd8e695](https://github.com/soerenschneider/sc/commit/fd8e695394bf3f57124af7596beb5e9a8cef3ca1))
+* **update:** add self-update command with keyless cosign verification ([2fd03b9](https://github.com/soerenschneider/sc/commit/2fd03b9d1b4437b20cc75f6e4ddb6a64da2bb61f))
+* **vault:** add approle login and list-accessors subcommands ([405d24e](https://github.com/soerenschneider/sc/commit/405d24e7cbc7ad0feab986fe3a3388abf2c465bf))
+* **vault:** add policy read subcommand ([ad22f5c](https://github.com/soerenschneider/sc/commit/ad22f5cbbcb8c9e94eeefb9840e1027b8bd216a1))
+* **vault:** add subcommand to delete totp secrets ([a794a94](https://github.com/soerenschneider/sc/commit/a794a942e65ad395704ae56b70c19e06f567714b))
+* **vault:** add token renew and revoke subcommands ([d8c8b03](https://github.com/soerenschneider/sc/commit/d8c8b032d1a4f900bcdc85bed785abfb4a711b30))
+* **vault:** add transit encrypt and decrypt subcommands ([d0da616](https://github.com/soerenschneider/sc/commit/d0da61615dcfed43ece058c1a792f8ad6a0523f3))
+* **vault:** discover mounts and filter by token capabilities ([4a21941](https://github.com/soerenschneider/sc/commit/4a21941db36928a4193e741e2f10b0e45760a5cf))
+* **vault:** select roles interactively for ssh sign and pki issue ([7f5acc7](https://github.com/soerenschneider/sc/commit/7f5acc7c3a77a880fe4858ec82440622973f8bfe))
+
+
+### Bug Fixes
+
+* **pw:** allow cancelling password wipe timeout with ctrl+c ([9c5688b](https://github.com/soerenschneider/sc/commit/9c5688b3399ccf23e18cd5e807742ba4b7ebef85))
+* **vault:** use password endpoint when updating userpass password ([783deb1](https://github.com/soerenschneider/sc/commit/783deb14e2b8b51e868021e103689c22f9589a06))
+
 ## [1.11.0](https://github.com/soerenschneider/sc/compare/v1.10.0...v1.11.0) (2026-08-30)
 
 
