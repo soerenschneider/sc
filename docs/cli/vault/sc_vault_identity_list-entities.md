@@ -1,13 +1,12 @@
 ## sc vault identity list-entities
 
-Manage Vault totp
+List identity entities in Vault
 
 ### Synopsis
 
-The 'token' command group contains subcommands for interacting with Vault tokens.
+Lists the names of all entities managed by the Vault identity system.
 
-This command itself does not perform any actions. Instead, use one of its subcommands
-to inspect or manage tokens.
+Note: Appropriate Vault permissions are required to access identity entity data.
 
 ```
 sc vault identity list-entities [flags]

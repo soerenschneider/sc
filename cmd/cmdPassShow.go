@@ -14,7 +14,11 @@ import (
 
 var passShowCmd = &cobra.Command{
 	Use:   "show",
-	Short: "Interacts with the pass unix password store",
+	Short: "Pick an entry and copy or show its secret",
+	Long: `Pick an entry of the pass password store in a filterable list. By default the
+first line of the entry is copied to the clipboard, with --show the whole entry
+is displayed instead. With --otp, only OTP entries are offered and a one-time
+code is generated.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		useOtp, _ := pkg.GetBool(cmd, passOtp)
 		otpPrefix := pkg.GetString(cmd, passOtpPrefix)

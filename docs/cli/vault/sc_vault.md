@@ -36,12 +36,16 @@ sc vault [flags]
 ### SEE ALSO
 
 * [sc](sc.md)	 - Universal Command Line Interface for soeren.cloud
+* [sc vault approle](sc_vault_approle.md)	 - Manage Vault approle auth
 * [sc vault aws](sc_vault_aws.md)	 - Manage AWS secret engine
 * [sc vault identity](sc_vault_identity.md)	 - Manage Vault identities
 * [sc vault login](sc_vault_login.md)	 - Authenticate with a Vault server using username and password
 * [sc vault pki](sc_vault_pki.md)	 - Manages the Vault PKI secret engine
+* [sc vault policy](sc_vault_policy.md)	 - Inspect Vault ACL policies
+* [sc vault secret](sc_vault_secret.md)	 - Manages the Vault KV2 secret engine
 * [sc vault ssh](sc_vault_ssh.md)	 - Manages the Vault SSH secret engine
 * [sc vault token](sc_vault_token.md)	 - Manage Vault tokens
-* [sc vault totp](sc_vault_totp.md)	 - Manage Vault totp
+* [sc vault totp](sc_vault_totp.md)	 - Manage Vault TOTP MFA methods and secrets
+* [sc vault transit](sc_vault_transit.md)	 - Manage Vault transit secret engine
 * [sc vault update-password](sc_vault_update-password.md)	 - Update the password for Vault userpass authentication method
 

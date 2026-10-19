@@ -20,10 +20,10 @@ const (
 
 var linksCmd = &cobra.Command{
 	Use:   "links",
-	Short: "Interact with Linkding for querying and managing links",
+	Short: "Manage bookmarks in Linkding",
 	Long: `The 'links' command is the entry point for interacting with Linkding.
 
-Use subcommands to query, tail, or manage links stored in Linkding.
+Use subcommands to add and search bookmarks and list tags stored in Linkding.
 
 Examples:
   sc links query -q='#example-tag'   # Query links with specific filters`,

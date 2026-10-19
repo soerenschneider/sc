@@ -1,13 +1,13 @@
 ## sc vault totp generate-method
 
-Manage Vault totp
+Create a TOTP MFA method
 
 ### Synopsis
 
-The 'token' command group contains subcommands for interacting with Vault tokens.
+Creates a TOTP MFA method in Vault and prints its id.
 
-This command itself does not perform any actions. Instead, use one of its subcommands
-to inspect or manage tokens.
+Issuer, method name and algorithm may be passed as flags. Anything that is not
+passed is prompted for interactively.
 
 ```
 sc vault totp generate-method [flags]
@@ -32,5 +32,5 @@ sc vault totp generate-method [flags]
 
 ### SEE ALSO
 
-* [sc vault totp](sc_vault_totp.md)	 - Manage Vault totp
+* [sc vault totp](sc_vault_totp.md)	 - Manage Vault TOTP MFA methods and secrets
 

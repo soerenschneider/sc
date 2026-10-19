@@ -1,13 +1,10 @@
 ## sc vault totp list-methods
 
-Manage Vault totp
+List TOTP MFA methods
 
 ### Synopsis
 
-The 'token' command group contains subcommands for interacting with Vault tokens.
-
-This command itself does not perform any actions. Instead, use one of its subcommands
-to inspect or manage tokens.
+Lists the ids of all TOTP MFA methods configured in Vault.
 
 ```
 sc vault totp list-methods [flags]
@@ -29,5 +26,5 @@ sc vault totp list-methods [flags]
 
 ### SEE ALSO
 
-* [sc vault totp](sc_vault_totp.md)	 - Manage Vault totp
+* [sc vault totp](sc_vault_totp.md)	 - Manage Vault TOTP MFA methods and secrets
 

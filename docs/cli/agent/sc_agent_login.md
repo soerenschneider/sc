@@ -11,7 +11,7 @@ sc agent login [flags]
 ```
   -i, --client-id string   OIDC client id (default "sc_agent")
   -h, --help               help for login
-  -p, --provider string    Username for login (default "https://auth.dd.soeren.cloud/realms/soerencloud")
+  -p, --provider string    URL of the OIDC provider (default "https://auth.dd.soeren.cloud/realms/soerencloud")
 ```
 
 ### Options inherited from parent commands

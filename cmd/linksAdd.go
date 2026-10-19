@@ -16,13 +16,12 @@ import (
 var linksAddCmd = &cobra.Command{
 	Use:     "add",
 	Aliases: []string{"a"},
-	Short:   "Interact with VictoriaLogs for querying and managing links",
-	Long: `The 'links' command is the entry point for interacting with VictoriaLogs.
-
-Use subcommands to query, tail, or manage links stored in VictoriaLogs, a high-performance log database.
+	Short:   "Add a bookmark to Linkding",
+	Long: `Add a bookmark to Linkding. If the URL already exists, the bookmark is updated
+instead. Without --url, the URL is prompted for interactively.
 
 Examples:
-  sc links query -q='level="error"'   # Query links with specific filters`,
+  sc links add -u https://example.com --tags go --tags cli`,
 	Run: func(cmd *cobra.Command, args []string) {
 		address := pkg.GetString(cmd, linksAddr)
 

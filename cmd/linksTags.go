@@ -17,13 +17,7 @@ import (
 var linksTagsCmd = &cobra.Command{
 	Use:     "tags",
 	Aliases: []string{"t"},
-	Short:   "Interact with VictoriaLogs for querying and managing links",
-	Long: `The 'links' command is the entry point for interacting with VictoriaLogs.
-
-Use subcommands to query, tail, or manage links stored in VictoriaLogs, a high-performance log database.
-
-Examples:
-  sc links query -q='level="error"'   # Query links with specific filters`,
+	Short:   "List all tags in Linkding",
 	Run: func(cmd *cobra.Command, args []string) {
 		address := pkg.GetString(cmd, linksAddr)
 		token, err := getLinkdingToken(cmd)

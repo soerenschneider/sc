@@ -11,7 +11,7 @@ var vaultAwsCmd = &cobra.Command{
 	Long: `The 'aws' command group contains subcommands for interacting with Vault AWS secret engine.
 
 This command itself does not perform any actions. Instead, use one of its subcommands
-to inspect or manage tokens.`,
+to list roles or generate credentials.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Help()
 	},

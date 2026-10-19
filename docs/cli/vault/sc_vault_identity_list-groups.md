@@ -1,16 +1,12 @@
 ## sc vault identity list-groups
 
-List identity entities in Vault
+List identity groups in Vault
 
 ### Synopsis
 
-The 'list-entities' command is part of the 'identity' command group, which provides 
-tools for managing identity-related resources in Vault.
+Lists the names of all groups managed by the Vault identity system.
 
-This command retrieves and lists all entities currently managed by the Vault identity system.
-It can be used to view entity IDs, names, and associated metadata.
-
-Note: Appropriate Vault permissions are required to access identity entity data.
+Note: Appropriate Vault permissions are required to access identity group data.
 
 ```
 sc vault identity list-groups [flags]

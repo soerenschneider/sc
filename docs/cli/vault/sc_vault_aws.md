@@ -7,7 +7,7 @@ Manage AWS secret engine
 The 'aws' command group contains subcommands for interacting with Vault AWS secret engine.
 
 This command itself does not perform any actions. Instead, use one of its subcommands
-to inspect or manage tokens.
+to list roles or generate credentials.
 
 ```
 sc vault aws [flags]
@@ -16,7 +16,8 @@ sc vault aws [flags]
 ### Options
 
 ```
-  -h, --help   help for aws
+  -h, --help           help for aws
+  -m, --mount string   Path where the AWS secret engine is mounted. If not specified, available mounts are discovered.
 ```
 
 ### Options inherited from parent commands

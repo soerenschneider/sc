@@ -17,16 +17,18 @@ sc vault aws generate-credentials [flags]
 ### Options
 
 ```
-  -p, --aws-profile string   Specifies the name of the AWS credentials profile section (default "default")
-  -h, --help                 help for generate-credentials
-  -m, --mount string         Mount path for the AWS secret engine (default "aws")
-  -r, --role string          Specifies the name of the role to generate credentials for
-  -t, --ttl int              Specify how long the credentials should be valid for in seconds (default 3600)
+  -p, --aws-profile string      Specifies the name of the AWS credentials profile section (default "default")
+  -h, --help                    help for generate-credentials
+      --no-wait                 Do not wait for the credentials to become effective
+  -r, --role string             Specifies the name of the role to generate credentials for
+  -t, --ttl int                 Specify how long the credentials should be valid for in seconds (default 3600)
+      --wait-timeout duration   How long to wait for the credentials to become effective (default 30s)
 ```
 
 ### Options inherited from parent commands
 
 ```
+  -m, --mount string     Path where the AWS secret engine is mounted. If not specified, available mounts are discovered.
       --no-telemetry     Do not perform check for updated version
       --profile string   Profile to use
   -v, --verbose          Print debug logs

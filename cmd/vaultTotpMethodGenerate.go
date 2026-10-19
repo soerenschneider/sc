@@ -22,11 +22,11 @@ var vaultTotpGenerateMethodCmd = &cobra.Command{
 		"method-gen",
 		"method-generate",
 	},
-	Short: "Manage Vault totp",
-	Long: `The 'token' command group contains subcommands for interacting with Vault tokens.
+	Short: "Create a TOTP MFA method",
+	Long: `Creates a TOTP MFA method in Vault and prints its id.
 
-This command itself does not perform any actions. Instead, use one of its subcommands
-to inspect or manage tokens.`,
+Issuer, method name and algorithm may be passed as flags. Anything that is not
+passed is prompted for interactively.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 

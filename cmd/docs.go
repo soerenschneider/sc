@@ -18,32 +18,28 @@ var docsCmd = &cobra.Command{
 	Short:  "Generate CLI docs",
 	Hidden: true,
 	Run: func(cmd *cobra.Command, args []string) {
-		err := os.RemoveAll(docsDir)
-		if err != nil {
+		if err := os.RemoveAll(docsDir); err != nil {
 			log.Fatalf("Failed to remove docs directory: %v", err)
 		}
 
-		err = os.Mkdir(docsDir, 0755)
-		if err != nil {
+		if err := os.Mkdir(docsDir, 0755); err != nil {
 			log.Fatalf("Failed to recreate docs directory: %v", err)
 		}
 
-		agentDocsDir := filepath.Join(docsDir, "agent")
-		if err = os.Mkdir(agentDocsDir, 0755); err != nil {
-			log.Fatalf("Failed to create dir: %v", err)
-		}
+		// every top-level command gets its own directory
+		for _, c := range rootCmd.Commands() {
+			if !c.IsAvailableCommand() || c.Name() == "completion" {
+				continue
+			}
 
-		if err = doc.GenMarkdownTree(agentCmd, agentDocsDir); err != nil {
-			log.Fatalf("Could not generate docs: %v", err)
-		}
+			dir := filepath.Join(docsDir, c.Name())
+			if err := os.Mkdir(dir, 0755); err != nil {
+				log.Fatalf("Failed to create dir: %v", err)
+			}
 
-		vaultDocsDir := filepath.Join(docsDir, "vault")
-		if err = os.Mkdir(vaultDocsDir, 0755); err != nil {
-			log.Fatalf("Failed to create dir: %v", err)
-		}
-
-		if err = doc.GenMarkdownTree(vaultCmd, vaultDocsDir); err != nil {
-			log.Fatalf("Could not generate docs: %v", err)
+			if err := doc.GenMarkdownTree(c, dir); err != nil {
+				log.Fatalf("Could not generate docs for %s: %v", c.Name(), err)
+			}
 		}
 	},
 }

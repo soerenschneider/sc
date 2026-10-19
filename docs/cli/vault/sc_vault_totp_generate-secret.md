@@ -1,13 +1,15 @@
 ## sc vault totp generate-secret
 
-Manage Vault totp
+Generate a TOTP secret for an entity
 
 ### Synopsis
 
-The 'token' command group contains subcommands for interacting with Vault tokens.
+Generates the TOTP secret of an identity entity for a given TOTP MFA method. The
+resulting otpauth URI is printed and displayed as QR code to be scanned with an
+authenticator app.
 
-This command itself does not perform any actions. Instead, use one of its subcommands
-to inspect or manage tokens.
+Method id and entity name may be passed as flags. Anything that is not passed is
+prompted for interactively. Use --force to replace an existing secret.
 
 ```
 sc vault totp generate-secret [flags]
@@ -32,5 +34,5 @@ sc vault totp generate-secret [flags]
 
 ### SEE ALSO
 
-* [sc vault totp](sc_vault_totp.md)	 - Manage Vault totp
+* [sc vault totp](sc_vault_totp.md)	 - Manage Vault TOTP MFA methods and secrets
 

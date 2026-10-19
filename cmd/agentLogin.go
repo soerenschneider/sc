@@ -40,6 +40,6 @@ var agentLoginCmd = &cobra.Command{
 func init() {
 	agentCmd.AddCommand(agentLoginCmd)
 
-	agentLoginCmd.Flags().StringP(scAgentProviderUrl, "p", "https://auth.dd.soeren.cloud/realms/soerencloud", "Username for login")
+	agentLoginCmd.Flags().StringP(scAgentProviderUrl, "p", "https://auth.dd.soeren.cloud/realms/soerencloud", "URL of the OIDC provider")
 	agentLoginCmd.Flags().StringP(scAgentClientID, "i", "sc_agent", "OIDC client id")
 }

@@ -6,14 +6,14 @@ import (
 
 const ()
 
-// vaultLoginCmd represents the vaultLogin command
 var vaultTotpCmd = &cobra.Command{
 	Use:   "totp",
-	Short: "Manage Vault totp",
-	Long: `The 'token' command group contains subcommands for interacting with Vault tokens.
+	Short: "Manage Vault TOTP MFA methods and secrets",
+	Long: `The 'totp' command group contains subcommands for managing TOTP MFA methods and
+the TOTP secrets of identity entities.
 
 This command itself does not perform any actions. Instead, use one of its subcommands
-to inspect or manage tokens.`,
+to inspect or manage TOTP methods and secrets.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Help()
 	},

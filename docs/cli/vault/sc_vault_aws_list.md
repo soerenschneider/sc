@@ -19,13 +19,13 @@ sc vault aws list [flags]
 ### Options
 
 ```
-  -h, --help           help for list
-  -m, --mount string   Mount path for the AWS secret engine (default "aws")
+  -h, --help   help for list
 ```
 
 ### Options inherited from parent commands
 
 ```
+  -m, --mount string     Path where the AWS secret engine is mounted. If not specified, available mounts are discovered.
       --no-telemetry     Do not perform check for updated version
       --profile string   Profile to use
   -v, --verbose          Print debug logs

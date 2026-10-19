@@ -15,11 +15,10 @@ var vaultIdentityListEntitiesCmd = &cobra.Command{
 	Aliases: []string{
 		"list",
 	},
-	Short: "Manage Vault totp",
-	Long: `The 'token' command group contains subcommands for interacting with Vault tokens.
+	Short: "List identity entities in Vault",
+	Long: `Lists the names of all entities managed by the Vault identity system.
 
-This command itself does not perform any actions. Instead, use one of its subcommands
-to inspect or manage tokens.`,
+Note: Appropriate Vault permissions are required to access identity entity data.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 		ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)

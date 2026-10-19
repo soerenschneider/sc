@@ -16,13 +16,13 @@ import (
 var linksQueryCmd = &cobra.Command{
 	Use:     "query",
 	Aliases: []string{"q"},
-	Short:   "Interact with VictoriaLogs for querying and managing links",
-	Long: `The 'links' command is the entry point for interacting with VictoriaLogs.
-
-Use subcommands to query, tail, or manage links stored in VictoriaLogs, a high-performance log database.
+	Short:   "Search bookmarks in Linkding",
+	Long: `Search bookmarks in Linkding and display them in a table. The query uses
+Linkding's search syntax, e.g. #tag to filter by tag. Without --query, the
+query is prompted for interactively, offering the existing tags as suggestions.
 
 Examples:
-  sc links query -q='level="error"'   # Query links with specific filters`,
+  sc links query -q '#golang'`,
 	Run: func(cmd *cobra.Command, args []string) {
 		address := pkg.GetString(cmd, linksAddr)
 		query := pkg.GetString(cmd, linksQuery)

@@ -31,4 +31,6 @@ sc vault token [flags]
 
 * [sc vault](sc_vault.md)	 - Commands for interacting with HashiCorp Vault
 * [sc vault token lookup](sc_vault_token_lookup.md)	 - Lookup and display information about the current Vault token
+* [sc vault token renew](sc_vault_token_renew.md)	 - Try to extend the TTL of the current Vault token
+* [sc vault token revoke](sc_vault_token_revoke.md)	 - Revoke the current Vault token
 

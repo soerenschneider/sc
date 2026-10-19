@@ -16,14 +16,10 @@ var vaultIdentityListGroupsCmd = &cobra.Command{
 	Aliases: []string{
 		"groups",
 	},
-	Short: "List identity entities in Vault",
-	Long: `The 'list-entities' command is part of the 'identity' command group, which provides 
-tools for managing identity-related resources in Vault.
+	Short: "List identity groups in Vault",
+	Long: `Lists the names of all groups managed by the Vault identity system.
 
-This command retrieves and lists all entities currently managed by the Vault identity system.
-It can be used to view entity IDs, names, and associated metadata.
-
-Note: Appropriate Vault permissions are required to access identity entity data.`,
+Note: Appropriate Vault permissions are required to access identity group data.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 		ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)

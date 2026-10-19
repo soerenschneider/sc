@@ -10,7 +10,7 @@ sc vault pki [flags]
 
 ```
   -h, --help           help for pki
-  -m, --mount string   Path where the PKI secret engine is mounted (default "pki")
+  -m, --mount string   Path where the PKI secret engine is mounted. If not specified, available mounts are discovered.
 ```
 
 ### Options inherited from parent commands

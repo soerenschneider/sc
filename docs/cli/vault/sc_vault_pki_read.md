@@ -16,7 +16,7 @@ sc vault pki read [flags]
 ### Options inherited from parent commands
 
 ```
-  -m, --mount string     Path where the PKI secret engine is mounted (default "pki")
+  -m, --mount string     Path where the PKI secret engine is mounted. If not specified, available mounts are discovered.
       --no-telemetry     Do not perform check for updated version
       --profile string   Profile to use
   -v, --verbose          Print debug logs

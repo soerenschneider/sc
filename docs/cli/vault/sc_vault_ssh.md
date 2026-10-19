@@ -10,7 +10,7 @@ sc vault ssh [flags]
 
 ```
   -h, --help           help for ssh
-  -m, --mount string   Path where the SSH secret engine is mounted (default "ssh")
+  -m, --mount string   Path where the SSH secret engine is mounted. If not specified, available mounts are discovered.
 ```
 
 ### Options inherited from parent commands

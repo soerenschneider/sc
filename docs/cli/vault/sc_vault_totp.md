@@ -1,13 +1,14 @@
 ## sc vault totp
 
-Manage Vault totp
+Manage Vault TOTP MFA methods and secrets
 
 ### Synopsis
 
-The 'token' command group contains subcommands for interacting with Vault tokens.
+The 'totp' command group contains subcommands for managing TOTP MFA methods and
+the TOTP secrets of identity entities.
 
 This command itself does not perform any actions. Instead, use one of its subcommands
-to inspect or manage tokens.
+to inspect or manage TOTP methods and secrets.
 
 ```
 sc vault totp [flags]
@@ -30,7 +31,8 @@ sc vault totp [flags]
 ### SEE ALSO
 
 * [sc vault](sc_vault.md)	 - Commands for interacting with HashiCorp Vault
-* [sc vault totp generate-method](sc_vault_totp_generate-method.md)	 - Manage Vault totp
-* [sc vault totp generate-secret](sc_vault_totp_generate-secret.md)	 - Manage Vault totp
-* [sc vault totp list-methods](sc_vault_totp_list-methods.md)	 - Manage Vault totp
+* [sc vault totp delete-secret](sc_vault_totp_delete-secret.md)	 - Delete an entity's TOTP secret
+* [sc vault totp generate-method](sc_vault_totp_generate-method.md)	 - Create a TOTP MFA method
+* [sc vault totp generate-secret](sc_vault_totp_generate-secret.md)	 - Generate a TOTP secret for an entity
+* [sc vault totp list-methods](sc_vault_totp_list-methods.md)	 - List TOTP MFA methods
 

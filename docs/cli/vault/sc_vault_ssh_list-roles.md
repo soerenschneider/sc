@@ -15,7 +15,7 @@ sc vault ssh list-roles [flags]
 ### Options inherited from parent commands
 
 ```
-  -m, --mount string     Path where the SSH secret engine is mounted (default "ssh")
+  -m, --mount string     Path where the SSH secret engine is mounted. If not specified, available mounts are discovered.
       --no-telemetry     Do not perform check for updated version
       --profile string   Profile to use
   -v, --verbose          Print debug logs

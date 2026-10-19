@@ -26,10 +26,10 @@ var vaultApproleCmd = &cobra.Command{
 	Use:     "approle",
 	Aliases: []string{"approles"},
 	Short:   "Manage Vault approle auth",
-	Long: `The 'aws' command group contains subcommands for interacting with Vault AWS secret engine.
+	Long: `The 'approle' command group contains subcommands for the Vault AppRole auth method.
 
 This command itself does not perform any actions. Instead, use one of its subcommands
-to inspect or manage tokens.`,
+to log in or inspect AppRoles.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Help()
 	},
@@ -38,7 +38,7 @@ to inspect or manage tokens.`,
 func init() {
 	vaultCmd.AddCommand(vaultApproleCmd)
 
-	vaultApproleCmd.PersistentFlags().StringP(vaultMountPath, "m", "approle", "Vault mount for userpass auth engine")
+	vaultApproleCmd.PersistentFlags().StringP(vaultMountPath, "m", "approle", "Vault mount of the approle auth method")
 	vaultApproleCmd.PersistentFlags().StringP(vaultApproleRoleId, "i", "", "AppRole role id")
 	vaultApproleCmd.PersistentFlags().StringP(vaultApproleRoleIdFile, "", "", "AppRole role id file")
 	vaultApproleCmd.PersistentFlags().StringP(vaultApproleRoleName, "r", "", "AppRole role name")

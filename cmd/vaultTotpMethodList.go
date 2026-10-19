@@ -15,11 +15,8 @@ var vaultTotpListMethodsCmd = &cobra.Command{
 	Aliases: []string{
 		"list",
 	},
-	Short: "Manage Vault totp",
-	Long: `The 'token' command group contains subcommands for interacting with Vault tokens.
-
-This command itself does not perform any actions. Instead, use one of its subcommands
-to inspect or manage tokens.`,
+	Short: "List TOTP MFA methods",
+	Long:  `Lists the ids of all TOTP MFA methods configured in Vault.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 		ctx, cancel := context.WithTimeout(context.Background(), vaultDefaultTimeout)
