@@ -59,10 +59,10 @@ func CheckDnsServer(endpoints []string) (time.Duration, error) {
 }
 
 type InternetConnectivityOpts struct {
-	DnsRecord           string
-	HttpCheckUrl        string
-	HttpCheckStatusCode int
-	DnsServers          []string
+	DnsRecord           string   `yaml:"dns-record"`
+	HttpCheckUrl        string   `yaml:"http-url"`
+	HttpCheckStatusCode int      `yaml:"http-status-code"`
+	DnsServers          []string `yaml:"dns-servers"`
 }
 
 func CheckInternetConnection(ctx context.Context, opts InternetConnectivityOpts) map[string]ProbeResult {

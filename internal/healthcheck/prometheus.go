@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"sort"
 )
 
 type PrometheusResponse struct {
@@ -65,34 +64,4 @@ func QueryPrometheus(ctx context.Context, query, endpoint string) (map[string]fl
 	}
 
 	return results, nil
-}
-
-func MergePrometheusResults(maps ...map[string]float64) [][]string {
-	// A map to store the merged results, where key is the string, value is a slice of float64 values.
-	merged := make(map[string][]string)
-
-	// Iterate over all input maps
-	for _, m := range maps {
-		// For each map, iterate over its key-value pairs
-		for key, value := range m {
-			merged[key] = append(merged[key], fmt.Sprintf("%.2f", value))
-		}
-	}
-
-	// Prepare the result in the format of [][]any
-	var result [][]string
-
-	// Convert the merged map into a slice of slices of any
-	for key, values := range merged {
-		// Create a row with the key and corresponding values
-		row := []string{key}
-		row = append(row, values...)
-		result = append(result, row)
-	}
-
-	sort.Slice(result, func(i, j int) bool {
-		return result[i][0] < result[j][0]
-	})
-
-	return result
 }

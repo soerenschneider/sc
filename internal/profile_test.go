@@ -52,3 +52,39 @@ func Test_getCommandHierarchy(t *testing.T) {
 		})
 	}
 }
+
+func TestDecode(t *testing.T) {
+	type group struct {
+		Name      string   `yaml:"name"`
+		Endpoints []string `yaml:"endpoints"`
+	}
+	type settings struct {
+		Record string  `yaml:"record"`
+		Groups []group `yaml:"groups"`
+	}
+
+	profileData = Profile{
+		"prod": {
+			"health": {
+				"groups": []any{
+					map[string]any{"name": "ssh", "endpoints": []any{"a:22", "b:22"}},
+				},
+			},
+		},
+	}
+	t.Cleanup(func() { profileData = nil })
+
+	got := settings{Record: "default"}
+	found, err := Decode("health-sub", "prod", &got)
+	if err != nil || !found {
+		t.Fatalf("Decode() = %v, %v, want true, nil", found, err)
+	}
+	want := settings{Record: "default", Groups: []group{{Name: "ssh", Endpoints: []string{"a:22", "b:22"}}}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Decode() decoded %+v, want %+v", got, want)
+	}
+
+	if found, err := Decode("health", "missing", &got); found || err != nil {
+		t.Errorf("Decode() for missing profile = %v, %v, want false, nil", found, err)
+	}
+}

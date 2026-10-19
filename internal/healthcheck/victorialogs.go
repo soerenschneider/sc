@@ -20,24 +20,10 @@ type LogEntry struct {
 	Message   string `json:"_msg"`
 }
 
-func TransformLogs(data []LogEntry) ([]string, [][]string) {
-	headers := []string{
-		"Timestamp",
-		"Message",
-	}
-
-	ret := make([][]string, 0, len(data))
-	for _, logline := range data {
-		ret = append(ret, []string{logline.Timestamp, logline.Message})
-	}
-
-	return headers, ret
-}
-
 type VictorialogsQuery struct {
-	Address string
-	Query   string
-	Limit   int
+	Address string `yaml:"address"`
+	Query   string `yaml:"query"`
+	Limit   int    `yaml:"limit"`
 }
 
 func (q *VictorialogsQuery) GetLimit() int {

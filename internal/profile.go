@@ -85,6 +85,34 @@ func Get(cmdName, profileName, key string) (string, bool) {
 	return "", false
 }
 
+// Decode decodes the most specific section of the profile for the given command into out, allowing commands to
+// read structured settings that can not be expressed as flags. Fields of out that are not present in the section
+// keep their value. It returns false if the profile contains no section for the command.
+func Decode(cmdName, profileName string, out any) (bool, error) {
+	cmd, ok := profileData[profileName]
+	if !ok {
+		return false, nil
+	}
+
+	for _, c := range getCommandHierarchy(cmdName) {
+		section, ok := cmd[c]
+		if !ok {
+			continue
+		}
+
+		data, err := yaml.Marshal(section)
+		if err != nil {
+			return true, err
+		}
+		if err := yaml.Unmarshal(data, out); err != nil {
+			return true, fmt.Errorf("invalid settings for %q in profile %q: %w", c, profileName, err)
+		}
+		return true, nil
+	}
+
+	return false, nil
+}
+
 var ErrProfileNotFound = errors.New("profile not found")
 
 func ApplyFlags(cmdName string, cmd *cobra.Command, profileName string) error {
