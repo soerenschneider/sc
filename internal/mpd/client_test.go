@@ -140,7 +140,7 @@ func TestFormatCommand(t *testing.T) {
 }
 
 func TestDialPassword(t *testing.T) {
-	s := newFakeServer(t, map[string]string{
+	s := newFakeServer(t, map[string]string{ // #nosec:G101
 		`password "secret"`: "",
 		`password "wrong"`:  "ACK [3@0] {password} incorrect password",
 	})

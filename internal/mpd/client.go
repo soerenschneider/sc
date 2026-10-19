@@ -131,7 +131,9 @@ func (c *Client) connect(ctx context.Context) error {
 
 	if c.password != "" {
 		if _, err := c.roundTrip(ctx, "password", c.password); err != nil {
-			c.closeConn()
+			func() {
+				_ = c.closeConn()
+			}()
 			return err
 		}
 	}
@@ -169,7 +171,9 @@ func (c *Client) Command(ctx context.Context, name string, args ...string) ([]Pa
 	if err != nil && isStale(err) {
 		// MPD closes idle connections after its connection_timeout. It does
 		// so before reading our command, so sending it again is safe.
-		c.closeConn()
+		func() {
+			_ = c.closeConn()
+		}()
 		if err := c.connect(ctx); err != nil {
 			return nil, err
 		}
@@ -178,7 +182,9 @@ func (c *Client) Command(ctx context.Context, name string, args ...string) ([]Pa
 	var mpdErr *Error
 	if err != nil && !errors.As(err, &mpdErr) && c.conn != nil {
 		// the connection is in an unknown state now
-		c.closeConn()
+		func() {
+			_ = c.closeConn()
+		}()
 	}
 	return pairs, err
 }
