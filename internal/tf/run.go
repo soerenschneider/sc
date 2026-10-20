@@ -38,6 +38,9 @@ func (r *runner) run() int {
 		die("invalid stack name: %s", r.stack)
 	}
 
+	if r.stack != "" && isDir(r.unitDir(r.stack, r.env)) && !fileExists(filepath.Join(r.unitDir(r.stack, r.env), "terragrunt.hcl")) {
+		die("%s is not a unit: %s", r.rel(r.unitDir(r.stack, r.env)), missingTerragruntHint)
+	}
 	if len(r.listStacks(r.env)) == 0 {
 		die("no such environment: %s (have: %s)", r.env, strings.Join(r.listEnvs(), " "))
 	}

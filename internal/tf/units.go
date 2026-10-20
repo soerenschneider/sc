@@ -29,6 +29,34 @@ func (r *runner) units() [][2]string {
 	return units
 }
 
+// incompleteUnits lists every stacks/<stack>/envs/<env> directory without a
+// terragrunt.hcl as (stack, env). They are no units, but most likely meant to
+// be one, so they are pointed out rather than skipped silently.
+func (r *runner) incompleteUnits() [][2]string {
+	matches, _ := filepath.Glob(filepath.Join(r.stacksDir, "*", "envs", "*"))
+	var incomplete [][2]string
+	for _, envDir := range matches {
+		stack, env := filepath.Base(filepath.Dir(filepath.Dir(envDir))), filepath.Base(envDir)
+		if strings.HasPrefix(stack, ".") || strings.HasPrefix(env, ".") || !isDir(envDir) {
+			continue
+		}
+		if !fileExists(filepath.Join(envDir, "terragrunt.hcl")) {
+			incomplete = append(incomplete, [2]string{stack, env})
+		}
+	}
+	return incomplete
+}
+
+// warnIncompleteUnits warns about every directory that looks like a unit but
+// lacks its terragrunt.hcl.
+func (r *runner) warnIncompleteUnits() {
+	for _, u := range r.incompleteUnits() {
+		warnf("ignoring %s: %s", r.rel(r.unitDir(u[0], u[1])), missingTerragruntHint)
+	}
+}
+
+const missingTerragruntHint = "it has no terragrunt.hcl, add one including tg-state.hcl and tg-settings.hcl like the other units"
+
 func uniqueSorted(values []string) []string {
 	sort.Strings(values)
 	return slices.Compact(values)

@@ -177,7 +177,13 @@ func List(repo string) {
 	r.checkContract()
 
 	whitelist := r.loadWhitelist()
-	for _, env := range r.listEnvs() {
+	incomplete := map[string][]string{}
+	envs := r.listEnvs()
+	for _, u := range r.incompleteUnits() {
+		incomplete[u[1]] = append(incomplete[u[1]], u[0])
+		envs = append(envs, u[1])
+	}
+	for _, env := range uniqueSorted(envs) {
 		lipgloss.Fprintln(os.Stdout, env)
 		for _, s := range r.listStacks(env) {
 			note := ""
@@ -189,6 +195,9 @@ func List(repo string) {
 				}
 			}
 			lipgloss.Fprintln(os.Stdout, "  "+s+note)
+		}
+		for _, s := range uniqueSorted(incomplete[env]) {
+			lipgloss.Fprintln(os.Stdout, "  "+s+errStyle.Render("  no terragrunt.hcl, not a unit"))
 		}
 	}
 }

@@ -128,6 +128,7 @@ func ask(field huh.Field) {
 func (r *runner) wizard() {
 	// 1. Stack
 	if !r.set["stack"] {
+		r.warnIncompleteUnits()
 		var options []huh.Option[string]
 		for _, s := range r.listStacks("") {
 			label := fmt.Sprintf("%s %s", s, dimStyle.Render("("+strings.Join(r.envsOf(s), ", ")+")"))

@@ -228,3 +228,25 @@ func TestGitFreshness(t *testing.T) {
 		t.Errorf("an unreachable remote should fail the fetch, got %v", err)
 	}
 }
+
+func TestIncompleteUnits(t *testing.T) {
+	stacks := filepath.Join(t.TempDir(), "stacks")
+	for _, dir := range []string{"aws-s3/envs/prod", "dyndns/envs/router-ez", "dyndns/envs/.cache", "kubernetes/envs/prod-dd"} {
+		if err := os.MkdirAll(filepath.Join(stacks, dir), 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, f := range []string{"aws-s3/envs/prod/terragrunt.hcl", "kubernetes/envs/prod-dd/terragrunt.hcl", "dyndns/envs/router-ez/main.tf"} {
+		if err := os.WriteFile(filepath.Join(stacks, f), nil, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	r := &runner{stacksDir: stacks}
+	if got, want := r.incompleteUnits(), [][2]string{{"dyndns", "router-ez"}}; !reflect.DeepEqual(got, want) {
+		t.Errorf("incompleteUnits() = %v, want %v", got, want)
+	}
+	if got, want := r.listStacks(""), []string{"aws-s3", "kubernetes"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("listStacks() = %v, want %v", got, want)
+	}
+}
