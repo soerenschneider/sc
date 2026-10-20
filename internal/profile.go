@@ -56,33 +56,66 @@ func getCommandHierarchy(cmd string) []string {
 	return ret
 }
 
+// Get returns the value of key for the given command in the profile, see lookup.
+// Lists are joined with commas.
 func Get(cmdName, profileName, key string) (string, bool) {
-	if cmd, ok := profileData[profileName]; ok {
-		commandHierarchy := getCommandHierarchy(cmdName)
-		for _, c := range commandHierarchy {
-			if section, ok := cmd[c]; ok {
-				switch v := section[key].(type) {
-				case string:
-					return v, true
-				case bool:
-					return strconv.FormatBool(v), true
-				case int:
-					return strconv.Itoa(v), true
-				case float64:
-					return strconv.FormatFloat(v, 'f', -1, 64), true
-				case []interface{}:
-					parts := []string{}
-					for _, item := range v {
-						parts = append(parts, fmt.Sprintf("%v", item))
-					}
-					return strings.Join(parts, ","), true
-				default:
-					return "", false
-				}
-			}
+	value, _, ok := lookup(cmdName, profileName, key)
+	if !ok {
+		return "", false
+	}
+	values, _, ok := toStrings(value)
+	if !ok {
+		return "", false
+	}
+	return strings.Join(values, ","), true
+}
+
+// lookup returns the value of key from the most specific section of the
+// command hierarchy that sets it, e.g. from "vault-login" before "vault", and
+// the name of that section.
+func lookup(cmdName, profileName, key string) (any, string, bool) {
+	cmd, ok := profileData[profileName]
+	if !ok {
+		return nil, "", false
+	}
+	for _, c := range getCommandHierarchy(cmdName) {
+		if value, ok := cmd[c][key]; ok {
+			return value, c, true
 		}
 	}
-	return "", false
+	return nil, "", false
+}
+
+// toStrings converts a scalar or a list of scalars from the profile to strings.
+// isList reports whether value is a list.
+func toStrings(value any) (values []string, isList bool, ok bool) {
+	scalar := func(v any) (string, bool) {
+		switch v := v.(type) {
+		case string:
+			return v, true
+		case bool:
+			return strconv.FormatBool(v), true
+		case int:
+			return strconv.Itoa(v), true
+		case float64:
+			return strconv.FormatFloat(v, 'f', -1, 64), true
+		}
+		return "", false
+	}
+
+	if list, isList := value.([]any); isList {
+		values = make([]string, 0, len(list))
+		for _, item := range list {
+			v, ok := scalar(item)
+			if !ok {
+				return nil, true, false
+			}
+			values = append(values, v)
+		}
+		return values, true, true
+	}
+	v, ok := scalar(value)
+	return []string{v}, false, ok
 }
 
 // Decode decodes the most specific section of the profile for the given command into out, allowing commands to
@@ -115,46 +148,51 @@ func Decode(cmdName, profileName string, out any) (bool, error) {
 
 var ErrProfileNotFound = errors.New("profile not found")
 
+// ApplyFlags sets the flags of cmd that were not given on the command line to
+// the values of the profile, see lookup.
 func ApplyFlags(cmdName string, cmd *cobra.Command, profileName string) error {
 	_, found := profileData[profileName]
 	if !found {
 		return ErrProfileNotFound
 	}
 
-	flagNames := getAllFlagNames(cmd)
-
-	commandHierarchy := getCommandHierarchy(cmdName)
-	var cmdNameFound string
-	for _, c := range commandHierarchy {
-		if cmd, ok := profileData[profileName]; ok {
-			if _, ok := cmd[c]; ok {
-				cmdNameFound = c
-				log.Info().Msgf("Applying settings from parent command %q instead of %q", c, cmdName)
-			}
-		}
-	}
-
-	for _, key := range flagNames {
-		val, ok := Get(cmdNameFound, profileName, key)
+	for _, key := range getAllFlagNames(cmd) {
+		value, section, ok := lookup(cmdName, profileName, key)
 		if !ok {
 			continue
 		}
 
-		flag := cmd.Flags().Lookup(key)
-		if flag != nil && !cmd.Flags().Changed(key) && flag.Value.String() == flag.DefValue {
-			if err := cmd.Flags().Set(key, val); err != nil {
-				log.Warn().Err(err).Msg("could not set flag")
-			}
+		flags := cmd.Flags()
+		flag := flags.Lookup(key)
+		if flag == nil {
+			flags = cmd.PersistentFlags()
+			flag = flags.Lookup(key)
+		}
+		if flag == nil || flags.Changed(key) || flag.Value.String() != flag.DefValue {
 			continue
 		}
 
-		pFlag := cmd.PersistentFlags().Lookup(key)
-		if pFlag != nil && !cmd.PersistentFlags().Changed(key) && pFlag.Value.String() == pFlag.DefValue {
-			if err := cmd.PersistentFlags().Set(key, val); err != nil {
-				log.Warn().Err(err).Msg("could not set persistent flag")
-			}
+		values, isList, ok := toStrings(value)
+		if !ok {
+			log.Warn().Msgf("ignoring %q in section %q of profile %q, expected a value or a list of values", key, section, profileName)
 			continue
 		}
+
+		var err error
+		if sliceValue, isSlice := flag.Value.(pflag.SliceValue); isSlice && isList {
+			// Set would split the joined values again for slice flags, but
+			// not for array flags
+			if err = sliceValue.Replace(values); err == nil {
+				flag.Changed = true
+			}
+		} else {
+			err = flags.Set(key, strings.Join(values, ","))
+		}
+		if err != nil {
+			log.Warn().Err(err).Msgf("could not set flag %q from section %q of profile %q", key, section, profileName)
+			continue
+		}
+		log.Debug().Msgf("Set flag %q from section %q of profile %q", key, section, profileName)
 	}
 
 	return nil

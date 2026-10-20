@@ -49,7 +49,7 @@ Use "sc [command] --help" for more information about a command.
 
 ## Profiles
 
-Flag values can be stored in profiles in `~/.sc-profiles.yaml`. A profile is selected with `--profile` or the `SC_PROFILE` environment variable. Settings are read from the section named after the command path joined by dashes, e.g. `vault-login` for `sc vault login`, or from the section of a parent command such as `mpd`.
+Flag values can be stored in profiles in `~/.sc-profiles.yaml`. A profile is selected with `--profile` or the `SC_PROFILE` environment variable. Sections are named after the command path joined by dashes, e.g. `vault-login` for `sc vault login`. Each flag is taken from the most specific section that sets it, so settings of a parent command such as `mpd` apply to all its subcommands unless a more specific section overrides them. Flags given on the command line always take precedence.
 
 ```yaml
 prod:
