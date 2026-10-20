@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 )
 
@@ -29,7 +31,9 @@ func (y *EnvVarFormatter) Format(data map[string]string) ([]byte, error) {
 		return nil, errors.New("can not use option 'valueOnly' with secrets containing multiple secret pairs")
 	}
 
-	for key, value := range data {
+	// sorted, so the output only changes if the secret does
+	for _, key := range slices.Sorted(maps.Keys(data)) {
+		value := data[key]
 		if y.uppercaseKeys {
 			key = strings.ToUpper(key)
 		}

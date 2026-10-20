@@ -17,7 +17,6 @@ import (
 	vaultSecretFormatter "github.com/soerenschneider/sc/internal/vault/formatter"
 	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/cobra"
-	"go.uber.org/multierr"
 	"gopkg.in/yaml.v3"
 )
 
@@ -76,50 +75,68 @@ var vaultSecretSyncCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("could not validate secrets configuration")
 		}
 
-		ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
-		defer cancel()
-
-		if !syncAllSecrets {
-			item, found := config.Items[secretName]
-			if !found {
-				log.Fatal().Msgf("secret %q not found in configuration", secretName)
+		names := []string{secretName}
+		if syncAllSecrets {
+			names = make([]string, 0, len(config.Items))
+			for name := range config.Items {
+				names = append(names, name)
 			}
+			sort.Strings(names)
+		} else if _, found := config.Items[secretName]; !found {
+			log.Fatal().Msgf("secret %q not found in configuration", secretName)
+		}
 
-			if err := syncItem(ctx, client, mount, item); err != nil {
-				log.Fatal().Err(err).Msg("could not sync secret")
+		failed := 0
+		for _, name := range names {
+			item := config.Items[name]
+			changed, err := syncItemWithTimeout(cmd.Context(), client, mount, item)
+			switch {
+			case vault.IsNotFound(err):
+				failed++
+				log.Error().Msgf("Could not sync %q: secret %q does not exist in mount %q", name, item.SecretPath, mount)
+			case err != nil:
+				failed++
+				log.Error().Err(err).Msgf("Could not sync %q from %q", name, item.SecretPath)
+			case changed:
+				log.Info().Msgf("Synced %q to %s", name, item.DestUri)
+			default:
+				log.Info().Msgf("%s is up to date with %q", item.DestUri, name)
 			}
 		}
 
-		var errs error
-		for _, replicationConfig := range config.Items {
-			errs = multierr.Append(errs, syncItem(ctx, client, mount, replicationConfig))
-		}
-
-		if errs != nil {
-			log.Fatal().Err(errs).Msg("could not sync all secrets")
+		if failed > 0 {
+			log.Fatal().Msgf("Could not sync %d of %d secret(s)", failed, len(names))
 		}
 	},
 }
 
-func syncItem(ctx context.Context, client *vault.VaultClient, mount string, item vault.Kv2SyncConfig) error {
+func syncItemWithTimeout(ctx context.Context, client *vault.VaultClient, mount string, item vault.Kv2SyncConfig) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	return syncItem(ctx, client, mount, item)
+}
+
+// syncItem writes the secret to its destination and reports whether the
+// destination changed.
+func syncItem(ctx context.Context, client *vault.VaultClient, mount string, item vault.Kv2SyncConfig) (bool, error) {
 	formatImpl, err := buildSecretFormatter(item.Formatter, item.FormatterArgs)
 	if err != nil {
-		return fmt.Errorf("could not build secret logsFormatter: %w", err)
+		return false, fmt.Errorf("could not build secret formatter: %w", err)
 	}
 
 	storage, err := pki.NewFilesystemStorageFromUri(pkg.GetExpandedFile(item.DestUri))
 	if err != nil {
-		return fmt.Errorf("could not create storage from uri %s: %w", item.DestUri, err)
+		return false, fmt.Errorf("could not create storage from uri %s: %w", item.DestUri, err)
 	}
 
 	read, err := client.Get(ctx, mount, item.SecretPath)
 	if err != nil {
-		return fmt.Errorf("could not read secret from vault: %w", err)
+		return false, fmt.Errorf("could not read secret from vault: %w", err)
 	}
 
 	formatted, err := formatImpl.Format(read.Data)
 	if err != nil {
-		return fmt.Errorf("formatting secret failed: %w", err)
+		return false, fmt.Errorf("formatting secret failed: %w", err)
 	}
 
 	return updateFile(formatted, storage)
@@ -141,7 +158,9 @@ func readSecretsConfiguration(file string) (*config, error) {
 	}, nil
 }
 
-func updateFile(data []byte, storageImpl vault.StorageImplementation) error {
+// updateFile writes data unless the storage already holds it and reports
+// whether it was written.
+func updateFile(data []byte, storageImpl vault.StorageImplementation) (bool, error) {
 	hash := hashContent(data)
 
 	diskContent, err := storageImpl.Read()
@@ -149,11 +168,14 @@ func updateFile(data []byte, storageImpl vault.StorageImplementation) error {
 		diskHash := hashContent(diskContent)
 		if diskHash == hash {
 			// file exists locally and is identical to the item we downloaded, we're done
-			return nil
+			return false, nil
 		}
 	}
 
-	return storageImpl.Write(data)
+	if err := storageImpl.Write(data); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func hashContent(data []byte) string {
