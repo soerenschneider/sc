@@ -59,8 +59,9 @@ var vaultTotpAlgorithms = []string{"SHA1", "SHA256", "SHA512"}
 
 // vaultCmd represents the vault command
 var vaultCmd = &cobra.Command{
-	Use:   "vault",
-	Short: "Commands for interacting with HashiCorp Vault",
+	Use:     "vault",
+	Aliases: []string{"bao"},
+	Short:   "Commands for interacting with HashiCorp Vault",
 	Long: `This command serves as the entry point for Vault-related functionality.
 
 Use one of the available subcommands to interact with HashiCorp Vault for tasks
