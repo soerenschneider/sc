@@ -43,6 +43,18 @@ type Bookmark struct {
 	WebsiteDescription    string    `json:"website_description"`
 }
 
+// DisplayName returns the title of the bookmark, falling back to the title of
+// the website and then the URL.
+func (b Bookmark) DisplayName() string {
+	switch {
+	case b.Title != "":
+		return b.Title
+	case b.WebsiteTitle != "":
+		return b.WebsiteTitle
+	}
+	return b.URL
+}
+
 type BookmarksResponse struct {
 	Results []Bookmark `json:"results"`
 	Next    string     `json:"next"` // for pagination

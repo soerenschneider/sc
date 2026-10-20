@@ -11,11 +11,10 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
-	"runtime"
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"github.com/soerenschneider/sc/pkg"
 	"golang.org/x/oauth2"
 )
 
@@ -75,7 +74,7 @@ func loginOidc(ctx context.Context, config *oauth2.Config) (*oauth2.Token, error
 
 	fmt.Println("Press Enter to open browser or CTRL+C to abort...")
 	_, _ = bufio.NewReader(os.Stdin).ReadString('\n')
-	if err := openBrowser(authCodeURL); err != nil {
+	if err := pkg.OpenBrowser(authCodeURL); err != nil {
 		return nil, err
 	}
 
@@ -128,27 +127,6 @@ func randomString(n int) string {
 	b := make([]byte, n)
 	_, _ = rand.Read(b)
 	return base64.URLEncoding.EncodeToString(b)
-}
-
-func openBrowser(url string) error {
-	var cmd string
-	var args []string
-
-	switch runtime.GOOS {
-	case "darwin":
-		cmd = "open"
-	case "windows":
-		cmd = "rundll32"
-		args = []string{"url.dll,FileProtocolHandler", url}
-	default: // linux, etc.
-		cmd = "xdg-open"
-	}
-
-	if cmd == "rundll32" {
-		return exec.Command(cmd, args...).Start()
-	}
-
-	return exec.Command(cmd, url).Start()
 }
 
 func extractHost(rawURL string) (string, error) {

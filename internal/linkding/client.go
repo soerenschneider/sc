@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,6 +13,9 @@ import (
 	"strconv"
 	"time"
 )
+
+// ErrNotFound is returned if a bookmark does not exist.
+var ErrNotFound = errors.New("bookmark not found")
 
 type LinkdingClient struct {
 	client *http.Client
@@ -198,4 +202,90 @@ func (c *LinkdingClient) GetAllTags(ctx context.Context) ([]Tag, error) {
 	})
 
 	return allTags, nil
+}
+
+// BookmarkUpdate holds the fields to change on a bookmark, nil fields are kept.
+type BookmarkUpdate struct {
+	Title       *string   `json:"title,omitempty"`
+	Description *string   `json:"description,omitempty"`
+	Notes       *string   `json:"notes,omitempty"`
+	TagNames    *[]string `json:"tag_names,omitempty"`
+}
+
+// GetBookmark returns the bookmark with the given id.
+func (c *LinkdingClient) GetBookmark(ctx context.Context, id int64) (*Bookmark, error) {
+	var bookmark Bookmark
+	if err := c.do(ctx, http.MethodGet, fmt.Sprintf("/api/bookmarks/%d/", id), nil, http.StatusOK, &bookmark); err != nil {
+		return nil, err
+	}
+	return &bookmark, nil
+}
+
+// CheckBookmark returns the bookmark for the given URL, nil if it is not bookmarked.
+func (c *LinkdingClient) CheckBookmark(ctx context.Context, bookmarkURL string) (*Bookmark, error) {
+	var resp struct {
+		Bookmark *Bookmark `json:"bookmark"`
+	}
+	path := "/api/bookmarks/check/?" + url.Values{"url": {bookmarkURL}}.Encode()
+	if err := c.do(ctx, http.MethodGet, path, nil, http.StatusOK, &resp); err != nil {
+		return nil, err
+	}
+	return resp.Bookmark, nil
+}
+
+// UpdateBookmark changes the fields of update on the bookmark with the given id
+// and returns the updated bookmark.
+func (c *LinkdingClient) UpdateBookmark(ctx context.Context, id int64, update BookmarkUpdate) (*Bookmark, error) {
+	var bookmark Bookmark
+	if err := c.do(ctx, http.MethodPatch, fmt.Sprintf("/api/bookmarks/%d/", id), update, http.StatusOK, &bookmark); err != nil {
+		return nil, err
+	}
+	return &bookmark, nil
+}
+
+// DeleteBookmark deletes the bookmark with the given id.
+func (c *LinkdingClient) DeleteBookmark(ctx context.Context, id int64) error {
+	return c.do(ctx, http.MethodDelete, fmt.Sprintf("/api/bookmarks/%d/", id), nil, http.StatusNoContent, nil)
+}
+
+// do sends a request with body encoded as JSON, if not nil, and decodes the
+// response into out, if not nil.
+func (c *LinkdingClient) do(ctx context.Context, method, path string, body any, wantStatus int, out any) error {
+	var reqBody io.Reader
+	if body != nil {
+		data, err := json.Marshal(body)
+		if err != nil {
+			return err
+		}
+		reqBody = bytes.NewReader(data)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, c.url+path, reqBody)
+	if err != nil {
+		return err
+	}
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	req.Header.Set("Authorization", "Token "+c.token)
+
+	// #nosec G704
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return ErrNotFound
+	}
+	if resp.StatusCode != wantStatus {
+		return fmt.Errorf("%s %s: expected http code %d, got %s", method, path, wantStatus, resp.Status)
+	}
+	if out == nil {
+		return nil
+	}
+	return json.NewDecoder(resp.Body).Decode(out)
 }
