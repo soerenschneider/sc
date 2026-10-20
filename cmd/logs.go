@@ -23,10 +23,11 @@ var logsCmd = &cobra.Command{
 	Short: "Interact with VictoriaLogs for querying and managing logs",
 	Long: `The 'logs' command is the entry point for interacting with VictoriaLogs.
 
-Use subcommands to query logs stored in VictoriaLogs, a high-performance log database.
+Use subcommands to query or follow logs stored in VictoriaLogs, a high-performance log database.
 
 Examples:
-  sc logs query -q='level="error"'   # Query logs with specific filters`,
+  sc logs query -q='level="error"'   # Query logs with specific filters
+  sc logs tail service:nginx         # Follow logs as they arrive`,
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Help()
 	},

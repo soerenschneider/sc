@@ -54,19 +54,24 @@ func init() {
 	logsCmd.AddCommand(logsQueryCmd)
 
 	logsQueryCmd.Flags().StringP(logsQuery, "q", defaultLogsQuery, "Query")
-	logsQueryCmd.Flags().StringP(logsFormat, "", "text", "Output format: text, json, raw")
-	logsQueryCmd.Flags().StringArrayP(logsIdFields, "i",
-		[]string{"host", "hostname", "service", "svc", "app"},
-		"Identity fields highlighted before the message (joined with '/'; use '_stream' to include the VictoriaLogs stream)")
+	addLogsOutputFlags(logsQueryCmd)
 	logsQueryCmd.Flags().StringP(logsSince, "s", "",
 		"Start time: duration (1h), RFC3339, YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, or Unix epoch")
 	logsQueryCmd.Flags().StringP(logsUntil, "u", "", "End time (same formats as --since)")
 	logsQueryCmd.Flags().DurationP(logsRefreshInterval, "r", 2*time.Second,
 		"Tail refresh interval (must be > 0)")
 	logsQueryCmd.Flags().BoolP(logsFollow, "f", false, "Whether to follow logs")
-	logsQueryCmd.Flags().BoolP(logsNoColor, "", false, "Disable ANSI color in text output")
 	logsQueryCmd.Flags().IntP(logsLimit, "l", 100, "Maximum entries (bounded mode and replay phase)")
 	logsQueryCmd.Flags().DurationP(logsTimeout, "", 10*time.Second, "Timeout")
+}
+
+// addLogsOutputFlags adds the flags controlling how log entries are printed.
+func addLogsOutputFlags(cmd *cobra.Command) {
+	cmd.Flags().StringP(logsFormat, "", "text", "Output format: text, json, raw")
+	cmd.Flags().StringArrayP(logsIdFields, "i",
+		[]string{"host", "hostname", "service", "svc", "app"},
+		"Identity fields highlighted before the message (joined with '/'; use '_stream' to include the VictoriaLogs stream)")
+	cmd.Flags().BoolP(logsNoColor, "", false, "Disable ANSI color in text output")
 }
 
 // logsOpts is the CLI-side option bag. Strings here are raw flag values;
