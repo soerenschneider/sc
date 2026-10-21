@@ -169,6 +169,7 @@ const (
 	ErrKindBadRequest
 	ErrKindTimeout
 	ErrKindNetwork
+	ErrKindUnsupported
 )
 
 func (k ErrorKind) String() string {
@@ -189,6 +190,8 @@ func (k ErrorKind) String() string {
 		return "timeout"
 	case ErrKindNetwork:
 		return "network"
+	case ErrKindUnsupported:
+		return "unsupported"
 	default:
 		return "unknown"
 	}
@@ -220,3 +223,6 @@ func IsKind(err error, k ErrorKind) bool {
 // Convenience predicates for the two kinds the UI cares about most.
 func IsNotFound(err error) bool    { return IsKind(err, ErrKindNotFound) }
 func IsCASConflict(err error) bool { return IsKind(err, ErrKindCASConflict) }
+
+func IsPermissionDenied(err error) bool { return IsKind(err, ErrKindPermissionDenied) }
+func IsUnsupported(err error) bool      { return IsKind(err, ErrKindUnsupported) }

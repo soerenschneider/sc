@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -1135,6 +1136,39 @@ func (c *VaultClient) Put(ctx context.Context, mount, path string, data map[stri
 		return nil, classify(err, "put")
 	}
 	return fromKVSecret(sec), nil
+}
+
+// Patch changes single keys of the latest version of a secret using a JSON merge patch, without
+// reading the secret. Keys with a nil value are deleted. Patching requires the 'patch' capability
+// and Vault 1.9 or newer, otherwise an error of kind ErrKindPermissionDenied or ErrKindUnsupported
+// is returned. If the secret does not exist or its latest version is deleted, the error is of
+// kind ErrKindNotFound.
+func (c *VaultClient) Patch(ctx context.Context, mount, path string, data map[string]any) (*Secret, error) {
+	p := strings.TrimRight(mount, "/") + "/data/" + path
+	sec, err := c.client.Logical().JSONMergePatch(ctx, p, map[string]any{"data": data})
+	if err != nil {
+		if rerr, ok := errors.AsType[*vault.ResponseError](err); ok && rerr.StatusCode == http.StatusMethodNotAllowed {
+			return nil, &VaultError{Kind: ErrKindUnsupported, Op: "patch", Message: "patching requires Vault 1.9 or newer", Cause: err}
+		}
+		return nil, classify(err, "patch")
+	}
+	if sec == nil {
+		return nil, &VaultError{Kind: ErrKindNotFound, Op: "patch"}
+	}
+
+	// The response only holds the version metadata, not the data of the secret.
+	out := &Secret{}
+	switch v := sec.Data["version"].(type) {
+	case json.Number:
+		version, _ := v.Int64()
+		out.Version = int(version)
+	case float64:
+		out.Version = int(v)
+	}
+	if created, ok := sec.Data["created_time"].(string); ok {
+		out.UpdatedAt, _ = time.Parse(time.RFC3339Nano, created)
+	}
+	return out, nil
 }
 
 func (c *VaultClient) SoftDelete(ctx context.Context, mount, path string) error {

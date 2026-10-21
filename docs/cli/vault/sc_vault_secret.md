@@ -26,5 +26,6 @@ sc vault secret [flags]
 * [sc vault](sc_vault.md)	 - Commands for interacting with HashiCorp Vault
 * [sc vault secret edit](sc_vault_secret_edit.md)	 - Interactively edit a Vault KV2 secret
 * [sc vault secret ls](sc_vault_secret_ls.md)	 - Browse Vault KV v2 secrets in a TUI
+* [sc vault secret patch](sc_vault_secret_patch.md)	 - Set or delete single keys of a Vault KV2 secret
 * [sc vault secret sync](sc_vault_secret_sync.md)	 - Syncs a KV2 secret to disk
 
