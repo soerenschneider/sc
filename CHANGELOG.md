@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.13.0](https://github.com/soerenschneider/sc/compare/v1.12.0...v1.13.0) (2026-10-19)
+
+
+### Features
+
+* **healthcheck:** add healthcheck dashboard command ([f8f5a66](https://github.com/soerenschneider/sc/commit/f8f5a6648e463e6966c2f08c524d2e522f79cb4a))
+* **mpd:** add mpd client and playback commands ([d5d021a](https://github.com/soerenschneider/sc/commit/d5d021a06886a5db9bd7c16dce45892b33556a5a))
+* **vault:** wait for aws credentials to become effective ([59000d4](https://github.com/soerenschneider/sc/commit/59000d49666fd1edba88d3cf6bd86b032f1824e2))
+
 ## [1.12.0](https://github.com/soerenschneider/sc/compare/v1.11.0...v1.12.0) (2026-10-18)
 
 
