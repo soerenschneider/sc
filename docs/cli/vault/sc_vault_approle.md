@@ -39,4 +39,5 @@ sc vault approle [flags]
 * [sc vault](sc_vault.md)	 - Commands for interacting with HashiCorp Vault
 * [sc vault approle list-accessors](sc_vault_approle_list-accessors.md)	 - List approle accessors
 * [sc vault approle login](sc_vault_approle_login.md)	 - Login to Vault using approle
+* [sc vault approle rotate-secret-id](sc_vault_approle_rotate-secret-id.md)	 - Rotate the secret_id of an AppRole
 

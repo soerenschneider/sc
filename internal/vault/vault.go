@@ -383,8 +383,9 @@ func (c *VaultClient) GetAppRoleAccessors(ctx context.Context, mount, roleName s
 		return nil, fmt.Errorf("failed to list secret IDs: %w", err)
 	}
 
+	// Vault answers a LIST without results with a 404, which the client turns into a nil secret.
 	if secret == nil || secret.Data == nil {
-		return nil, fmt.Errorf("no data returned for role %s", roleName)
+		return []string{}, nil
 	}
 
 	// Extract keys (accessors)
@@ -549,6 +550,35 @@ func (c *VaultClient) CreateAppRoleSecretID(ctx context.Context, mount string, r
 	}
 
 	return secretID, accessor, nil
+}
+
+// RotateAppRoleSecretID creates a new SecretID for the given AppRole and destroys all
+// SecretIDs that existed before. The new SecretID is returned even if destroying old
+// ones failed, so it is not lost.
+func (c *VaultClient) RotateAppRoleSecretID(ctx context.Context, mount, roleName string, metadata map[string]string, cidrList []string, ttl string) (secretID string, accessor string, destroyed []string, err error) {
+	oldAccessors, err := c.GetAppRoleAccessors(ctx, mount, roleName)
+	if err != nil {
+		return "", "", nil, fmt.Errorf("failed to list accessors: %w", err)
+	}
+
+	secretID, accessor, err = c.CreateAppRoleSecretID(ctx, mount, roleName, metadata, cidrList, cidrList, ttl)
+	if err != nil {
+		return "", "", nil, err
+	}
+
+	var errs error
+	for _, old := range oldAccessors {
+		if old == accessor {
+			continue
+		}
+		if err := c.DeleteAppRoleAccessor(ctx, mount, roleName, old); err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		destroyed = append(destroyed, old)
+	}
+
+	return secretID, accessor, destroyed, errs
 }
 
 // ResetAppRoleSecretIDs deletes ALL secret_id_accessors for a role
