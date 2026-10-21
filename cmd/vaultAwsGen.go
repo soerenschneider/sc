@@ -3,8 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"time"
@@ -17,7 +15,6 @@ import (
 	"github.com/soerenschneider/sc/internal/vault/prompt"
 	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/cobra"
-	"gopkg.in/ini.v1"
 )
 
 var vaultAwsGenerateCredentialsCmd = &cobra.Command{
@@ -140,49 +137,6 @@ func waitForAwsCredentials(creds vault.AwsCredentials, timeout time.Duration) {
 	}
 
 	log.Info().Msgf("Credentials are effective, authenticated as %s", arn)
-}
-
-func updateAwsCredentialsFile(profile string, creds vault.AwsCredentials) error {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("could not determine home directory: %w", err)
-	}
-
-	awsDir := filepath.Join(homeDir, ".aws")
-	credsPath := filepath.Join(awsDir, "credentials")
-
-	if err := os.MkdirAll(awsDir, 0700); err != nil {
-		return fmt.Errorf("failed to create .aws directory: %w", err)
-	}
-
-	cfg := ini.Empty()
-	if _, err := os.Stat(credsPath); err == nil {
-		if err := cfg.Append(credsPath); err != nil {
-			return fmt.Errorf("failed to load existing credentials file: %w", err)
-		}
-	}
-
-	section, err := cfg.GetSection(profile)
-	if err != nil {
-		section, err = cfg.NewSection(profile)
-		if err != nil {
-			return fmt.Errorf("failed to create profile section: %w", err)
-		}
-	}
-	section.Key("aws_access_key_id").SetValue(creds.AccessKeyID)
-	section.Key("aws_secret_access_key").SetValue(creds.SecretAccessKey)
-	if creds.SessionToken != "" {
-		section.Key("aws_session_token").SetValue(creds.SessionToken)
-	} else {
-		// Don't leave a stale token from earlier credentials behind.
-		section.DeleteKey("aws_session_token")
-	}
-
-	if err := cfg.SaveTo(credsPath); err != nil {
-		return fmt.Errorf("failed to write credentials file: %w", err)
-	}
-
-	return nil
 }
 
 func init() {

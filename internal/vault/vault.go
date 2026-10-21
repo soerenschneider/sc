@@ -37,6 +37,10 @@ type AwsCredentials struct {
 	SecretAccessKey string
 	// SessionToken is only set for assumed_role and federation_token credentials.
 	SessionToken string
+	// LeaseID is needed to revoke the credentials before they expire.
+	LeaseID string
+	// Expiration is the zero time if Vault did not return a lease duration.
+	Expiration time.Time
 }
 
 type MfaCreateMethodRequest struct {
@@ -189,11 +193,25 @@ func (c *VaultClient) AwsGenCreds(ctx context.Context, mount string, role string
 
 	sessionToken, _ := secret.Data["security_token"].(string)
 
-	return &AwsCredentials{
+	creds := &AwsCredentials{
 		AccessKeyID:     accessKey,
 		SecretAccessKey: secretKey,
 		SessionToken:    sessionToken,
-	}, nil
+		LeaseID:         secret.LeaseID,
+	}
+	if secret.LeaseDuration > 0 {
+		creds.Expiration = time.Now().Add(time.Duration(secret.LeaseDuration) * time.Second)
+	}
+
+	return creds, nil
+}
+
+// RevokeLease revokes the lease with the given id, e.g. to destroy dynamic credentials before they expire.
+// The lease id is passed as part of the path instead of the body, so policies can grant revoking
+// leases of a specific prefix only, e.g. 'sys/leases/revoke/aws/creds/developer/*'.
+func (c *VaultClient) RevokeLease(ctx context.Context, leaseID string) error {
+	_, err := c.client.Logical().WriteWithContext(ctx, "sys/leases/revoke/"+strings.TrimPrefix(leaseID, "/"), nil)
+	return err
 }
 
 func (c *VaultClient) SshListRoles(ctx context.Context, mount string) ([]string, error) {
