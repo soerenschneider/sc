@@ -19,7 +19,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.8.3
 	github.com/keybase/go-keychain v0.0.1
 	github.com/liyue201/goqr v0.0.0-20200803022322-df443203d4ea
-	github.com/mdp/qrterminal/v3 v3.2.1
+	github.com/mdp/qrterminal/v4 v4.0.0
 	github.com/rs/zerolog v1.35.1
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/soerenschneider/sc-agent v1.13.1
@@ -45,6 +45,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.20.9
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.4
 	github.com/charmbracelet/x/ansi v0.11.9
+	github.com/mdp/qrterminal/v3 v3.2.1
 	github.com/sigstore/sigstore-go v1.3.0
 	golang.org/x/mod v0.42.0
 	k8s.io/api v0.37.1
