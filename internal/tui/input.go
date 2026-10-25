@@ -25,6 +25,28 @@ func SelectInput(title string, choices []string) string {
 	return input
 }
 
+// SelectLabeledInput offers a selection displaying labels and returns the value of the selected label.
+// labels and values must have the same length.
+func SelectLabeledInput(title string, labels, values []string) string {
+	options := make([]huh.Option[string], 0, len(values))
+	for i, value := range values {
+		options = append(options, huh.NewOption(labels[i], value))
+	}
+
+	var input string
+	err := huh.NewSelect[string]().
+		Title(title).
+		Options(options...).
+		Value(&input).
+		Run()
+
+	if err != nil {
+		log.Fatal().Err(err).Msg("could not get choice")
+	}
+
+	return input
+}
+
 func MultiSelectInput(title string, choices []string) []string {
 	var input []string
 	err := huh.NewMultiSelect[string]().

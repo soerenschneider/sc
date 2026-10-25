@@ -159,7 +159,7 @@ to stdout as a fallback.`,
 			log.Fatal().Msgf("Failed to save token to %s: %v", tokenFile, err)
 		}
 
-		var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("Token saved")
+		var outputHeader = tui.BadgeStyle.MarginRight(1).SetString("Token saved")
 		fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), tokenFile))
 
 		userData.LastUser = username
@@ -170,7 +170,7 @@ to stdout as a fallback.`,
 }
 
 func printToken(token string) {
-	var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("Vault token")
+	var outputHeader = tui.BadgeStyle.MarginRight(1).SetString("Vault token")
 	fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), token))
 }
 

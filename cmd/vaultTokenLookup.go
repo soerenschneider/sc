@@ -63,6 +63,11 @@ func printTokenInfo(data map[string]any) {
 		data["issue_time"] = updatedValue
 	}
 
+	title := "Token"
+	if name, ok := data["display_name"].(string); ok && name != "" {
+		title += " " + name
+	}
+	tui.PrintHeader(title)
 	tui.PrintMapOutput(data, problematicColumns...)
 }
 

@@ -90,14 +90,14 @@ It requires appropriate configuration and permissions set in Vault to access the
 			}
 
 			if err := updateAwsCredentialsFile(profile, *creds); err != nil {
-				var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("access_key")
+				var outputHeader = tui.BadgeStyle.MarginRight(1).SetString("access_key")
 				fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), creds.AccessKeyID))
 
-				outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("secret_key")
+				outputHeader = tui.BadgeStyle.MarginRight(1).SetString("secret_key")
 				fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), creds.SecretAccessKey))
 
 				if creds.SessionToken != "" {
-					outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("session_token")
+					outputHeader = tui.BadgeStyle.MarginRight(1).SetString("session_token")
 					fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), creds.SessionToken))
 				}
 
@@ -109,7 +109,7 @@ It requires appropriate configuration and permissions set in Vault to access the
 			}
 		}
 
-		var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("Wrote credentials")
+		var outputHeader = tui.BadgeStyle.MarginRight(1).SetString("Wrote credentials")
 		fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), vaultAwsDefaultCredentialsFilename))
 	},
 }
