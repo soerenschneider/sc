@@ -22,6 +22,7 @@ import (
 const (
 	commandName = "sc"
 
+	rootCmdFlagsQuiet       = "quiet"
 	rootCmdFlagsVerbose     = "verbose"
 	rootCmdFlagsProfile     = "profile"
 	rootCmdFlagsNoTelemetry = "no-telemetry"
@@ -47,6 +48,7 @@ var rootCmd = &cobra.Command{
 	DisableAutoGenTag: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		setupLogger()
+		applyLogLevel(cmd)
 
 		if profile == "" {
 			var found bool
@@ -63,8 +65,8 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
-		verbose, _ := cmd.Flags().GetBool(rootCmdFlagsVerbose)
-		setLogLevel(verbose)
+		// profiles may set --verbose or --quiet as well
+		applyLogLevel(cmd)
 
 		conditionallyLogLatestReleaseInfo(cmd)
 
@@ -85,15 +87,19 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVar(&profile, rootCmdFlagsProfile, "", "Profile to use")
+	// no shorthand, -q is used for --query by several subcommands
+	rootCmd.PersistentFlags().Bool(rootCmdFlagsQuiet, false, "Only print errors")
 	rootCmd.PersistentFlags().BoolP(rootCmdFlagsVerbose, "v", false, "Print debug logs")
 	rootCmd.PersistentFlags().Bool(rootCmdFlagsNoTelemetry, false, "Do not perform check for updated version")
+
+	rootCmd.MarkFlagsMutuallyExclusive(rootCmdFlagsQuiet, rootCmdFlagsVerbose)
 }
 
 func initConfig() {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+		_, _ = fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 	}
 }
 
@@ -109,10 +115,20 @@ func setupLogger() {
 	}
 }
 
-func setLogLevel(debug bool) {
+func applyLogLevel(cmd *cobra.Command) {
+	verbose, _ := cmd.Flags().GetBool(rootCmdFlagsVerbose)
+	quiet, _ := cmd.Flags().GetBool(rootCmdFlagsQuiet)
+	setLogLevel(verbose, quiet)
+}
+
+// setLogLevel sets the global log level: debug if verbose, error if quiet and info otherwise.
+func setLogLevel(verbose, quiet bool) {
 	level := zerolog.InfoLevel
-	if debug {
+	switch {
+	case verbose:
 		level = zerolog.DebugLevel
+	case quiet:
+		level = zerolog.ErrorLevel
 	}
 	zerolog.SetGlobalLevel(level)
 }
@@ -125,10 +141,7 @@ func conditionallyLogLatestReleaseInfo(cmd *cobra.Command) {
 		return
 	}
 
-	checkUpdateWaitGroup.Add(1)
-	go func() {
-		defer checkUpdateWaitGroup.Done()
-
+	checkUpdateWaitGroup.Go(func() {
 		httpClient := deps.GetHttpClient()
 		releaseNotifier, err := internal.NewReleaseNotifier(httpClient, internal.BuildVersion)
 		if err != nil {
@@ -139,7 +152,7 @@ func conditionallyLogLatestReleaseInfo(cmd *cobra.Command) {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 		releaseNotifier.CheckRelease(ctx)
-	}()
+	})
 }
 
 func isDisableTelemetry(cmd *cobra.Command) bool {
