@@ -34,7 +34,7 @@ const (
 	awsCredsKeySecretAccessKey = "aws_secret_access_key" //nolint G101
 	awsCredsKeySessionToken    = "aws_session_token"     //nolint G101
 	// The AWS SDKs ignore unknown keys, the x_ prefix follows the convention of saml2aws and others.
-	awsCredsKeyVaultLeaseID = "x_vault_lease_id"
+	awsCredsKeyVaultLeaseID = "x_vault_lease_id" //nolint G101
 	awsCredsKeyExpires      = "x_security_token_expires"
 )
 
