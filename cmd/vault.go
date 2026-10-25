@@ -78,6 +78,6 @@ Examples:
 func init() {
 	rootCmd.AddCommand(vaultCmd)
 
-	vaultCmd.Flags().StringP(vaultAddr, "a", "", "Vault address. If not specified, tries to read env variable VAULT_ADDR.")
+	vaultCmd.PersistentFlags().StringP(vaultAddr, "a", "", "Vault address. If not specified, tries to read env variable VAULT_ADDR.")
 	vaultCmd.Flags().StringP(vaultTokenFile, "t", "~/.vault-token", "Vault token file.")
 }

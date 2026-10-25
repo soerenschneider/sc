@@ -94,7 +94,7 @@ func MustAuthenticateClient(client *VaultClient) *VaultClient {
 }
 
 func GetVaultAddress(cmd *cobra.Command) (string, error) {
-	address, err := cmd.Flags().GetString("addr")
+	address, err := cmd.Flags().GetString("address")
 	if err == nil && len(address) > 0 {
 		return address, nil
 	}
@@ -372,6 +372,29 @@ func (c *VaultClient) ListAppRoles(ctx context.Context, mount string) ([]string,
 	return roles, nil
 }
 
+// ReadAppRole returns the configuration of the given AppRole. If the role_id of the role can be read, it is
+// included in the returned configuration as well.
+func (c *VaultClient) ReadAppRole(ctx context.Context, mount, roleName string) (map[string]any, error) {
+	if roleName == "" {
+		return nil, fmt.Errorf("roleName must not be empty")
+	}
+
+	secret, err := c.client.Logical().ReadWithContext(ctx, fmt.Sprintf("auth/%s/role/%s", mount, roleName))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read approle %q: %w", roleName, err)
+	}
+	if secret == nil || secret.Data == nil {
+		return nil, fmt.Errorf("approle %q not found", roleName)
+	}
+
+	// reading the role_id requires a separate permission, so failing to read it is not fatal
+	if roleID, err := c.GetApproleID(ctx, mount, roleName); err == nil {
+		secret.Data["role_id"] = roleID
+	}
+
+	return secret.Data, nil
+}
+
 // GetAppRoleAccessors returns all secret_id_accessors for a given AppRole
 func (c *VaultClient) GetAppRoleAccessors(ctx context.Context, mount, roleName string) ([]string, error) {
 	// Path to list secret IDs (accessors)
@@ -409,44 +432,90 @@ func (c *VaultClient) GetAppRoleAccessors(ctx context.Context, mount, roleName s
 	return accessors, nil
 }
 
-func (c *VaultClient) GetAppRoleAccessorMetadata(ctx context.Context, mount, roleName, accessor string) error {
-	lookupPath := fmt.Sprintf("auth/approle/role/%s/secret-id-accessor/lookup", roleName)
+// AppRoleSecretID describes a secret_id of an AppRole, as returned by a lookup of its accessor.
+type AppRoleSecretID struct {
+	Accessor        string
+	CreationTime    time.Time
+	ExpirationTime  time.Time
+	LastUpdatedTime time.Time
+	NumUses         int64
+	Ttl             time.Duration
+	CidrList        []string
+	TokenBoundCidrs []string
+	Metadata        map[string]string
+}
 
-	resp, err := c.client.Logical().WriteWithContext(ctx, lookupPath, map[string]interface{}{
+// Expires returns whether the secret_id expires at all. Vault reports secret_ids without TTL using a zero
+// expiration time.
+func (s *AppRoleSecretID) Expires() bool {
+	return !s.ExpirationTime.IsZero()
+}
+
+// Expired returns whether the secret_id is expired at the given time.
+func (s *AppRoleSecretID) Expired(now time.Time) bool {
+	return s.Expires() && now.After(s.ExpirationTime)
+}
+
+// LookupAppRoleSecretIDAccessor returns the properties of the secret_id with the given accessor.
+func (c *VaultClient) LookupAppRoleSecretIDAccessor(ctx context.Context, mount, roleName, accessor string) (*AppRoleSecretID, error) {
+	path := fmt.Sprintf("auth/%s/role/%s/secret-id-accessor/lookup", mount, roleName)
+
+	resp, err := c.client.Logical().WriteWithContext(ctx, path, map[string]any{
 		"secret_id_accessor": accessor,
 	})
 	if err != nil {
-		log.Printf("failed to lookup accessor %s: %v", accessor, err)
-		return err
+		return nil, fmt.Errorf("failed to lookup accessor %q of role %q: %w", accessor, roleName, err)
 	}
-
 	if resp == nil || resp.Data == nil {
-		log.Printf("no data for accessor %s", accessor)
-		return err
+		return nil, fmt.Errorf("no data returned for accessor %q of role %q", accessor, roleName)
 	}
 
-	// Step 3: Extract expiration info
-	expirationStr, ok := resp.Data["expiration_time"].(string)
-	if !ok || expirationStr == "" {
-		log.Printf("accessor %s has no expiration_time (might be non-expiring)", accessor)
-		return err
+	ret := &AppRoleSecretID{Accessor: accessor}
+	ret.CreationTime = parseVaultTime(resp.Data["creation_time"])
+	ret.ExpirationTime = parseVaultTime(resp.Data["expiration_time"])
+	ret.LastUpdatedTime = parseVaultTime(resp.Data["last_updated_time"])
+	if numUses, ok := resp.Data["secret_id_num_uses"].(json.Number); ok {
+		ret.NumUses, _ = numUses.Int64()
+	}
+	ret.Ttl = parseVaultDuration(resp.Data["secret_id_ttl"])
+	ret.CidrList = toStringSlice(resp.Data["cidr_list"])
+	ret.TokenBoundCidrs = toStringSlice(resp.Data["token_bound_cidrs"])
+	if metadata, ok := resp.Data["metadata"].(map[string]any); ok {
+		ret.Metadata = make(map[string]string, len(metadata))
+		for k, v := range metadata {
+			ret.Metadata[k] = fmt.Sprintf("%v", v)
+		}
 	}
 
-	expirationTime, err := time.Parse(time.RFC3339, expirationStr)
-	if err != nil {
-		log.Printf("failed to parse expiration_time for accessor %s: %v", accessor, err)
-		return err
+	return ret, nil
+}
+
+// parseVaultTime parses a RFC3339 timestamp as returned by Vault. Returns the zero time if the value can not
+// be parsed or is Vault's representation of "no time", "0001-01-01T00:00:00Z".
+func parseVaultTime(val any) time.Time {
+	s, ok := val.(string)
+	if !ok || s == "" {
+		return time.Time{}
 	}
-
-	now := time.Now().UTC()
-
-	if now.After(expirationTime) {
-		fmt.Printf("EXPIRED: accessor=%s expired at %s\n", accessor, expirationTime)
-	} else {
-		fmt.Printf("VALID: accessor=%s expires at %s\n", accessor, expirationTime)
+	t, err := time.Parse(time.RFC3339Nano, s)
+	if err != nil || t.Year() <= 1 {
+		return time.Time{}
 	}
+	return t
+}
 
-	return nil
+func toStringSlice(val any) []string {
+	items, ok := val.([]any)
+	if !ok {
+		return nil
+	}
+	ret := make([]string, 0, len(items))
+	for _, item := range items {
+		if s, ok := item.(string); ok {
+			ret = append(ret, s)
+		}
+	}
+	return ret
 }
 
 // DeleteAppRoleAccessor deletes a secret_id_accessor for a given AppRole
@@ -504,23 +573,7 @@ func (c *VaultClient) DeleteAllAppRoleAccessors(ctx context.Context, mount, role
 // CreateAppRoleSecretID creates a new SecretID for the given AppRole.
 // Optionally accepts metadata, CIDR restrictions, and TTL.
 func (c *VaultClient) CreateAppRoleSecretID(ctx context.Context, mount string, roleName string, metadata map[string]string, cidrList []string, tokenBoundCIDRs []string, ttl string) (secretID string, accessor string, err error) {
-	path := fmt.Sprintf("auth/%s/role/%s/secret-id", mount, roleName)
-
-	data := map[string]any{}
-	if metadata != nil {
-		data["metadata"] = metadata
-	}
-	if len(cidrList) > 0 {
-		data["cidr_list"] = cidrList
-	}
-	if len(tokenBoundCIDRs) > 0 {
-		data["token_bound_cidrs"] = tokenBoundCIDRs
-	}
-	if ttl != "" {
-		data["ttl"] = ttl
-	}
-
-	secret, err := c.client.Logical().WriteWithContext(ctx, path, data)
+	secret, err := c.writeAppRoleSecretID(ctx, c.client, mount, roleName, metadata, cidrList, tokenBoundCIDRs, ttl)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to create secret ID: %w", err)
 	}
@@ -552,33 +605,96 @@ func (c *VaultClient) CreateAppRoleSecretID(ctx context.Context, mount string, r
 	return secretID, accessor, nil
 }
 
+// CreateWrappedAppRoleSecretID creates a new SecretID for the given AppRole using response wrapping, so the
+// SecretID itself is only revealed when the returned wrapping token is unwrapped.
+func (c *VaultClient) CreateWrappedAppRoleSecretID(ctx context.Context, mount string, roleName string, metadata map[string]string, cidrList []string, tokenBoundCIDRs []string, ttl string, wrapTTL string) (*vault.SecretWrapInfo, error) {
+	if wrapTTL == "" {
+		return nil, fmt.Errorf("wrapTTL must not be empty")
+	}
+
+	// the wrapping lookup func is set on a clone, so other requests of this client are not wrapped
+	wrappingClient, err := c.client.Clone()
+	if err != nil {
+		return nil, fmt.Errorf("could not clone client: %w", err)
+	}
+	wrappingClient.SetToken(c.client.Token())
+	wrappingClient.SetHeaders(c.client.Headers())
+	wrappingClient.SetWrappingLookupFunc(func(operation, path string) string {
+		return wrapTTL
+	})
+
+	secret, err := c.writeAppRoleSecretID(ctx, wrappingClient, mount, roleName, metadata, cidrList, tokenBoundCIDRs, ttl)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create secret ID: %w", err)
+	}
+
+	if secret == nil || secret.WrapInfo == nil || secret.WrapInfo.Token == "" {
+		return nil, fmt.Errorf("no wrap info returned from Vault")
+	}
+
+	return secret.WrapInfo, nil
+}
+
+func (c *VaultClient) writeAppRoleSecretID(ctx context.Context, client *vault.Client, mount string, roleName string, metadata map[string]string, cidrList []string, tokenBoundCIDRs []string, ttl string) (*vault.Secret, error) {
+	path := fmt.Sprintf("auth/%s/role/%s/secret-id", mount, roleName)
+
+	data := map[string]any{}
+	if metadata != nil {
+		data["metadata"] = metadata
+	}
+	if len(cidrList) > 0 {
+		data["cidr_list"] = cidrList
+	}
+	if len(tokenBoundCIDRs) > 0 {
+		data["token_bound_cidrs"] = tokenBoundCIDRs
+	}
+	if ttl != "" {
+		data["ttl"] = ttl
+	}
+
+	return client.Logical().WriteWithContext(ctx, path, data)
+}
+
+// AppRoleSecretIDRotation is the result of RotateAppRoleSecretID.
+type AppRoleSecretIDRotation struct {
+	// SecretID and SecretIDAccessor are empty if the new SecretID has been wrapped.
+	SecretID         string
+	SecretIDAccessor string
+	// WrapInfo is only set if the new SecretID has been wrapped.
+	WrapInfo  *vault.SecretWrapInfo
+	Destroyed []string
+}
+
 // RotateAppRoleSecretID creates a new SecretID for the given AppRole and destroys all
-// SecretIDs that existed before. The new SecretID is returned even if destroying old
-// ones failed, so it is not lost.
-func (c *VaultClient) RotateAppRoleSecretID(ctx context.Context, mount, roleName string, metadata map[string]string, cidrList []string, ttl string) (secretID string, accessor string, destroyed []string, err error) {
+// SecretIDs that existed before. If wrapTTL is not empty, the new SecretID is response
+// wrapped. The new SecretID is returned even if destroying old ones failed, so it is not lost.
+func (c *VaultClient) RotateAppRoleSecretID(ctx context.Context, mount, roleName string, metadata map[string]string, cidrList []string, ttl string, wrapTTL string) (*AppRoleSecretIDRotation, error) {
 	oldAccessors, err := c.GetAppRoleAccessors(ctx, mount, roleName)
 	if err != nil {
-		return "", "", nil, fmt.Errorf("failed to list accessors: %w", err)
+		return nil, fmt.Errorf("failed to list accessors: %w", err)
 	}
 
-	secretID, accessor, err = c.CreateAppRoleSecretID(ctx, mount, roleName, metadata, cidrList, cidrList, ttl)
+	rotation := &AppRoleSecretIDRotation{}
+	if wrapTTL != "" {
+		rotation.WrapInfo, err = c.CreateWrappedAppRoleSecretID(ctx, mount, roleName, metadata, cidrList, cidrList, ttl, wrapTTL)
+	} else {
+		rotation.SecretID, rotation.SecretIDAccessor, err = c.CreateAppRoleSecretID(ctx, mount, roleName, metadata, cidrList, cidrList, ttl)
+	}
 	if err != nil {
-		return "", "", nil, err
+		return nil, err
 	}
 
+	// oldAccessors has been listed before the new SecretID was created, so it never contains the new one
 	var errs error
 	for _, old := range oldAccessors {
-		if old == accessor {
-			continue
-		}
 		if err := c.DeleteAppRoleAccessor(ctx, mount, roleName, old); err != nil {
 			errs = multierr.Append(errs, err)
 			continue
 		}
-		destroyed = append(destroyed, old)
+		rotation.Destroyed = append(rotation.Destroyed, old)
 	}
 
-	return secretID, accessor, destroyed, errs
+	return rotation, errs
 }
 
 // ResetAppRoleSecretIDs deletes ALL secret_id_accessors for a role
@@ -714,6 +830,32 @@ func (c *VaultClient) TotpListMethods(ctx context.Context) ([]string, error) {
 	}
 
 	return keys, nil
+}
+
+// Unwrap returns the data wrapped by the given wrapping token. The wrapping token itself is used to authenticate the
+// request, so the client does not need to be authenticated.
+func (c *VaultClient) Unwrap(ctx context.Context, wrappingToken string) (*vault.Secret, error) {
+	if wrappingToken == "" {
+		return nil, fmt.Errorf("wrappingToken must not be empty")
+	}
+
+	// the token is set on a clone, so the token of this client is not replaced
+	unwrapClient, err := c.client.Clone()
+	if err != nil {
+		return nil, fmt.Errorf("could not clone client: %w", err)
+	}
+	unwrapClient.SetHeaders(c.client.Headers())
+	unwrapClient.SetToken(wrappingToken)
+
+	secret, err := unwrapClient.Logical().UnwrapWithContext(ctx, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to unwrap: %w", err)
+	}
+	if secret == nil {
+		return nil, fmt.Errorf("no data returned from Vault")
+	}
+
+	return secret, nil
 }
 
 func (c *VaultClient) WrapValue(data map[string]interface{}, ttl string) (string, error) {

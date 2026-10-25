@@ -2,13 +2,10 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"github.com/soerenschneider/sc/internal/vault/prompt"
-	"strings"
 
-	"charm.land/lipgloss/v2"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/vault"
+	"github.com/soerenschneider/sc/internal/vault/prompt"
 	"github.com/soerenschneider/sc/pkg"
 	"github.com/spf13/cobra"
 )
@@ -17,7 +14,14 @@ var sshListCmd = &cobra.Command{
 	Use:     "list-roles",
 	Aliases: []string{"list"},
 	Short:   "Lists all roles for the SSH secrets engine",
+	Long: `Lists the names of all roles of the SSH secrets engine, sorted alphabetically and printed one
+per line. Use --output json to print them as JSON array instead.`,
+	Example: `  sc vault ssh list-roles
+  sc vault ssh list-roles -m my-ssh-mount -o json`,
+	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
+		output := mustGetNameListOutput(cmd)
+
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 
 		mount := pkg.GetString(cmd, vaultMountPath)
@@ -33,11 +37,11 @@ var sshListCmd = &cobra.Command{
 			log.Fatal().Err(err).Msgf("failed to list SSH roles for mount %q", mount)
 		}
 
-		var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("SSH roles")
-		fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), strings.Join(roles, ", ")))
+		mustPrintNames(roles, output)
 	},
 }
 
 func init() {
 	vaultSshCmd.AddCommand(sshListCmd)
+	addNameListOutputFlag(sshListCmd)
 }

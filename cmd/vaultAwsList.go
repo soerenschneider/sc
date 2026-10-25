@@ -2,10 +2,7 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
-	"charm.land/lipgloss/v2"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/vault"
 	"github.com/soerenschneider/sc/internal/vault/prompt"
@@ -23,8 +20,16 @@ This command queries the AWS secrets engine mounted in Vault to retrieve a list 
 all available role names. These roles define the IAM permissions that Vault can
 generate for temporary AWS credentials.
 
+The role names are sorted alphabetically and printed one per line. Use --output json to print
+them as JSON array instead.
+
 The command expects that the AWS secrets engine has been enabled and configured.`,
+	Example: `  sc vault aws list
+  sc vault aws list -m my-aws-mount -o json`,
+	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
+		output := mustGetNameListOutput(cmd)
+
 		client := vault.MustAuthenticateClient(vault.MustBuildClient(cmd))
 
 		mount := pkg.GetString(cmd, vaultMountPath)
@@ -40,11 +45,11 @@ The command expects that the AWS secrets engine has been enabled and configured.
 			log.Fatal().Err(err).Msgf("failed to list AWS roles for mount %q", mount)
 		}
 
-		var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("AWS roles")
-		fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), strings.Join(roles, ", ")))
+		mustPrintNames(roles, output)
 	},
 }
 
 func init() {
 	vaultAwsCmd.AddCommand(vaultAwsListCmd)
+	addNameListOutputFlag(vaultAwsListCmd)
 }
