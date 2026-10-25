@@ -12,6 +12,9 @@ Uses the same taxonomy YAML as 'task add' (default ~/.sc/taskwarrior.yaml,
 override with --config). Tasks are processed oldest-first. For each one you
 can Apply the changes, Skip it (leave it in the inbox), or Quit the sweep.
 
+Like 'task add', the project and tags are pre-selected based on the task's
+description, marked with ✨ and the reason. See 'sc task add --help'.
+
 ```
 sc task groom [flags]
 ```
@@ -28,6 +31,7 @@ sc task groom [flags]
 ```
       --no-telemetry     Do not perform check for updated version
       --profile string   Profile to use
+      --quiet            Only print errors
   -v, --verbose          Print debug logs
 ```
 

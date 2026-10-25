@@ -9,7 +9,7 @@ sc vault secret sync [flags]
 ### Options
 
 ```
-  -a, --all                  Flag to sync all secrets
+      --all                  Flag to sync all secrets
   -h, --help                 help for sync
   -n, --name string          Name of the secret to sync
   -c, --sync-config string   Config file that holds secret sync configuration
@@ -18,9 +18,11 @@ sc vault secret sync [flags]
 ### Options inherited from parent commands
 
 ```
+  -a, --address string   Vault address. If not specified, tries to read env variable VAULT_ADDR.
   -m, --mount string     Path where the KV2 secret engine is mounted (default "secret")
       --no-telemetry     Do not perform check for updated version
       --profile string   Profile to use
+      --quiet            Only print errors
   -v, --verbose          Print debug logs
 ```
 

@@ -30,6 +30,7 @@ sc tf rotate-passphrase-start [-- <extra arguments for tofu>] [flags]
   -i, --interactive      Ask for everything not given as a flag, even when --stack is given
       --no-telemetry     Do not perform check for updated version
       --profile string   Profile to use
+      --quiet            Only print errors
       --repo string      Checkout of the soeren.cloud repository (default: $SC_TF_REPO)
   -s, --stack string     Stack below terraform/stacks/ that has a unit for the environment
   -v, --verbose          Print debug logs

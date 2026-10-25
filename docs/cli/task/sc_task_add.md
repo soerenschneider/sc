@@ -21,6 +21,17 @@ and type the full dotted name in the follow-up input.
 An optional Depends-on step lists pending tasks; "(none)" is the default,
 so enter skips it. Pick a task to append depends:<ID> to the invocation.
 
+The project and tags are pre-selected based on the description, marked
+with ✨ and the reason. They are deduced from, in this order:
+  - rules in the taxonomy YAML, mapping keywords to a project and/or tags:
+      suggestions:
+        - keywords: [zahnarzt, "tax return"]
+          project: health
+          tags: ["@phone"]
+  - a description word matching the last part of a project name,
+    e.g. "openbao" → homelab.openbao
+  - the projects and tags of existing tasks with similar descriptions
+
 ```
 sc task add [flags]
 ```
@@ -37,6 +48,7 @@ sc task add [flags]
 ```
       --no-telemetry     Do not perform check for updated version
       --profile string   Profile to use
+      --quiet            Only print errors
   -v, --verbose          Print debug logs
 ```
 

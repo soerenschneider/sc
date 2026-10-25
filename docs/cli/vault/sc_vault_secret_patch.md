@@ -44,9 +44,11 @@ sc vault secret patch <path> [key=value...] [flags]
 ### Options inherited from parent commands
 
 ```
+  -a, --address string   Vault address. If not specified, tries to read env variable VAULT_ADDR.
   -m, --mount string     Path where the KV2 secret engine is mounted (default "secret")
       --no-telemetry     Do not perform check for updated version
       --profile string   Profile to use
+      --quiet            Only print errors
   -v, --verbose          Print debug logs
 ```
 

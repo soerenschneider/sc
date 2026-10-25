@@ -42,6 +42,7 @@ sc logs tail [query]... [flags]
   -a, --address string   Victorialogs address.
       --no-telemetry     Do not perform check for updated version
       --profile string   Profile to use
+      --quiet            Only print errors
   -v, --verbose          Print debug logs
 ```
 
