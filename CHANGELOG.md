@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.14.0](https://github.com/soerenschneider/sc/compare/v1.13.0...v1.14.0) (2026-10-27)
+
+
+### Features
+
+* add --quiet flag ([523d30e](https://github.com/soerenschneider/sc/commit/523d30efa92bdeedf5513a9ac2843514a9bcb562))
+* **links:** add open, edit and delete commands ([24e91cd](https://github.com/soerenschneider/sc/commit/24e91cd315b3224b3589b49547af681c0396669a))
+* **logs:** add tail command ([f4c67c1](https://github.com/soerenschneider/sc/commit/f4c67c1465474f63646fce1354b2ef73bccb0261))
+* **vault:** add approle rotate-secret-id command ([5c69cec](https://github.com/soerenschneider/sc/commit/5c69cec25d8c5519961d6704e4b07e4bf4bf504d))
+* **vault:** add aws revoke-credentials and status commands ([b3e4313](https://github.com/soerenschneider/sc/commit/b3e4313d58faae8c0246e30074ab4c3e90e32e8c))
+* **vault:** add secret patch command ([40141a0](https://github.com/soerenschneider/sc/commit/40141a0ac6032abf3f5e51d2188781e2bab087a1))
+* **vault:** extend approle commands and add unwrap ([d189b28](https://github.com/soerenschneider/sc/commit/d189b2889428bd1f1121169cea269b60e55c0bc4))
+
+
+### Bug Fixes
+
+* **deps:** bump dependencies ([df5c2d3](https://github.com/soerenschneider/sc/commit/df5c2d3f0126dde4082e17154a23d7d4c818fe5b))
+* **profile:** prefer the most specific section per flag ([49f2b44](https://github.com/soerenschneider/sc/commit/49f2b4473d150ec777b2321986a557df7d3f066b))
+* **tf:** point out stack directories without terragrunt.hcl ([87501ef](https://github.com/soerenschneider/sc/commit/87501ef9c209049117b2142b893e5a89bd58cc76))
+* **vault:** only sync the requested secret and name failed ones ([817df79](https://github.com/soerenschneider/sc/commit/817df791837ed0224f0d185c8cc4838a63d190ab))
+
 ## [1.13.0](https://github.com/soerenschneider/sc/compare/v1.12.0...v1.13.0) (2026-10-19)
 
 
