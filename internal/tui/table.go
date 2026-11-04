@@ -54,6 +54,12 @@ type Table struct {
 	// column layout regardless of the receiver's terminal.
 	FullWidth bool
 
+	// FitWidth shrinks the table to the terminal width when stdout is a
+	// TTY and the table would be wider otherwise. Unlike FullWidth,
+	// narrower tables keep their natural width. Combine with Wrap to
+	// keep the content of shrunk columns rather than truncating it.
+	FitWidth bool
+
 	// Wrap allows long cell content to wrap inside its column rather
 	// than be truncated. Off by default — most tables read better with
 	// single-line rows; turn on for log-style messages.
@@ -156,13 +162,14 @@ func (t Table) Render() string {
 		Wrap(t.Wrap).
 		StyleFunc(t.makeStyleFunc())
 
-	if t.FullWidth {
-		if w, ok := terminalWidth(); ok {
-			tbl = tbl.Width(w)
+	rendered := tbl.String()
+	if t.FullWidth || t.FitWidth {
+		if w, ok := terminalWidth(); ok && (t.FullWidth || lipgloss.Width(rendered) > w) {
+			rendered = tbl.Width(w).String()
 		}
 	}
 
-	out.WriteString(tbl.String())
+	out.WriteString(rendered)
 
 	if t.Caption != "" {
 		out.WriteString("\n\n")

@@ -11,8 +11,8 @@ Roles without any secret_id are listed as well. If some roles or accessors can n
 the remaining ones are printed nonetheless and the command exits with an error.
 
 The output format is chosen with --output:
-  pretty  a styled table (default)
-  simple  plain, tab-aligned columns without styling, suited for grep and awk
+  pretty  a styled table (default if stdout is a terminal)
+  simple  plain, tab-aligned columns without styling, suited for grep and awk (default otherwise)
   json    JSON, e.g. for further processing with jq
 
 ```
@@ -32,7 +32,7 @@ sc vault approle list-accessors [role] [flags]
 
 ```
   -h, --help            help for list-accessors
-  -o, --output string   Output format: pretty, simple, json (default "pretty")
+  -o, --output string   Output format: pretty, simple, json (default pretty if stdout is a terminal, simple otherwise)
 ```
 
 ### Options inherited from parent commands
