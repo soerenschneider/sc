@@ -12,10 +12,10 @@ func TestPrintNames(t *testing.T) {
 		output string
 		want   string
 	}{
-		{"simple", []string{"b", "a"}, approleOutputSimple, "a\nb\n"},
-		{"simple empty", nil, approleOutputSimple, ""},
-		{"json", []string{"b", "a"}, approleOutputJson, "[\"a\",\"b\"]\n"},
-		{"json empty", nil, approleOutputJson, "[]\n"},
+		{"simple", []string{"b", "a"}, listOutputSimple, "a\nb\n"},
+		{"simple empty", nil, listOutputSimple, ""},
+		{"json", []string{"b", "a"}, listOutputJson, "[\n  \"a\",\n  \"b\"\n]\n"},
+		{"json empty", nil, listOutputJson, "[]\n"},
 	}
 
 	for _, tt := range tests {
@@ -25,6 +25,28 @@ func TestPrintNames(t *testing.T) {
 				t.Fatal(err)
 			}
 			if got := buf.String(); got != tt.want {
+				t.Errorf("got %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDefaultListOutput(t *testing.T) {
+	tests := []struct {
+		name     string
+		formats  []string
+		terminal bool
+		want     string
+	}{
+		{"table terminal", tableOutputFormats, true, listOutputPretty},
+		{"table pipe", tableOutputFormats, false, listOutputSimple},
+		{"names terminal", nameListOutputFormats, true, listOutputSimple},
+		{"names pipe", nameListOutputFormats, false, listOutputSimple},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := defaultListOutput(tt.formats, tt.terminal); got != tt.want {
 				t.Errorf("got %q, want %q", got, tt.want)
 			}
 		})

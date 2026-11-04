@@ -13,6 +13,11 @@ After successful login, a Vault token is returned. The token is saved to a file.
 If the file cannot be written—due to permission issues or missing directories—the token is printed
 to stdout as a fallback.
 
+With --print-token, the token file is left untouched and only the raw token is printed to stdout,
+while all prompts are rendered to stderr. This allows using a token in a single shell only:
+
+  export VAULT_TOKEN=$(sc vault login --print-token)
+
 ```
 sc vault login [flags]
 ```
@@ -24,6 +29,7 @@ sc vault login [flags]
       --mfa-id string     MFA ID
   -m, --mount string      Vault mount for userpass auth engine (default "userpass")
   -o, --otp string        OTP value for non-interactive login
+      --print-token       Only print the token to stdout instead of writing it to the token file
   -u, --username string   Username for login
 ```
 
