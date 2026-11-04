@@ -16,7 +16,7 @@ var agentPowerStateShutdownCmd = &cobra.Command{
 		client := agent.MustBuildApp(cmd)
 
 		params := &api.PowerPostActionParams{
-			Action: api.Shutdown,
+			Action: api.PowerPostActionParamsActionShutdown,
 		}
 		resp, err := client.PowerPostAction(context.Background(), params)
 		if err != nil {

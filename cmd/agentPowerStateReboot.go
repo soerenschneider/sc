@@ -16,7 +16,7 @@ var agentPowerStateRebootCmd = &cobra.Command{
 		client := agent.MustBuildApp(cmd)
 
 		params := &api.PowerPostActionParams{
-			Action: api.Reboot,
+			Action: api.PowerPostActionParamsActionReboot,
 		}
 		resp, err := client.PowerPostAction(context.Background(), params)
 		if err != nil {

@@ -23,7 +23,7 @@ var agentServiceRestartCmd = &cobra.Command{
 		}
 
 		params := &api.ServicesUnitStatusPutParams{
-			Action: api.Restart,
+			Action: api.ServicesUnitStatusPutParamsActionRestart,
 		}
 		resp, err := client.ServicesUnitStatusPut(context.Background(), unit, params)
 		if err != nil {

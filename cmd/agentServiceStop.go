@@ -23,7 +23,7 @@ var agentServiceStopCmd = &cobra.Command{
 		}
 
 		params := &api.ServicesUnitStatusPutParams{
-			Action: api.Stop,
+			Action: api.ServicesUnitStatusPutParamsActionStop,
 		}
 		resp, err := client.ServicesUnitStatusPut(context.Background(), unit, params)
 		if err != nil {
