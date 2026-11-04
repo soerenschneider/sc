@@ -1,13 +1,19 @@
 ## sc vault approle list
 
-List the names of all AppRoles
+List all AppRoles along with their configuration
 
 ### Synopsis
 
-Lists the names of all AppRoles of the mount, sorted alphabetically and printed one per line.
+Lists all AppRoles of the mount, sorted alphabetically, along with their token policies, token TTLs
+and secret_id settings.
 
-Use --output json to print them as JSON array instead. To list the secret_ids of the AppRoles,
-use 'list-accessors'.
+If some roles can not be read, the remaining ones are printed nonetheless and the command exits
+with an error. To list the secret_ids of the AppRoles, use 'list-accessors'.
+
+The output format is chosen with --output:
+  pretty  a styled table (default if stdout is a terminal)
+  simple  plain, tab-aligned columns without styling, suited for grep and awk (default otherwise)
+  json    JSON, e.g. for further processing with jq
 
 ```
 sc vault approle list [flags]
@@ -18,14 +24,15 @@ sc vault approle list [flags]
 ```
   sc vault approle list
   sc vault approle list -m my-approle-mount
-  sc vault approle list -o json
+  sc vault approle list -o simple | awk 'NR > 1 { print $1 }'
+  sc vault approle list -o json | jq -r '.[] | select(.secret_id_ttl_seconds == 0) | .role'
 ```
 
 ### Options
 
 ```
   -h, --help            help for list
-  -o, --output string   Output format: simple, json (default "simple")
+  -o, --output string   Output format: pretty, simple, json (default pretty if stdout is a terminal, simple otherwise)
 ```
 
 ### Options inherited from parent commands

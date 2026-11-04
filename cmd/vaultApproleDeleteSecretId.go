@@ -214,7 +214,7 @@ func approleSecretIDLabels(secretIDs []approleSecretID) []string {
 	var buf bytes.Buffer
 	tw := tabwriter.NewWriter(&buf, 0, 0, 2, ' ', 0)
 	for _, s := range secretIDs {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\texpires %s\t%s\n", s.Accessor, s.Status, formatApproleTime(s.ExpirationTime, "never"), formatApproleMetadata(s.Metadata))
+		_, _ = fmt.Fprintf(tw, "%s\t%s\texpires %s\t%s\n", s.Accessor, s.Status, formatApproleTime(s.ExpirationTime, "never"), formatApproleMetadata(s.Metadata, listSepSimple))
 	}
 	_ = tw.Flush()
 
