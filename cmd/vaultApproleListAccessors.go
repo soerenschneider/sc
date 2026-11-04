@@ -2,11 +2,9 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
-	"slices"
 	"sort"
 	"strings"
 	"text/tabwriter"
@@ -22,20 +20,12 @@ import (
 )
 
 const (
-	vaultApproleOutput = "output"
-
-	approleOutputPretty = "pretty"
-	approleOutputSimple = "simple"
-	approleOutputJson   = "json"
-
 	approleStatusValid       = "valid"
 	approleStatusExpired     = "expired"
 	approleStatusNonExpiring = "non-expiring"
 
 	approleTimeFormat = "2006-01-02 15:04:05"
 )
-
-var approleOutputFormats = []string{approleOutputPretty, approleOutputSimple, approleOutputJson}
 
 // approleSecretIDs is the output of the secret_ids of a single AppRole.
 type approleSecretIDs struct {
@@ -67,8 +57,8 @@ Roles without any secret_id are listed as well. If some roles or accessors can n
 the remaining ones are printed nonetheless and the command exits with an error.
 
 The output format is chosen with --output:
-  pretty  a styled table (default)
-  simple  plain, tab-aligned columns without styling, suited for grep and awk
+  pretty  a styled table (default if stdout is a terminal)
+  simple  plain, tab-aligned columns without styling, suited for grep and awk (default otherwise)
   json    JSON, e.g. for further processing with jq`,
 	Example: `  sc vault approle list-accessors
   sc vault approle list-accessors my-role
@@ -76,10 +66,7 @@ The output format is chosen with --output:
   sc vault approle list-accessors -o json | jq '.[] | select(.secret_ids | length == 0) | .role'`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		output := pkg.GetString(cmd, vaultApproleOutput)
-		if !slices.Contains(approleOutputFormats, output) {
-			log.Fatal().Msgf("invalid output format %q, must be one of %s", output, strings.Join(approleOutputFormats, ", "))
-		}
+		output := mustGetListOutput(cmd, tableOutputFormats)
 
 		roleName, err := readValueOrFile(pkg.GetString(cmd, vaultApproleRoleName), pkg.GetString(cmd, vaultApproleRoleNameFile), "role")
 		if err != nil {
@@ -103,9 +90,9 @@ The output format is chosen with --output:
 		}
 
 		switch output {
-		case approleOutputJson:
+		case listOutputJson:
 			err = printApproleSecretIDsJson(os.Stdout, result)
-		case approleOutputSimple:
+		case listOutputSimple:
 			err = printApproleSecretIDsSimple(os.Stdout, result)
 		default:
 			printApproleSecretIDsPretty(result)
@@ -218,22 +205,20 @@ func printApproleSecretIDsJson(w io.Writer, roles []approleSecretIDs) error {
 	if roles == nil {
 		roles = []approleSecretIDs{}
 	}
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	return enc.Encode(roles)
+	return printListJson(w, roles)
 }
 
 func printApproleSecretIDsSimple(w io.Writer, roles []approleSecretIDs) error {
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 	_, _ = fmt.Fprintln(tw, "ROLE\tACCESSOR\tSTATUS\tCREATED\tEXPIRES\tUSES\tCIDRS\tMETADATA")
-	for _, row := range approleSecretIDRows(roles) {
+	for _, row := range approleSecretIDRows(roles, listSepSimple) {
 		_, _ = fmt.Fprintln(tw, strings.Join(row, "\t"))
 	}
 	return tw.Flush()
 }
 
 func printApproleSecretIDsPretty(roles []approleSecretIDs) {
-	rows := approleSecretIDRows(roles)
+	rows := approleSecretIDRows(roles, listSepPretty)
 
 	expired := 0
 	for _, role := range roles {
@@ -262,6 +247,8 @@ func printApproleSecretIDsPretty(roles []approleSecretIDs) {
 		Aligns:       []tui.Align{0, 0, 0, 0, 0, tui.AlignRight},
 		Caption:      fmt.Sprintf("%d roles, %d secret_ids, %d expired", len(roles), len(rows)-rolesWithoutSecretIDs(roles), expired),
 		Zebra:        len(rows) > 10,
+		FitWidth:     true,
+		Wrap:         true,
 		EmptyMessage: "(no AppRoles)",
 	}.Print()
 }
@@ -277,8 +264,8 @@ func rolesWithoutSecretIDs(roles []approleSecretIDs) int {
 }
 
 // approleSecretIDRows returns a row per secret_id. Roles without secret_id are represented by a row without
-// accessor.
-func approleSecretIDRows(roles []approleSecretIDs) [][]string {
+// accessor. Lists within a cell are joined with sep.
+func approleSecretIDRows(roles []approleSecretIDs, sep string) [][]string {
 	var rows [][]string
 	for _, role := range roles {
 		if len(role.SecretIDs) == 0 {
@@ -299,8 +286,8 @@ func approleSecretIDRows(roles []approleSecretIDs) [][]string {
 				formatApproleTime(s.CreationTime, "-"),
 				formatApproleTime(s.ExpirationTime, "never"),
 				uses,
-				joinOrDash(s.CidrList),
-				formatApproleMetadata(s.Metadata),
+				joinOrDash(s.CidrList, sep),
+				formatApproleMetadata(s.Metadata, sep),
 			})
 		}
 	}
@@ -314,7 +301,7 @@ func formatApproleTime(t *time.Time, fallback string) string {
 	return t.Local().Format(approleTimeFormat)
 }
 
-func formatApproleMetadata(metadata map[string]string) string {
+func formatApproleMetadata(metadata map[string]string, sep string) string {
 	if len(metadata) == 0 {
 		return "-"
 	}
@@ -323,19 +310,17 @@ func formatApproleMetadata(metadata map[string]string) string {
 		pairs = append(pairs, k+"="+v)
 	}
 	sort.Strings(pairs)
-	return strings.Join(pairs, ",")
+	return strings.Join(pairs, sep)
 }
 
-func joinOrDash(items []string) string {
+func joinOrDash(items []string, sep string) string {
 	if len(items) == 0 {
 		return "-"
 	}
-	return strings.Join(items, ",")
+	return strings.Join(items, sep)
 }
 
 func init() {
 	vaultApproleCmd.AddCommand(vaultApproleListAccessorsCmd)
-
-	vaultApproleListAccessorsCmd.Flags().StringP(vaultApproleOutput, "o", approleOutputPretty, "Output format: "+strings.Join(approleOutputFormats, ", "))
-	_ = vaultApproleListAccessorsCmd.RegisterFlagCompletionFunc(vaultApproleOutput, cobra.FixedCompletions(approleOutputFormats, cobra.ShellCompDirectiveNoFileComp))
+	addListOutputFlag(vaultApproleListAccessorsCmd, tableOutputFormats)
 }
