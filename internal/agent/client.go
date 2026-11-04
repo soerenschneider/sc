@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 
 	"github.com/soerenschneider/sc-agent/pkg/api"
@@ -22,6 +23,14 @@ func NewClient(client api.ClientInterface) (*ScAgentClient, error) {
 	return &ScAgentClient{
 		client: client,
 	}, nil
+}
+
+func (a ScAgentClient) NftablesPostSetElementWithBody(ctx context.Context, set string, contentType string, body io.Reader, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
+	return a.client.NftablesPostSetElementWithBody(ctx, set, contentType, body, reqEditors...)
+}
+
+func (a ScAgentClient) NftablesPostSetElement(ctx context.Context, set string, body api.NftablesPostSetElementJSONRequestBody, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
+	return a.client.NftablesPostSetElement(ctx, set, body, reqEditors...)
 }
 
 func (a ScAgentClient) CertsAcmeGetCertificates(ctx context.Context, reqEditors ...api.RequestEditorFn) (*http.Response, error) {
