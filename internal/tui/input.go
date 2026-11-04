@@ -1,9 +1,12 @@
 package tui
 
 import (
+	"context"
 	"errors"
 	"strconv"
+	"strings"
 
+	"charm.land/bubbles/v2/key"
 	"charm.land/huh/v2"
 	"github.com/rs/zerolog/log"
 )
@@ -15,6 +18,28 @@ func SelectInput(title string, choices []string) string {
 	err := huh.NewSelect[string]().
 		Title(title).
 		Options(huh.NewOptions(choices...)...).
+		Value(&input).
+		Run()
+
+	if err != nil {
+		log.Fatal().Err(err).Msg("could not get choice")
+	}
+
+	return input
+}
+
+// SelectLabeledInput offers a selection displaying labels and returns the value of the selected label.
+// labels and values must have the same length.
+func SelectLabeledInput(title string, labels, values []string) string {
+	options := make([]huh.Option[string], 0, len(values))
+	for i, value := range values {
+		options = append(options, huh.NewOption(labels[i], value))
+	}
+
+	var input string
+	err := huh.NewSelect[string]().
+		Title(title).
+		Options(options...).
 		Value(&input).
 		Run()
 
@@ -111,4 +136,37 @@ func ReadSensitiveInput(title string) string {
 	}
 
 	return input
+}
+
+// ReadMultilineInput reads text that may span several lines, e.g. pasted
+// text. Enter inserts a new line, ctrl+d submits and ctrl+e opens $EDITOR.
+// It returns huh.ErrUserAborted if the user aborts.
+func ReadMultilineInput(ctx context.Context, title, description string) (string, error) {
+	submit := key.NewBinding(key.WithKeys("ctrl+d"), key.WithHelp("ctrl+d", "submit"))
+
+	keymap := huh.NewDefaultKeyMap()
+	keymap.Text.NewLine = key.NewBinding(key.WithKeys("enter", "alt+enter", "ctrl+j"), key.WithHelp("enter", "new line"))
+	keymap.Text.Submit = submit
+	keymap.Text.Next = submit
+
+	var input string
+	err := huh.NewForm(huh.NewGroup(
+		huh.NewText().
+			Title(title).
+			Description(description).
+			Lines(12).
+			CharLimit(0).
+			ExternalEditor(true).
+			Value(&input).
+			Validate(func(s string) error {
+				if strings.TrimSpace(s) == "" {
+					return errors.New("may not be empty")
+				}
+				return nil
+			}),
+	)).
+		WithKeyMap(keymap).
+		RunWithContext(ctx)
+
+	return strings.TrimSpace(input), err
 }

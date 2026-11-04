@@ -15,9 +15,11 @@ sc vault approle login [flags]
 ### Options inherited from parent commands
 
 ```
+  -a, --address string          Vault address. If not specified, tries to read env variable VAULT_ADDR.
   -m, --mount string            Vault mount of the approle auth method (default "approle")
       --no-telemetry            Do not perform check for updated version
       --profile string          Profile to use
+      --quiet                   Only print errors
   -r, --role string             AppRole role name
       --role-file string        AppRole role name file
   -i, --role-id string          AppRole role id

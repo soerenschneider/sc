@@ -21,6 +21,7 @@ sc agent libvirt shutdown-domain [flags]
   -k, --key-file string    The file that contains the x509 client key to authenticate with
       --no-telemetry       Do not perform check for updated version
       --profile string     Profile to use
+      --quiet              Only print errors
       --server string      The endpoint of the server running sc-agent
   -v, --verbose            Increase verbosity of output
 ```

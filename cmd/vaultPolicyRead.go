@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"charm.land/lipgloss/v2"
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/tui"
 	"github.com/soerenschneider/sc/internal/vault"
@@ -86,12 +85,7 @@ func browsePolicies(ctx context.Context, client *vault.VaultClient, policies []s
 
 // printPolicy prints the rules of a policy, preceded by a header with its name if stdout is a terminal.
 func printPolicy(name, rules string) {
-	if isTerminal(os.Stdout) {
-		header := lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).SetString("Policy " + name)
-		fmt.Println(header.String())
-		fmt.Println()
-	}
-
+	tui.PrintHeader("Policy " + name)
 	fmt.Println(strings.TrimRight(rules, "\n"))
 }
 

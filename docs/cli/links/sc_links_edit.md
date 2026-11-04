@@ -37,6 +37,7 @@ sc links edit [id|url|query]... [flags]
   -a, --address string      Linkding address.
       --no-telemetry        Do not perform check for updated version
       --profile string      Profile to use
+      --quiet               Only print errors
   -t, --token string        Linkding token.
   -T, --token-file string   Path to a file containing the Linkding token.
   -v, --verbose             Print debug logs

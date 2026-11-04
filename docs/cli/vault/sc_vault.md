@@ -30,6 +30,7 @@ sc vault [flags]
 ```
       --no-telemetry     Do not perform check for updated version
       --profile string   Profile to use
+      --quiet            Only print errors
   -v, --verbose          Print debug logs
 ```
 
@@ -47,5 +48,6 @@ sc vault [flags]
 * [sc vault token](sc_vault_token.md)	 - Manage Vault tokens
 * [sc vault totp](sc_vault_totp.md)	 - Manage Vault TOTP MFA methods and secrets
 * [sc vault transit](sc_vault_transit.md)	 - Manage Vault transit secret engine
+* [sc vault unwrap](sc_vault_unwrap.md)	 - Unwrap a response wrapping token
 * [sc vault update-password](sc_vault_update-password.md)	 - Update the password for Vault userpass authentication method
 

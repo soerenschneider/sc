@@ -28,6 +28,7 @@ sc task groom [flags]
 ```
       --no-telemetry     Do not perform check for updated version
       --profile string   Profile to use
+      --quiet            Only print errors
   -v, --verbose          Print debug logs
 ```
 

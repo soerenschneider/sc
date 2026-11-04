@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/user"
 	"strings"
@@ -37,12 +38,24 @@ authentication is enabled, you may also provide a one-time password (OTP).
 
 After successful login, a Vault token is returned. The token is saved to a file.
 If the file cannot be written—due to permission issues or missing directories—the token is printed
-to stdout as a fallback.`,
+to stdout as a fallback.
+
+With --print-token, the token file is left untouched and only the raw token is printed to stdout,
+while all prompts are rendered to stderr. This allows using a token in a single shell only:
+
+  export VAULT_TOKEN=$(sc vault login --print-token)`,
 	Run: func(cmd *cobra.Command, args []string) {
 		username := pkg.GetString(cmd, vaultLoginUsername)
 		otp := pkg.GetString(cmd, vaultLoginOtp)
 		mfaId := pkg.GetString(cmd, vaultLoginMfaId)
 		mount := pkg.GetString(cmd, vaultMountPath)
+		printTokenOnly, _ := pkg.GetBool(cmd, vaultLoginPrintToken)
+
+		// keep stdout clean when only printing the token so it can be captured by the shell
+		var tuiOutput io.Writer = os.Stdout
+		if printTokenOnly {
+			tuiOutput = os.Stderr
+		}
 
 		client := vault.MustBuildClient(cmd)
 
@@ -74,7 +87,7 @@ to stdout as a fallback.`,
 		var password string
 		fields = append(fields, huh.NewInput().Title("Password").EchoMode(huh.EchoModePassword).Value(&password).Validate(validateFunc))
 
-		form := huh.NewForm(huh.NewGroup(fields...))
+		form := huh.NewForm(huh.NewGroup(fields...)).WithOutput(tuiOutput)
 
 		// Jump directly to the password field if the username field is already filled out
 		if username != "" {
@@ -105,6 +118,7 @@ to stdout as a fallback.`,
 			ActionWithErr(sendPasswordFunc).
 			Title("Sending login request...").
 			Context(ctx).
+			WithOutput(tuiOutput).
 			Type(spinner.Dots).
 			Run(); err != nil {
 			log.Fatal().Err(err).Msg("sending login to request to Vault failed")
@@ -128,7 +142,10 @@ to stdout as a fallback.`,
 						otp = clipboardContent
 					}
 				}
-				tui.ReadInputSuggestionWithValidation(&otp, fmt.Sprintf("Enter OTP for id %q", otpId), nil, pkg.OtpValidation)
+				otpInput := huh.NewInput().Title(fmt.Sprintf("Enter OTP for id %q", otpId)).Value(&otp).Validate(pkg.OtpValidation)
+				if err := huh.NewForm(huh.NewGroup(otpInput)).WithOutput(tuiOutput).Run(); err != nil {
+					log.Fatal().Err(err).Msg("could not read OTP")
+				}
 			}
 
 			ctx, cancel = context.WithTimeout(context.Background(), vaultDefaultTimeout)
@@ -143,10 +160,24 @@ to stdout as a fallback.`,
 				ActionWithErr(sendOtpFunc).
 				Title("Sending OTP...").
 				Context(ctx).
+				WithOutput(tuiOutput).
 				Type(spinner.Dots).
 				Run(); err != nil {
 				log.Fatal().Err(err).Msg("sending OTP to Vault failed")
 			}
+		}
+
+		// only remember usernames that were entered interactively
+		if !cmd.Flags().Changed(vaultLoginUsername) {
+			userData.LastUser = username
+			if err := userdata.Upsert[vaultLoginUserdata](cmp.Or(profile, defaultProfileName), commandName, userData); err != nil {
+				log.Warn().Err(err).Msg("could not save userdata")
+			}
+		}
+
+		if printTokenOnly {
+			fmt.Println(vaultSecret.Auth.ClientToken)
+			return
 		}
 
 		tokenFile, err := vault.GetVaultTokenFilePath()
@@ -159,18 +190,13 @@ to stdout as a fallback.`,
 			log.Fatal().Msgf("Failed to save token to %s: %v", tokenFile, err)
 		}
 
-		var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("Token saved")
+		var outputHeader = tui.BadgeStyle.MarginRight(1).SetString("Token saved")
 		fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), tokenFile))
-
-		userData.LastUser = username
-		if err := userdata.Upsert[vaultLoginUserdata](cmp.Or(profile, defaultProfileName), commandName, userData); err != nil {
-			log.Warn().Err(err).Msg("could not save userdata")
-		}
 	},
 }
 
 func printToken(token string) {
-	var outputHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#F1F1F1")).Background(lipgloss.Color("#6C50FF")).Bold(true).Padding(0, 1).MarginRight(1).SetString("Vault token")
+	var outputHeader = tui.BadgeStyle.MarginRight(1).SetString("Vault token")
 	fmt.Println(lipgloss.JoinHorizontal(lipgloss.Center, outputHeader.String(), token))
 }
 
@@ -181,4 +207,5 @@ func init() {
 	vaultLoginCmd.Flags().StringP(vaultMountPath, "m", "userpass", "Vault mount for userpass auth engine")
 	vaultLoginCmd.Flags().StringP(vaultLoginOtp, "o", "", "OTP value for non-interactive login")
 	vaultLoginCmd.Flags().StringP(vaultLoginMfaId, "", "", "MFA ID")
+	vaultLoginCmd.Flags().BoolP(vaultLoginPrintToken, "", false, "Only print the token to stdout instead of writing it to the token file")
 }

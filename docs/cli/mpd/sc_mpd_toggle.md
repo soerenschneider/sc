@@ -24,6 +24,7 @@ sc mpd toggle [flags]
       --no-telemetry      Do not perform check for updated version
       --password string   MPD password
       --profile string    Profile to use
+      --quiet             Only print errors
   -v, --verbose           Print debug logs
 ```
 

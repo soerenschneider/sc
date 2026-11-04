@@ -36,13 +36,14 @@ const (
 	vaultIpSans        = "ip-sans"
 	vaultAltNames      = "alt-names"
 
-	vaulEntityName      = "entity-name"
-	vaultLoginUsername  = "username"
-	vaultLoginOtp       = "otp"
-	vaultLoginMfaId     = "mfa-id"
-	vaultIssuer         = "issuer"
-	vaultTotpMethodName = "method-name"
-	vaultAlgorithm      = "algorithm"
+	vaulEntityName       = "entity-name"
+	vaultLoginUsername   = "username"
+	vaultLoginOtp        = "otp"
+	vaultLoginMfaId      = "mfa-id"
+	vaultLoginPrintToken = "print-token"
+	vaultIssuer          = "issuer"
+	vaultTotpMethodName  = "method-name"
+	vaultAlgorithm       = "algorithm"
 
 	vaultIdentityEntityId = "entity-id"
 	vaultTotpMethodId     = "method-id"
@@ -78,6 +79,6 @@ Examples:
 func init() {
 	rootCmd.AddCommand(vaultCmd)
 
-	vaultCmd.Flags().StringP(vaultAddr, "a", "", "Vault address. If not specified, tries to read env variable VAULT_ADDR.")
+	vaultCmd.PersistentFlags().StringP(vaultAddr, "a", "", "Vault address. If not specified, tries to read env variable VAULT_ADDR.")
 	vaultCmd.Flags().StringP(vaultTokenFile, "t", "~/.vault-token", "Vault token file.")
 }

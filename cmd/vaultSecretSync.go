@@ -252,7 +252,7 @@ func buildSecretFormatter(name string, arguments map[string]any) (secretFormatte
 func init() {
 	vaultSecretCmd.AddCommand(vaultSecretSyncCmd)
 
-	vaultSecretSyncCmd.Flags().BoolP(vaultSecretSyncAll, "a", false, "Flag to sync all secrets")
+	vaultSecretSyncCmd.Flags().Bool(vaultSecretSyncAll, false, "Flag to sync all secrets")
 	vaultSecretSyncCmd.Flags().StringP(vaultSecretSyncName, "n", "", "Name of the secret to sync")
 	vaultSecretSyncCmd.MarkFlagsMutuallyExclusive(vaultSecretSyncAll, vaultSecretSyncName)
 

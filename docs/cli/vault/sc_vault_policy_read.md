@@ -30,8 +30,10 @@ sc vault policy read [name] [flags]
 ### Options inherited from parent commands
 
 ```
+  -a, --address string   Vault address. If not specified, tries to read env variable VAULT_ADDR.
       --no-telemetry     Do not perform check for updated version
       --profile string   Profile to use
+      --quiet            Only print errors
   -v, --verbose          Print debug logs
 ```
 

@@ -28,6 +28,7 @@ Available Commands:
   links       Manage bookmarks in Linkding
   logs        Interact with VictoriaLogs for querying and managing logs
   mpd         Control a Music Player Daemon
+  ollama      Manage the models of an Ollama instance
   pass        Interacts with the pass unix password store
   pw          Generate secure passwords
   qrcode      Encodes or decodes a string to/from a QR code.
