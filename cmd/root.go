@@ -54,7 +54,7 @@ var rootCmd = &cobra.Command{
 			var found bool
 			profile, found = os.LookupEnv(profileEnvKey)
 			if found {
-				log.Info().Msgf("Using profile %q defined by env var", profile)
+				log.Debug().Msgf("Using profile %q defined by env var", profile)
 			}
 		}
 

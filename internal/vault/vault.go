@@ -375,6 +375,55 @@ func (c *VaultClient) ListAppRoles(ctx context.Context, mount string) ([]string,
 // ReadAppRole returns the configuration of the given AppRole. If the role_id of the role can be read, it is
 // included in the returned configuration as well.
 func (c *VaultClient) ReadAppRole(ctx context.Context, mount, roleName string) (map[string]any, error) {
+	data, err := c.readAppRoleData(ctx, mount, roleName)
+	if err != nil {
+		return nil, err
+	}
+
+	// reading the role_id requires a separate permission, so failing to read it is not fatal
+	if roleID, err := c.GetApproleID(ctx, mount, roleName); err == nil {
+		data["role_id"] = roleID
+	}
+
+	return data, nil
+}
+
+// AppRole is the subset of an AppRole's configuration that is relevant for an overview of multiple roles.
+type AppRole struct {
+	Name               string
+	TokenPolicies      []string
+	TokenTtl           time.Duration
+	TokenMaxTtl        time.Duration
+	TokenBoundCidrs    []string
+	SecretIDTtl        time.Duration
+	SecretIDNumUses    int64
+	SecretIDBoundCidrs []string
+}
+
+// GetAppRole returns the configuration of the given AppRole. Unlike ReadAppRole, the role_id is not read.
+func (c *VaultClient) GetAppRole(ctx context.Context, mount, roleName string) (*AppRole, error) {
+	data, err := c.readAppRoleData(ctx, mount, roleName)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := &AppRole{
+		Name:               roleName,
+		TokenPolicies:      toStringSlice(data["token_policies"]),
+		TokenTtl:           parseVaultDuration(data["token_ttl"]),
+		TokenMaxTtl:        parseVaultDuration(data["token_max_ttl"]),
+		TokenBoundCidrs:    toStringSlice(data["token_bound_cidrs"]),
+		SecretIDTtl:        parseVaultDuration(data["secret_id_ttl"]),
+		SecretIDBoundCidrs: toStringSlice(data["secret_id_bound_cidrs"]),
+	}
+	if numUses, ok := data["secret_id_num_uses"].(json.Number); ok {
+		ret.SecretIDNumUses, _ = numUses.Int64()
+	}
+
+	return ret, nil
+}
+
+func (c *VaultClient) readAppRoleData(ctx context.Context, mount, roleName string) (map[string]any, error) {
 	if roleName == "" {
 		return nil, fmt.Errorf("roleName must not be empty")
 	}
@@ -385,11 +434,6 @@ func (c *VaultClient) ReadAppRole(ctx context.Context, mount, roleName string) (
 	}
 	if secret == nil || secret.Data == nil {
 		return nil, fmt.Errorf("approle %q not found", roleName)
-	}
-
-	// reading the role_id requires a separate permission, so failing to read it is not fatal
-	if roleID, err := c.GetApproleID(ctx, mount, roleName); err == nil {
-		secret.Data["role_id"] = roleID
 	}
 
 	return secret.Data, nil
