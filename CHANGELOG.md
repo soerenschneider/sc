@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.14.0](https://github.com/soerenschneider/sc/compare/v1.13.0...v1.14.0) (2026-11-05)
+
+
+### Features
+
+* add --quiet flag ([523d30e](https://github.com/soerenschneider/sc/commit/523d30efa92bdeedf5513a9ac2843514a9bcb562))
+* **agent:** add nftables set element methods to client ([d384a88](https://github.com/soerenschneider/sc/commit/d384a8835835e179dec3dc4228d5c048ac47595c))
+* **links:** add open, edit and delete commands ([24e91cd](https://github.com/soerenschneider/sc/commit/24e91cd315b3224b3589b49547af681c0396669a))
+* **logs:** add tail command ([f4c67c1](https://github.com/soerenschneider/sc/commit/f4c67c1465474f63646fce1354b2ef73bccb0261))
+* **ollama:** add ollama command to manage and ask models ([ea9b86a](https://github.com/soerenschneider/sc/commit/ea9b86a9e56f167e0386100303e6964f4c48320a))
+* **vault:** add approle rotate-secret-id command ([5c69cec](https://github.com/soerenschneider/sc/commit/5c69cec25d8c5519961d6704e4b07e4bf4bf504d))
+* **vault:** add aws revoke-credentials and status commands ([b3e4313](https://github.com/soerenschneider/sc/commit/b3e4313d58faae8c0246e30074ab4c3e90e32e8c))
+* **vault:** add option to only print token after successful login ([3aa80f5](https://github.com/soerenschneider/sc/commit/3aa80f57ba23281629f269423f7c49162e0e0a60))
+* **vault:** add secret patch command ([40141a0](https://github.com/soerenschneider/sc/commit/40141a0ac6032abf3f5e51d2188781e2bab087a1))
+* **vault:** extend approle commands and add unwrap ([d189b28](https://github.com/soerenschneider/sc/commit/d189b2889428bd1f1121169cea269b60e55c0bc4))
+* **vault:** show approle config table in approle list ([e3527fa](https://github.com/soerenschneider/sc/commit/e3527fa9dc5d090220fe48697a11a30a83674c51))
+
+
+### Bug Fixes
+
+* **agent:** adapt to renamed enum constants in sc-agent v1.14.0 ([64d1ada](https://github.com/soerenschneider/sc/commit/64d1ada6baf60b982089cd04c4050cbc9c06ee56))
+* **deps:** bump dependencies ([df5c2d3](https://github.com/soerenschneider/sc/commit/df5c2d3f0126dde4082e17154a23d7d4c818fe5b))
+* **deps:** tidy go.mod ([c3cd9db](https://github.com/soerenschneider/sc/commit/c3cd9dbd9b26a7220db7b92186bd6603d944552e))
+* **deps:** Update dependency go to v1.27.3 ([e63e653](https://github.com/soerenschneider/sc/commit/e63e653054ba880e11a770f0cdb16f71d143740b))
+* **deps:** Update dependency go to v1.27.3 ([09f8e4e](https://github.com/soerenschneider/sc/commit/09f8e4e96d4bcea5982ef34660e96bff4a2e8e42))
+* **deps:** Update module charm.land/bubbletea/v2 to v2.1.1 ([97c5a47](https://github.com/soerenschneider/sc/commit/97c5a47d3fb349594ba806958ae14306efbc7fa0))
+* **deps:** Update module charm.land/bubbletea/v2 to v2.1.1 ([b9bfeb4](https://github.com/soerenschneider/sc/commit/b9bfeb41a3e9e28b02abb7f6884483a7c1d4eb34))
+* **deps:** Update module github.com/aws/aws-sdk-go-v2 to v1.47.5 ([7d7b993](https://github.com/soerenschneider/sc/commit/7d7b9936159729696f06851933a1e46dadc31741))
+* **deps:** Update module github.com/aws/aws-sdk-go-v2 to v1.47.5 ([617f01a](https://github.com/soerenschneider/sc/commit/617f01a65d8aaccb85f35dd5d5fb1f6d93f2bab5))
+* **deps:** Update module github.com/go-playground/validator/v10 to v10.30.6 ([35991c9](https://github.com/soerenschneider/sc/commit/35991c99248fa009dcb9af58585dd4665d7accd4))
+* **deps:** Update module github.com/go-playground/validator/v10 to v10.30.6 ([d5d63da](https://github.com/soerenschneider/sc/commit/d5d63da75f9b486f6551528189f8022a751a643b))
+* **deps:** Update module github.com/soerenschneider/sc-agent to v1.14.0 ([5495c90](https://github.com/soerenschneider/sc/commit/5495c9054baf77938dd0927953517cedf3277301))
+* **deps:** Update module github.com/soerenschneider/sc-agent to v1.14.0 ([6a8641a](https://github.com/soerenschneider/sc/commit/6a8641abb339b4e3957ee38675452025d3d1676d))
+* **profile:** prefer the most specific section per flag ([49f2b44](https://github.com/soerenschneider/sc/commit/49f2b4473d150ec777b2321986a557df7d3f066b))
+* **tf:** point out stack directories without terragrunt.hcl ([87501ef](https://github.com/soerenschneider/sc/commit/87501ef9c209049117b2142b893e5a89bd58cc76))
+* **vault:** only sync the requested secret and name failed ones ([817df79](https://github.com/soerenschneider/sc/commit/817df791837ed0224f0d185c8cc4838a63d190ab))
+
 ## [1.13.0](https://github.com/soerenschneider/sc/compare/v1.12.0...v1.13.0) (2026-10-19)
 
 
