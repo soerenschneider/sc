@@ -25,6 +25,7 @@ require (
 	github.com/keybase/go-keychain v0.0.1
 	github.com/liyue201/goqr v0.0.0-20200803022322-df443203d4ea
 	github.com/mdp/qrterminal/v3 v3.2.1
+	github.com/mdp/qrterminal/v4 v4.0.0
 	github.com/rs/zerolog v1.35.1
 	github.com/sigstore/sigstore-go v1.3.0
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
