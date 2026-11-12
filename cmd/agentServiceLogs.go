@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"context"
-
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc-agent/pkg/api"
 	"github.com/soerenschneider/sc/internal/agent"
@@ -23,7 +21,7 @@ var agentServiceLogsCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("could net get flag")
 		}
 
-		resp, err := client.ServicesUnitLogsGet(context.Background(), unit)
+		resp, err := client.ServicesUnitLogsGet(cmd.Context(), unit)
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not send request")
 		}

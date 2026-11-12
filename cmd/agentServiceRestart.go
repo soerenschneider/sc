@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"context"
-
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc-agent/pkg/api"
 	"github.com/soerenschneider/sc/internal/agent"
@@ -25,7 +23,7 @@ var agentServiceRestartCmd = &cobra.Command{
 		params := &api.ServicesUnitStatusPutParams{
 			Action: api.ServicesUnitStatusPutParamsActionRestart,
 		}
-		resp, err := client.ServicesUnitStatusPut(context.Background(), unit, params)
+		resp, err := client.ServicesUnitStatusPut(cmd.Context(), unit, params)
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not send request")
 		}

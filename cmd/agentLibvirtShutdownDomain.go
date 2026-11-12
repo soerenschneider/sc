@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"context"
-
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc-agent/pkg/api"
 	"github.com/soerenschneider/sc/internal/agent"
@@ -25,7 +23,7 @@ var agentLibvirtShutdownDomainCmd = &cobra.Command{
 		params := &api.LibvirtPostDomainActionParams{
 			Action: api.LibvirtPostDomainActionParamsActionShutdown,
 		}
-		resp, err := client.LibvirtPostDomainAction(context.Background(), domain, params)
+		resp, err := client.LibvirtPostDomainAction(cmd.Context(), domain, params)
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not send requests")
 		}

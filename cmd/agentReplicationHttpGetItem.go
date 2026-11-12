@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"context"
-
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc-agent/pkg/api"
 	"github.com/soerenschneider/sc/internal/agent"
@@ -23,7 +21,7 @@ var agentReplicationHttpGetItemCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("could not get flag")
 		}
 
-		resp, err := client.ReplicationGetHttpItem(context.Background(), id)
+		resp, err := client.ReplicationGetHttpItem(cmd.Context(), id)
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not send request")
 		}

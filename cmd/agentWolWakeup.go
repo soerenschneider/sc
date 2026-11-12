@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"context"
-
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc/internal/agent"
 	"github.com/spf13/cobra"
@@ -21,7 +19,7 @@ var agentWolWakeupCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("could not get flag")
 		}
 
-		resp, err := client.WolPostMessage(context.Background(), alias)
+		resp, err := client.WolPostMessage(cmd.Context(), alias)
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not send request")
 		}

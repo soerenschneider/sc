@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"context"
-
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc-agent/pkg/api"
 	ssh "github.com/soerenschneider/sc/internal/agent"
@@ -23,7 +21,7 @@ var agentCertsSshGetCertificateCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("could not get flag")
 		}
 
-		resp, err := client.CertsSshGetCertificate(context.Background(), id)
+		resp, err := client.CertsSshGetCertificate(cmd.Context(), id)
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not send request")
 		}

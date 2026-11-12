@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"context"
-
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc-agent/pkg/api"
 	"github.com/soerenschneider/sc/internal/agent"
@@ -16,7 +14,7 @@ var agentPackagesInstalledCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := agent.MustBuildApp(cmd)
 
-		resp, err := client.PackagesInstalledGet(context.Background())
+		resp, err := client.PackagesInstalledGet(cmd.Context())
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not send request")
 		}

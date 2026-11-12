@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"context"
-
 	"github.com/rs/zerolog/log"
 	"github.com/soerenschneider/sc-agent/pkg/api"
 	"github.com/soerenschneider/sc/internal/agent"
@@ -18,7 +16,7 @@ var agentK0sStopCmd = &cobra.Command{
 		params := &api.K0sPostActionParams{
 			Action: api.K0sPostActionParamsActionStop,
 		}
-		resp, err := client.K0sPostAction(context.Background(), params)
+		resp, err := client.K0sPostAction(cmd.Context(), params)
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not send request")
 		}

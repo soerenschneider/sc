@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/rs/zerolog/log"
@@ -17,7 +16,7 @@ var agentPackagesUpdateableCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := agent.MustBuildApp(cmd)
 
-		resp, err := client.PackagesUpdatesGet(context.Background())
+		resp, err := client.PackagesUpdatesGet(cmd.Context())
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not send request")
 		}
