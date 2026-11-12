@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"maps"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -16,6 +18,7 @@ type fakeKv2Store struct {
 	metadata bool
 	puts     int
 	putCas   int
+	put      map[string]any
 
 	patchErr error
 	patched  map[string]any
@@ -33,7 +36,7 @@ func (f *fakeKv2Store) Get(_ context.Context, _, _ string) (*vault.Secret, error
 	if f.secret == nil {
 		return nil, &vault.VaultError{Kind: vault.ErrKindNotFound}
 	}
-	return &vault.Secret{Data: maps.Clone(f.secret.Data), Version: f.secret.Version}, nil
+	return &vault.Secret{Data: maps.Clone(f.secret.Data), JSONKeys: maps.Clone(f.secret.JSONKeys), Version: f.secret.Version}, nil
 }
 
 func (f *fakeKv2Store) GetMetadata(_ context.Context, _, _ string) (*vault.SecretMetadata, error) {
@@ -43,10 +46,12 @@ func (f *fakeKv2Store) GetMetadata(_ context.Context, _, _ string) (*vault.Secre
 	return &vault.SecretMetadata{}, nil
 }
 
-func (f *fakeKv2Store) Put(_ context.Context, _, _ string, data map[string]string, cas int) (*vault.Secret, error) {
+func (f *fakeKv2Store) Put(_ context.Context, _, _ string, data map[string]any, cas int) (*vault.Secret, error) {
 	f.puts++
 	f.putCas = cas
-	f.secret = &vault.Secret{Data: data, Version: cas + 1}
+	f.put = data
+	f.secret = &vault.Secret{Version: cas + 1}
+	f.secret.Data, f.secret.JSONKeys = vault.EncodeValues(data)
 	return f.secret, nil
 }
 
@@ -167,5 +172,34 @@ func TestParseSecretPatchPairs(t *testing.T) {
 		if _, err := parseSecretPatchPairs(args, strings.NewReader("x")); err == nil {
 			t.Errorf("expected an error for %v", args)
 		}
+	}
+}
+
+func TestPatchSecretReadWriteKeepsJSONValues(t *testing.T) {
+	store := &fakeKv2Store{}
+	_, _ = store.Put(context.Background(), "secret", "app", map[string]any{
+		"user":  "admin",
+		"hosts": []any{"a", "b"},
+		"port":  json.Number("5432"),
+	}, 2)
+
+	_, err := patchSecretReadWrite(context.Background(), store, "secret", "app", map[string]string{"user": "root", "port": "5433"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Untouched keys keep their type, set values are strings like with a native patch.
+	want := map[string]any{"user": "root", "hosts": []any{"a", "b"}, "port": "5433"}
+	if !reflect.DeepEqual(store.put, want) {
+		t.Errorf("expected %#v, got %#v", want, store.put)
+	}
+
+	// Setting a JSON value to its own text still changes its type to string.
+	_, _ = store.Put(context.Background(), "secret", "app", map[string]any{"port": json.Number("5432")}, 3)
+	result, err := patchSecretReadWrite(context.Background(), store, "secret", "app", map[string]string{"port": "5432"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(result.changed, []string{"port"}) || store.put["port"] != "5432" {
+		t.Errorf("expected port to be written as string, got changed %v and %#v", result.changed, store.put["port"])
 	}
 }

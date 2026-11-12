@@ -123,7 +123,10 @@ type StorageImplementation interface {
 
 // Secret is the storage-neutral view of a versioned KV secret.
 type Secret struct {
+	// Data holds the values as text, see EncodeValues. JSONKeys marks the keys whose value is
+	// JSON-encoded because it is not a string in Vault.
 	Data      map[string]string
+	JSONKeys  map[string]bool
 	Version   int
 	UpdatedAt time.Time
 }

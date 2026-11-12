@@ -53,7 +53,7 @@ type vaultKv2Provider interface {
 	// assert the secret does not exist yet, otherwise pass the version
 	// returned by the most recent Get/Put. Returns a VaultError with
 	// Kind == ErrKindCASConflict when the server's version has advanced.
-	Put(ctx context.Context, mount, path string, data map[string]string, cas int) (*vault.Secret, error)
+	Put(ctx context.Context, mount, path string, data map[string]any, cas int) (*vault.Secret, error)
 
 	// SoftDelete marks the latest version as deleted while preserving
 	// history (so it can be undeleted out-of-band).
@@ -116,6 +116,8 @@ const (
 type pair struct {
 	key   string
 	value string
+	// json is set if the value is JSON-encoded because it is not a string in Vault.
+	json bool
 }
 
 type model struct {
@@ -287,7 +289,7 @@ func (m *model) applyLoadResult(res *loadResult) {
 func (m *model) applyServerSecret(sec *vault.Secret, updateCurrent bool) {
 	m.pairs = m.pairs[:0]
 	for k, v := range sec.Data {
-		m.pairs = append(m.pairs, pair{key: k, value: v})
+		m.pairs = append(m.pairs, pair{key: k, value: v, json: sec.JSONKeys[k]})
 	}
 	sort.Slice(m.pairs, func(i, j int) bool { return m.pairs[i].key < m.pairs[j].key })
 	m.version = sec.Version
@@ -301,11 +303,13 @@ func (m *model) applyServerSecret(sec *vault.Secret, updateCurrent bool) {
 
 func (m *model) save() tea.Cmd {
 	data := make(map[string]string, len(m.pairs))
+	jsonKeys := map[string]bool{}
 	for _, p := range m.pairs {
 		if p.key == "" {
 			continue
 		}
 		data[p.key] = p.value
+		jsonKeys[p.key] = p.json
 	}
 	// CAS uses currentVersion, never the viewed version. Saving from a
 	// historical view creates a fresh version on top of the latest.
@@ -313,7 +317,7 @@ func (m *model) save() tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
-		sec, err := store.Put(ctx, mount, path, data, cas)
+		sec, err := store.Put(ctx, mount, path, vault.DecodeValues(data, jsonKeys), cas)
 		if err != nil {
 			return errMsg{err: err, op: "save"}
 		}
@@ -1109,7 +1113,7 @@ func (m *model) exportCmd() tea.Cmd {
 			}
 		}
 
-		body, err := marshalSecretJSON(res.sec.Data)
+		body, err := marshalSecretJSON(vault.DecodeValues(res.sec.Data, res.sec.JSONKeys))
 		if err != nil {
 			return errMsg{err: err, op: "export"}
 		}
@@ -1131,13 +1135,13 @@ type exportedMsg struct {
 	historical bool
 }
 
-// marshalSecretJSON encodes a string map as deterministic, indented JSON.
+// marshalSecretJSON encodes the secret's data as deterministic, indented JSON.
 // json.MarshalIndent sorts map keys lexically, so the output is stable
 // across exports — friendly for diffs if the user re-exports over an
 // existing file.
-func marshalSecretJSON(data map[string]string) ([]byte, error) {
+func marshalSecretJSON(data map[string]any) ([]byte, error) {
 	if data == nil {
-		data = map[string]string{}
+		data = map[string]any{}
 	}
 	return json.MarshalIndent(data, "", "  ")
 }

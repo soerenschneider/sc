@@ -132,11 +132,13 @@ func patchSecret(ctx context.Context, store vaultKv2Patcher, mount, path string,
 // patchSecretReadWrite applies the changes to the current version of the secret and writes it using check-and-set.
 func patchSecretReadWrite(ctx context.Context, store vaultKv2Provider, mount, path string, sets map[string]string, deletes []string) (*secretPatchResult, error) {
 	data := map[string]string{}
+	jsonKeys := map[string]bool{}
 	cas := 0
 	current, err := store.Get(ctx, mount, path)
 	switch {
 	case err == nil:
 		data = maps.Clone(current.Data)
+		jsonKeys = maps.Clone(current.JSONKeys)
 		cas = current.Version
 	case vault.IsNotFound(err):
 		// The latest version may be deleted while older ones exist, patching an empty secret would lose their keys.
@@ -151,8 +153,10 @@ func patchSecretReadWrite(ctx context.Context, store vaultKv2Provider, mount, pa
 
 	result := &secretPatchResult{}
 	for _, key := range slices.Sorted(maps.Keys(sets)) {
-		if old, ok := data[key]; !ok || old != sets[key] {
+		// Set values are strings, like with a native patch.
+		if old, ok := data[key]; !ok || old != sets[key] || jsonKeys[key] {
 			data[key] = sets[key]
+			delete(jsonKeys, key)
 			result.changed = append(result.changed, key)
 		}
 	}
@@ -169,7 +173,7 @@ func patchSecretReadWrite(ctx context.Context, store vaultKv2Provider, mount, pa
 		return result, nil
 	}
 
-	result.secret, err = store.Put(ctx, mount, path, data, cas)
+	result.secret, err = store.Put(ctx, mount, path, vault.DecodeValues(data, jsonKeys), cas)
 	return result, err
 }
 

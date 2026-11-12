@@ -1342,12 +1342,8 @@ func (c *VaultClient) GetMetadata(ctx context.Context, mount, path string) (*Sec
 	return out, nil
 }
 
-func (c *VaultClient) Put(ctx context.Context, mount, path string, data map[string]string, cas int) (*Secret, error) {
-	payload := make(map[string]any, len(data))
-	for k, val := range data {
-		payload[k] = val
-	}
-	sec, err := c.client.KVv2(mount).Put(ctx, path, payload, vault.WithCheckAndSet(cas))
+func (c *VaultClient) Put(ctx context.Context, mount, path string, data map[string]any, cas int) (*Secret, error) {
+	sec, err := c.client.KVv2(mount).Put(ctx, path, data, vault.WithCheckAndSet(cas))
 	if err != nil {
 		return nil, classify(err, "put")
 	}
@@ -1424,10 +1420,8 @@ func fromKVSecret(sec *vault.KVSecret) *Secret {
 	if sec == nil {
 		return nil
 	}
-	out := &Secret{Data: make(map[string]string, len(sec.Data))}
-	for k, v := range sec.Data {
-		out.Data[k] = fmt.Sprintf("%v", v)
-	}
+	out := &Secret{}
+	out.Data, out.JSONKeys = EncodeValues(sec.Data)
 	if sec.VersionMetadata != nil {
 		out.Version = sec.VersionMetadata.Version
 		out.UpdatedAt = sec.VersionMetadata.CreatedTime
